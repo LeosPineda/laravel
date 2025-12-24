@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Superadmin\DashboardController as SuperadminDashboardController;
 use App\Http\Controllers\Superadmin\VendorController as SuperadminVendorController;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -10,11 +11,40 @@ Route::get('/', function () {
     return redirect()->route('login');
 });
 
-// Auth routes are handled by Fortify
+// Auth GET routes for Inertia pages (Fortify only provides POST routes when views: false)
+Route::get('/login', function () {
+    return Inertia::render('auth/Login');
+})->name('login');
+
+Route::get('/register', function () {
+    return Inertia::render('auth/Register');
+})->name('register');
+
+Route::get('/forgot-password', function () {
+    return Inertia::render('auth/ForgotPassword');
+})->name('forgot-password');
+
+Route::get('/reset-password', function () {
+    return Inertia::render('auth/ResetPassword');
+})->name('reset-password');
+
+Route::get('/two-factor-challenge', function () {
+    return Inertia::render('auth/TwoFactorChallenge');
+})->name('two-factor.login');
+
+// Password reset route for email notifications (required by Laravel's ResetPassword notification)
+Route::get('/reset-password/{token}', function ($token) {
+    return Inertia::render('auth/ResetPassword', [
+        'token' => $token,
+        'email' => request('email')
+    ]);
+})->name('password.reset');
+
+// Auth POST routes are handled by Fortify
 
 // Dashboard redirect based on role
 Route::get('/dashboard', function () {
-    $user = auth()->user();
+    $user = Auth::user();
 
     return match ($user->role) {
         'superadmin' => redirect()->route('superadmin.dashboard'),
@@ -22,7 +52,7 @@ Route::get('/dashboard', function () {
         'customer' => redirect()->route('customer.home'),
         default => redirect()->route('login'),
     };
-})->middleware('auth', 'verified')->name('dashboard');
+})->middleware('auth')->name('dashboard');
 
 // Superadmin routes (no email verification needed)
 Route::middleware(['auth', 'role:superadmin'])->prefix('superadmin')->name('superadmin.')->group(function () {
@@ -37,15 +67,15 @@ Route::middleware(['auth', 'role:superadmin'])->prefix('superadmin')->name('supe
     Route::delete('/vendors/{vendor}', [SuperadminVendorController::class, 'destroy'])->name('vendors.destroy');
 });
 
-// Vendor routes (requires email verification)
-Route::middleware(['auth', 'role:vendor', 'verified'])->prefix('vendor')->name('vendor.')->group(function () {
+// Vendor routes (no email verification needed)
+Route::middleware(['auth', 'role:vendor'])->prefix('vendor')->name('vendor.')->group(function () {
     Route::get('/dashboard', function () {
         return Inertia::render('vendor/Dashboard');
     })->name('dashboard');
 });
 
-// Customer routes (requires email verification)
-Route::middleware(['auth', 'role:customer', 'verified'])->prefix('customer')->name('customer.')->group(function () {
+// Customer routes (no email verification needed)
+Route::middleware(['auth', 'role:customer'])->prefix('customer')->name('customer.')->group(function () {
     Route::get('/home', function () {
         return Inertia::render('customer/Home');
     })->name('home');
