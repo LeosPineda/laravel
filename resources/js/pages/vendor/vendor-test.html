@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vendor Test Page</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .header {
+            background-color: #27ae60;
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .test-section {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .button {
+            background-color: #27ae60;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .button:hover {
+            background-color: #219a52;
+        }
+        .admin-button {
+            background-color: #e74c3c;
+        }
+        .admin-button:hover {
+            background-color: #c0392b;
+        }
+        .customer-button {
+            background-color: #f39c12;
+        }
+        .customer-button:hover {
+            background-color: #d68910;
+        }
+        .vendor-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .stat-card {
+            background-color: #ecf0f1;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .stat-number {
+            font-size: 24px;
+            font-weight: bold;
+            color: #27ae60;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🍔 Vendor Dashboard Test</h1>
+        <p>This is a test page for vendor role-based access</p>
+    </div>
+
+    <div class="test-section">
+        <h2>✅ Vendor Access Test</h2>
+        <div class="success">
+            ✅ Successfully redirected to vendor dashboard!
+        </div>
+        <p><strong>User Role:</strong> Vendor</p>
+        <p><strong>Business Name:</strong> John's Restaurant</p>
+        <p><strong>Access Level:</strong> Can manage products and view orders</p>
+    </div>
+
+    <div class="test-section">
+        <h2>📊 Vendor Dashboard</h2>
+        <div class="vendor-stats">
+            <div class="stat-card">
+                <div class="stat-number">12</div>
+                <div>Products</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">45</div>
+                <div>Orders Today</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">$1,234</div>
+                <div>Today's Revenue</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">4.8</div>
+                <div>Rating</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>🍕 Vendor Actions</h2>
+        <button class="button" onclick="testManageProducts()">Manage Products</button>
+        <button class="button" onclick="testViewOrders()">View Orders</button>
+        <button class="button" onclick="testUpdateOrderStatus()">Update Order Status</button>
+        <button class="button" onclick="testBusinessSettings()">Business Settings</button>
+    </div>
+
+    <div class="test-section">
+        <h2>🚫 Restricted Actions (Should Fail)</h2>
+        <button class="button admin-button" onclick="testAdminAccess()">Access Admin Panel</button>
+        <button class="button customer-button" onclick="testPlaceOrders()">Place Orders</button>
+        <button class="button customer-button" onclick="testBrowseProducts()">Browse Products</button>
+    </div>
+
+    <div class="test-section">
+        <h2>📋 Recent Orders</h2>
+        <div id="recent-orders">
+            <div style="padding: 10px; background-color: #f8f9fa; margin: 5px 0; border-radius: 4px;">
+                <strong>Order #12345</strong> - Pizza Margherita - $25.99 - <span style="color: #28a745;">Completed</span>
+            </div>
+            <div style="padding: 10px; background-color: #fff3cd; margin: 5px 0; border-radius: 4px;">
+                <strong>Order #12346</strong> - Cheeseburger - $18.99 - <span style="color: #ffc107;">Preparing</span>
+            </div>
+            <div style="padding: 10px; background-color: #f8f9fa; margin: 5px 0; border-radius: 4px;">
+                <strong>Order #12347</strong> - Caesar Salad - $12.99 - <span style="color: #17a2b8;">Ready</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>🔄 Navigation Test</h2>
+        <button class="button" onclick="goToLogin()">Go to Login</button>
+        <button class="button" onclick="logout()">Logout</button>
+        <button class="button" onclick="refreshPage()">Refresh Page</button>
+        <button class="button" onclick="testCustomerView()">Switch to Customer View</button>
+    </div>
+
+    <script>
+        function testManageProducts() {
+            alert('✅ Vendor can manage products!\n\nActions available:\n- Add new product\n- Edit existing product\n- Update prices\n- Manage stock\n- Upload images');
+        }
+
+        function testViewOrders() {
+            alert('✅ Vendor can view all orders!\n\nOrder management:\n- View incoming orders\n- See customer details\n- Track order status\n- View order history');
+        }
+
+        function testUpdateOrderStatus() {
+            alert('✅ Vendor can update order status!\n\nStatus updates:\n- Accept order\n- Mark as preparing\n- Mark as ready\n- Mark as completed');
+        }
+
+        function testBusinessSettings() {
+            alert('✅ Vendor can update business settings!\n\nSettings available:\n- Business name\n- Category\n- Description\n- Logo upload\n- Operating hours');
+        }
+
+        function testAdminAccess() {
+            alert('🚫 ACCESS DENIED!\n\nVendors cannot access admin panels.\nThis should trigger a 403 error or redirect.');
+        }
+
+        function testPlaceOrders() {
+            alert('🚫 ACCESS DENIED!\n\nVendors cannot place orders as customers.\nThey can only receive orders.');
+        }
+
+        function testBrowseProducts() {
+            alert('🚫 ACCESS DENIED!\n\nVendors cannot browse products like customers.\nThey manage their own products.');
+        }
+
+        function testCustomerView() {
+            window.location.href = '/resources/customer-test.html';
+        }
+
+        function goToLogin() {
+            window.location.href = '/login';
+        }
+
+        function logout() {
+            alert('Logging out vendor...');
+            // In real app, this would clear session and redirect to login
+            window.location.href = '/';
+        }
+
+        function refreshPage() {
+            location.reload();
+        }
+
+        // Log when page loads
+        console.log('Vendor test page loaded successfully!');
+        console.log('Role: Vendor');
+        console.log('Business: John\'s Restaurant');
+        console.log('Permissions: Product Management, Order Management, Business Settings');
+    </script>
+</body>
+</html>
