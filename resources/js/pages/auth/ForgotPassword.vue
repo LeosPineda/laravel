@@ -1,65 +1,90 @@
 <script setup lang="ts">
-import InputError from '@/components/InputError.vue';
-import TextLink from '@/components/TextLink.vue';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Spinner } from '@/components/ui/spinner';
-import AuthLayout from '@/layouts/AuthLayout.vue';
-import { login } from '@/routes';
-import { email } from '@/routes/password';
-import { Form, Head } from '@inertiajs/vue3';
+import { Head, useForm } from '@inertiajs/vue3';
 
 defineProps<{
     status?: string;
 }>();
+
+const form = useForm({
+    email: '',
+});
+
+const submit = () => {
+    form.post('/forgot-password');
+};
 </script>
 
 <template>
-    <AuthLayout
-        title="Forgot password"
-        description="Enter your email to receive a password reset link"
-    >
-        <Head title="Forgot password" />
+    <Head title="Forgot Password" />
 
-        <div
-            v-if="status"
-            class="mb-4 text-center text-sm font-medium text-green-600"
-        >
-            {{ status }}
-        </div>
+    <div class="min-h-screen flex items-center justify-center bg-[#F5F5F5] px-4">
+        <div class="w-full max-w-md">
+            <!-- Logo/Brand -->
+            <div class="text-center mb-8">
+                <h1 class="text-3xl font-bold text-[#1A1A1A]">Food Court</h1>
+                <p class="text-[#1A1A1A]/60 mt-2">Reset your password</p>
+            </div>
 
-        <div class="space-y-6">
-            <Form v-bind="email.form()" v-slot="{ errors, processing }">
-                <div class="grid gap-2">
-                    <Label for="email">Email address</Label>
-                    <Input
-                        id="email"
-                        type="email"
-                        name="email"
-                        autocomplete="off"
-                        autofocus
-                        placeholder="email@example.com"
-                    />
-                    <InputError :message="errors.email" />
+            <!-- Card -->
+            <div class="bg-white rounded-xl shadow-sm border border-[#E0E0E0] p-8">
+                <!-- Status Message -->
+                <div
+                    v-if="status"
+                    class="mb-6 p-3 bg-green-50 border border-green-200 rounded-lg text-center text-sm text-green-700"
+                >
+                    {{ status }}
                 </div>
 
-                <div class="my-6 flex items-center justify-start">
-                    <Button
-                        class="w-full"
-                        :disabled="processing"
-                        data-test="email-password-reset-link-button"
+                <p class="text-sm text-[#1A1A1A]/70 mb-6">
+                    Enter your email address and we'll send you a link to reset your password.
+                </p>
+
+                <form @submit.prevent="submit" class="space-y-6">
+                    <!-- Email -->
+                    <div>
+                        <label for="email" class="block text-sm font-medium text-[#1A1A1A] mb-2">
+                            Email Address
+                        </label>
+                        <input
+                            id="email"
+                            type="email"
+                            v-model="form.email"
+                            required
+                            autofocus
+                            autocomplete="email"
+                            placeholder="email@example.com"
+                            class="w-full px-4 py-3 border border-[#E0E0E0] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FF6B35] focus:border-transparent transition-all"
+                            :class="{ 'border-red-500': form.errors.email }"
+                        />
+                        <p v-if="form.errors.email" class="mt-2 text-sm text-red-600">
+                            {{ form.errors.email }}
+                        </p>
+                    </div>
+
+                    <!-- Submit Button -->
+                    <button
+                        type="submit"
+                        :disabled="form.processing"
+                        class="w-full py-3 px-4 bg-[#FF6B35] text-white font-semibold rounded-lg hover:bg-[#FF6B35]/90 focus:outline-none focus:ring-2 focus:ring-[#FF6B35] focus:ring-offset-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                        <Spinner v-if="processing" />
-                        Email password reset link
-                    </Button>
-                </div>
-            </Form>
+                        <span v-if="form.processing" class="flex items-center justify-center gap-2">
+                            <svg class="animate-spin h-5 w-5" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none" />
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                            </svg>
+                            Sending...
+                        </span>
+                        <span v-else>Send Reset Link</span>
+                    </button>
+                </form>
 
-            <div class="space-x-1 text-center text-sm text-muted-foreground">
-                <span>Or, return to</span>
-                <TextLink :href="login()">log in</TextLink>
+                <!-- Back to Login -->
+                <div class="mt-6 text-center">
+                    <a href="/login" class="text-sm text-[#FF6B35] font-medium hover:text-[#FF6B35]/80 transition-colors">
+                        ← Back to Sign In
+                    </a>
+                </div>
             </div>
         </div>
-    </AuthLayout>
+    </div>
 </template>

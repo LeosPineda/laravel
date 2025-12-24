@@ -1,110 +1,216 @@
 <script setup lang="ts">
-import InputError from '@/components/InputError.vue';
-import TextLink from '@/components/TextLink.vue';
-import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Spinner } from '@/components/ui/spinner';
-import AuthBase from '@/layouts/AuthLayout.vue';
-import { register } from '@/routes';
-import { store } from '@/routes/login';
-import { request } from '@/routes/password';
-import { Form, Head } from '@inertiajs/vue3';
+import { Head, useForm } from '@inertiajs/vue3';
+import { ref } from 'vue';
 
 defineProps<{
     status?: string;
-    canResetPassword: boolean;
-    canRegister: boolean;
 }>();
+
+const showPassword = ref(false);
+
+const form = useForm({
+    email: '',
+    password: '',
+});
+
+const submit = () => {
+    form.post('/login', {
+        onFinish: () => form.reset('password'),
+    });
+};
 </script>
 
 <template>
-    <AuthBase
-        title="Log in to your account"
-        description="Enter your email and password below to log in"
-    >
-        <Head title="Log in" />
+    <Head title="Sign In" />
 
-        <div
-            v-if="status"
-            class="mb-4 text-center text-sm font-medium text-green-600"
-        >
-            {{ status }}
+    <div class="min-h-screen flex flex-col lg:flex-row bg-white">
+        <!-- Left Side - Branding (60% white + 30% light gray) -->
+        <div class="hidden lg:flex lg:w-1/2 bg-[#F5F5F5] p-8 xl:p-12 flex-col justify-between relative">
+            <!-- Decorative Elements -->
+            <div class="absolute top-0 right-0 w-64 h-64 bg-[#FF6B35]/5 rounded-full -translate-y-1/2 translate-x-1/2"></div>
+            <div class="absolute bottom-0 left-0 w-48 h-48 bg-[#FF6B35]/5 rounded-full translate-y-1/2 -translate-x-1/2"></div>
+
+            <!-- Content -->
+            <div class="relative z-10">
+                <!-- Logo -->
+                <div class="flex items-center gap-3">
+                    <img src="/fast-food.png" alt="4Rodz" class="w-12 h-12 rounded-xl" />
+                    <span class="text-xl font-bold text-[#1A1A1A]">4Rodz Food Court</span>
+                </div>
+            </div>
+
+            <!-- Main Content -->
+            <div class="relative z-10 max-w-md">
+                <h1 class="text-4xl xl:text-5xl font-bold text-[#1A1A1A] leading-tight mb-6">
+                    Your favorite food,
+                    <span class="text-[#FF6B35]">ready when you are</span>
+                </h1>
+                <p class="text-[#1A1A1A]/70 text-lg leading-relaxed mb-10">
+                    Skip the lines. Order from multiple vendors, track your order in real-time, and pick up when it's ready.
+                </p>
+
+                <!-- Features -->
+                <div class="space-y-4">
+                    <div class="flex items-center gap-4 p-4 bg-white rounded-2xl border border-[#E0E0E0] shadow-sm">
+                        <div class="w-12 h-12 bg-[#FF6B35]/10 rounded-xl flex items-center justify-center shrink-0">
+                            <svg class="w-6 h-6 text-[#FF6B35]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                            </svg>
+                        </div>
+                        <div>
+                            <h3 class="font-semibold text-[#1A1A1A]">Mobile Ordering</h3>
+                            <p class="text-[#1A1A1A]/60 text-sm">Order from anywhere in the food court</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-4 p-4 bg-white rounded-2xl border border-[#E0E0E0] shadow-sm">
+                        <div class="w-12 h-12 bg-[#FF6B35]/10 rounded-xl flex items-center justify-center shrink-0">
+                            <svg class="w-6 h-6 text-[#FF6B35]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                            </svg>
+                        </div>
+                        <div>
+                            <h3 class="font-semibold text-[#1A1A1A]">Fast Pickup</h3>
+                            <p class="text-[#1A1A1A]/60 text-sm">Get notified when your order is ready</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-4 p-4 bg-white rounded-2xl border border-[#E0E0E0] shadow-sm">
+                        <div class="w-12 h-12 bg-[#FF6B35]/10 rounded-xl flex items-center justify-center shrink-0">
+                            <svg class="w-6 h-6 text-[#FF6B35]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                            </svg>
+                        </div>
+                        <div>
+                            <h3 class="font-semibold text-[#1A1A1A]">Multiple Vendors</h3>
+                            <p class="text-[#1A1A1A]/60 text-sm">All your favorites in one place</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <div class="relative z-10">
+                <p class="text-[#1A1A1A]/40 text-sm">&copy; 2024 4Rodz Food Court</p>
+            </div>
         </div>
 
-        <Form
-            v-bind="store.form()"
-            :reset-on-success="['password']"
-            v-slot="{ errors, processing }"
-            class="flex flex-col gap-6"
-        >
-            <div class="grid gap-6">
-                <div class="grid gap-2">
-                    <Label for="email">Email address</Label>
-                    <Input
-                        id="email"
-                        type="email"
-                        name="email"
-                        required
-                        autofocus
-                        :tabindex="1"
-                        autocomplete="email"
-                        placeholder="email@example.com"
-                    />
-                    <InputError :message="errors.email" />
-                </div>
-
-                <div class="grid gap-2">
-                    <div class="flex items-center justify-between">
-                        <Label for="password">Password</Label>
-                        <TextLink
-                            v-if="canResetPassword"
-                            :href="request()"
-                            class="text-sm"
-                            :tabindex="5"
-                        >
-                            Forgot password?
-                        </TextLink>
+        <!-- Right Side - Login Form (60% white) -->
+        <div class="flex-1 flex items-center justify-center p-4 sm:p-6 lg:p-12 bg-white">
+            <div class="w-full max-w-[400px]">
+                <!-- Mobile Header -->
+                <div class="lg:hidden text-center mb-8">
+                    <div class="flex items-center justify-center gap-3 mb-4">
+                        <img src="/fast-food.png" alt="4Rodz" class="w-14 h-14 rounded-2xl shadow-lg" />
                     </div>
-                    <Input
-                        id="password"
-                        type="password"
-                        name="password"
-                        required
-                        :tabindex="2"
-                        autocomplete="current-password"
-                        placeholder="Password"
-                    />
-                    <InputError :message="errors.password" />
+                    <h1 class="text-2xl font-bold text-[#1A1A1A]">4Rodz Food Court</h1>
+                    <p class="text-[#1A1A1A]/50 text-sm mt-1">Order • Pick up • Enjoy</p>
                 </div>
 
-                <div class="flex items-center justify-between">
-                    <Label for="remember" class="flex items-center space-x-3">
-                        <Checkbox id="remember" name="remember" :tabindex="3" />
-                        <span>Remember me</span>
-                    </Label>
+                <!-- Welcome Text -->
+                <div class="mb-8">
+                    <h2 class="text-2xl sm:text-3xl font-bold text-[#1A1A1A]">Welcome back</h2>
+                    <p class="text-[#1A1A1A]/60 mt-2">Sign in to continue ordering</p>
                 </div>
 
-                <Button
-                    type="submit"
-                    class="mt-4 w-full"
-                    :tabindex="4"
-                    :disabled="processing"
-                    data-test="login-button"
+                <!-- Status Message -->
+                <div
+                    v-if="status"
+                    class="mb-6 p-4 bg-green-50 border border-green-100 rounded-xl text-center text-sm text-green-700"
                 >
-                    <Spinner v-if="processing" />
-                    Log in
-                </Button>
-            </div>
+                    {{ status }}
+                </div>
 
-            <div
-                class="text-center text-sm text-muted-foreground"
-                v-if="canRegister"
-            >
-                Don't have an account?
-                <TextLink :href="register()" :tabindex="5">Sign up</TextLink>
+                <form @submit.prevent="submit" class="space-y-5">
+                    <!-- Email -->
+                    <div>
+                        <label for="email" class="block text-sm font-medium text-[#1A1A1A] mb-2">
+                            Email address
+                        </label>
+                        <input
+                            id="email"
+                            type="email"
+                            v-model="form.email"
+                            required
+                            autofocus
+                            autocomplete="email"
+                            placeholder="Enter your email"
+                            class="w-full px-4 py-3.5 border border-[#E0E0E0] rounded-xl bg-[#F5F5F5] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#FF6B35]/20 focus:border-[#FF6B35] transition-all text-[#1A1A1A] placeholder:text-[#1A1A1A]/40"
+                            :class="{ 'border-red-400 focus:ring-red-400/20 focus:border-red-400': form.errors.email }"
+                        />
+                        <p v-if="form.errors.email" class="mt-2 text-sm text-red-600">
+                            {{ form.errors.email }}
+                        </p>
+                    </div>
+
+                    <!-- Password -->
+                    <div>
+                        <div class="flex items-center justify-between mb-2">
+                            <label for="password" class="block text-sm font-medium text-[#1A1A1A]">
+                                Password
+                            </label>
+                            <a
+                                href="/forgot-password"
+                                class="text-sm font-medium text-[#FF6B35] hover:underline"
+                            >
+                                Forgot password?
+                            </a>
+                        </div>
+                        <div class="relative">
+                            <input
+                                id="password"
+                                :type="showPassword ? 'text' : 'password'"
+                                v-model="form.password"
+                                required
+                                autocomplete="current-password"
+                                placeholder="Enter your password"
+                                class="w-full px-4 py-3.5 pr-12 border border-[#E0E0E0] rounded-xl bg-[#F5F5F5] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#FF6B35]/20 focus:border-[#FF6B35] transition-all text-[#1A1A1A] placeholder:text-[#1A1A1A]/40"
+                                :class="{ 'border-red-400 focus:ring-red-400/20 focus:border-red-400': form.errors.password }"
+                            />
+                            <button
+                                type="button"
+                                @click="showPassword = !showPassword"
+                                class="absolute right-4 top-1/2 -translate-y-1/2 text-[#1A1A1A]/40 hover:text-[#1A1A1A]/70 transition-colors"
+                            >
+                                <svg v-if="showPassword" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                                </svg>
+                                <svg v-else class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                </svg>
+                            </button>
+                        </div>
+                        <p v-if="form.errors.password" class="mt-2 text-sm text-red-600">
+                            {{ form.errors.password }}
+                        </p>
+                    </div>
+
+                    <!-- Submit Button (10% orange - accent) -->
+                    <button
+                        type="submit"
+                        :disabled="form.processing"
+                        class="w-full py-4 px-6 bg-[#FF6B35] text-white font-semibold rounded-xl hover:bg-[#e55f2f] active:scale-[0.99] focus:outline-none focus:ring-4 focus:ring-[#FF6B35]/20 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+                    >
+                        <span v-if="form.processing" class="flex items-center justify-center gap-2">
+                            <svg class="animate-spin h-5 w-5" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none" />
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                            </svg>
+                            Signing in...
+                        </span>
+                        <span v-else>Sign in</span>
+                    </button>
+                </form>
+
+                <!-- Register Link -->
+                <div class="mt-8 text-center">
+                    <p class="text-[#1A1A1A]/60">
+                        New to 4Rodz?
+                        <a href="/register" class="font-semibold text-[#FF6B35] hover:underline">
+                            Create an account
+                        </a>
+                    </p>
+                </div>
             </div>
-        </Form>
-    </AuthBase>
+        </div>
+    </div>
 </template>

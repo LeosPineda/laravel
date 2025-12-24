@@ -13,12 +13,10 @@ return new class extends Migration
     {
         Schema::create('vendors', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')->constrained()->onDelete('cascade');
-            $table->string('name');
-            $table->string('category')->nullable();
-            $table->text('description')->nullable();
-            $table->string('logo')->nullable();
-            $table->string('qr_code')->nullable();
+            $table->foreignId('user_id')->unique()->constrained()->onDelete('cascade');
+            $table->string('brand_name');
+            $table->string('brand_image')->nullable();
+            $table->string('qr_code_image')->nullable();
             $table->boolean('is_active')->default(true);
             $table->timestamps();
         });

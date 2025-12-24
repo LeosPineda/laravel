@@ -20,6 +20,7 @@ return new class extends Migration
             $table->string('profile_image')->nullable()->index();
             $table->string('remember_token')->nullable();
             $table->enum('role', ['customer', 'vendor', 'superadmin'])->default('customer');
+            $table->boolean('is_active')->default(true);
             $table->timestamps();
         });
 
