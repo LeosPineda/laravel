@@ -22,9 +22,9 @@ Route::get('/dashboard', function () {
         'customer' => redirect()->route('customer.home'),
         default => redirect()->route('login'),
     };
-})->middleware('auth')->name('dashboard');
+})->middleware('auth', 'verified')->name('dashboard');
 
-// Superadmin routes
+// Superadmin routes (no email verification needed)
 Route::middleware(['auth', 'role:superadmin'])->prefix('superadmin')->name('superadmin.')->group(function () {
     Route::get('/dashboard', [SuperadminDashboardController::class, 'index'])->name('dashboard');
 
@@ -37,15 +37,15 @@ Route::middleware(['auth', 'role:superadmin'])->prefix('superadmin')->name('supe
     Route::delete('/vendors/{vendor}', [SuperadminVendorController::class, 'destroy'])->name('vendors.destroy');
 });
 
-// Vendor routes (placeholder for now)
-Route::middleware(['auth', 'role:vendor'])->prefix('vendor')->name('vendor.')->group(function () {
+// Vendor routes (requires email verification)
+Route::middleware(['auth', 'role:vendor', 'verified'])->prefix('vendor')->name('vendor.')->group(function () {
     Route::get('/dashboard', function () {
         return Inertia::render('vendor/Dashboard');
     })->name('dashboard');
 });
 
-// Customer routes (placeholder for now)
-Route::middleware(['auth', 'role:customer'])->prefix('customer')->name('customer.')->group(function () {
+// Customer routes (requires email verification)
+Route::middleware(['auth', 'role:customer', 'verified'])->prefix('customer')->name('customer.')->group(function () {
     Route::get('/home', function () {
         return Inertia::render('customer/Home');
     })->name('home');
