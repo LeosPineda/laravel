@@ -1,51 +1,182 @@
 <script setup lang="ts">
-import { Head, router } from '@inertiajs/vue3';
+import { Link } from '@inertiajs/vue3';
+import VendorLayout from '@/layouts/vendor/VendorLayout.vue';
+import { ShoppingBag, DollarSign, Clock, TrendingUp, ArrowRight } from 'lucide-vue-next';
 
-const logout = () => {
-    router.post('/logout');
+interface Stats {
+    todayOrders: number;
+    todayRevenue: number;
+    pendingOrders: number;
+    totalOrders: number;
+}
+
+interface RecentOrder {
+    id: number;
+    order_number: string;
+    status: string;
+    total_amount: number;
+    table_number: string | null;
+    created_at: string;
+}
+
+const props = defineProps<{
+    stats: Stats;
+    recentOrders: RecentOrder[];
+}>();
+
+const formatPrice = (price: number) => {
+    return new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(price);
+};
+
+const formatTime = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleTimeString('en-PH', { hour: '2-digit', minute: '2-digit' });
+};
+
+const getStatusColor = (status: string) => {
+    switch (status) {
+        case 'pending': return 'bg-yellow-100 text-yellow-700';
+        case 'accepted': return 'bg-blue-100 text-blue-700';
+        case 'ready_for_pickup': return 'bg-green-100 text-green-700';
+        case 'completed': return 'bg-gray-100 text-gray-700';
+        case 'cancelled': return 'bg-red-100 text-red-700';
+        default: return 'bg-gray-100 text-gray-700';
+    }
+};
+
+const getStatusLabel = (status: string) => {
+    switch (status) {
+        case 'pending': return 'Pending';
+        case 'accepted': return 'Accepted';
+        case 'ready_for_pickup': return 'Ready';
+        case 'completed': return 'Completed';
+        case 'cancelled': return 'Cancelled';
+        default: return status;
+    }
 };
 </script>
 
 <template>
-    <Head title="Vendor Dashboard" />
+    <VendorLayout>
+        <template #title>Dashboard</template>
 
-    <div class="min-h-screen bg-[#F5F5F5]">
-        <!-- Header -->
-        <header class="bg-white border-b border-[#E0E0E0] sticky top-0 z-50">
-            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div class="flex justify-between items-center h-16">
+        <div class="space-y-6">
+            <!-- Stats Cards -->
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="bg-white rounded-xl p-4 border border-[#E0E0E0]">
                     <div class="flex items-center gap-3">
-                        <div class="w-9 h-9 bg-[#FF6B35] rounded-xl flex items-center justify-center">
-                            <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
-                                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/>
-                            </svg>
+                        <div class="w-10 h-10 rounded-lg bg-orange-50 flex items-center justify-center">
+                            <ShoppingBag class="w-5 h-5 text-[#FF6B35]" />
                         </div>
-                        <span class="text-lg font-bold text-[#1A1A1A]">Vendor Dashboard</span>
+                        <div>
+                            <p class="text-2xl font-bold text-[#1A1A1A]">{{ stats.todayOrders }}</p>
+                            <p class="text-sm text-gray-500">Today's Orders</p>
+                        </div>
                     </div>
-                    <button
-                        @click="logout"
-                        class="flex items-center gap-2 px-4 py-2 text-sm font-medium text-[#1A1A1A]/70 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                    >
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                        </svg>
-                        <span class="hidden sm:inline">Logout</span>
-                    </button>
                 </div>
-            </div>
-        </header>
 
-        <!-- Main Content -->
-        <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            <div class="text-center py-16">
-                <div class="w-20 h-20 bg-[#FF6B35]/10 rounded-2xl flex items-center justify-center mx-auto mb-6">
-                    <svg class="w-10 h-10 text-[#FF6B35]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-                    </svg>
+                <div class="bg-white rounded-xl p-4 border border-[#E0E0E0]">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-lg bg-green-50 flex items-center justify-center">
+                            <DollarSign class="w-5 h-5 text-green-600" />
+                        </div>
+                        <div>
+                            <p class="text-2xl font-bold text-[#1A1A1A]">{{ formatPrice(stats.todayRevenue) }}</p>
+                            <p class="text-sm text-gray-500">Today's Revenue</p>
+                        </div>
+                    </div>
                 </div>
-                <h1 class="text-2xl font-bold text-[#1A1A1A] mb-2">Welcome to Vendor Dashboard!</h1>
-                <p class="text-[#1A1A1A]/60">Your vendor account is active. More features coming soon.</p>
+
+                <div class="bg-white rounded-xl p-4 border border-[#E0E0E0]">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-lg bg-yellow-50 flex items-center justify-center">
+                            <Clock class="w-5 h-5 text-yellow-600" />
+                        </div>
+                        <div>
+                            <p class="text-2xl font-bold text-[#1A1A1A]">{{ stats.pendingOrders }}</p>
+                            <p class="text-sm text-gray-500">Pending Orders</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-xl p-4 border border-[#E0E0E0]">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center">
+                            <TrendingUp class="w-5 h-5 text-blue-600" />
+                        </div>
+                        <div>
+                            <p class="text-2xl font-bold text-[#1A1A1A]">{{ stats.totalOrders }}</p>
+                            <p class="text-sm text-gray-500">Total Orders</p>
+                        </div>
+                    </div>
+                </div>
             </div>
-        </main>
-    </div>
+
+            <!-- Recent Orders -->
+            <div class="bg-white rounded-xl border border-[#E0E0E0]">
+                <div class="flex items-center justify-between p-4 border-b border-[#E0E0E0]">
+                    <h2 class="font-semibold text-[#1A1A1A]">Recent Orders</h2>
+                    <Link href="/vendor/orders" class="text-[#FF6B35] text-sm flex items-center gap-1 hover:underline">
+                        View All <ArrowRight class="w-4 h-4" />
+                    </Link>
+                </div>
+
+                <div v-if="recentOrders.length > 0" class="divide-y divide-[#E0E0E0]">
+                    <div v-for="order in recentOrders" :key="order.id" class="p-4 flex items-center justify-between">
+                        <div>
+                            <p class="font-medium text-[#1A1A1A]">#{{ order.order_number }}</p>
+                            <p class="text-sm text-gray-500">
+                                Table {{ order.table_number || 'N/A' }} • {{ formatTime(order.created_at) }}
+                            </p>
+                        </div>
+                        <div class="text-right">
+                            <span
+                                class="inline-block px-2 py-1 rounded text-xs font-medium"
+                                :class="getStatusColor(order.status)"
+                            >
+                                {{ getStatusLabel(order.status) }}
+                            </span>
+                            <p class="text-sm font-medium text-[#1A1A1A] mt-1">{{ formatPrice(order.total_amount) }}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div v-else class="p-8 text-center text-gray-500">
+                    No orders yet today
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <Link
+                    href="/vendor/orders"
+                    class="bg-[#FF6B35] text-white rounded-xl p-4 text-center hover:bg-orange-600 transition-colors"
+                >
+                    <ShoppingBag class="w-6 h-6 mx-auto mb-2" />
+                    <span class="text-sm font-medium">Manage Orders</span>
+                </Link>
+                <Link
+                    href="/vendor/products/create"
+                    class="bg-white border border-[#E0E0E0] rounded-xl p-4 text-center hover:border-[#FF6B35] transition-colors"
+                >
+                    <span class="text-2xl">➕</span>
+                    <p class="text-sm font-medium text-[#1A1A1A] mt-1">Add Product</p>
+                </Link>
+                <Link
+                    href="/vendor/analytics"
+                    class="bg-white border border-[#E0E0E0] rounded-xl p-4 text-center hover:border-[#FF6B35] transition-colors"
+                >
+                    <span class="text-2xl">📊</span>
+                    <p class="text-sm font-medium text-[#1A1A1A] mt-1">View Analytics</p>
+                </Link>
+                <Link
+                    href="/vendor/qr"
+                    class="bg-white border border-[#E0E0E0] rounded-xl p-4 text-center hover:border-[#FF6B35] transition-colors"
+                >
+                    <span class="text-2xl">📱</span>
+                    <p class="text-sm font-medium text-[#1A1A1A] mt-1">QR Code</p>
+                </Link>
+            </div>
+        </div>
+    </VendorLayout>
 </template>

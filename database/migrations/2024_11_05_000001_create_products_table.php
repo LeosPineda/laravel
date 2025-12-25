@@ -15,13 +15,11 @@ return new class extends Migration
             $table->id();
             $table->foreignId('vendor_id')->constrained()->onDelete('cascade');
             $table->string('name');
-            $table->text('description')->nullable();
             $table->decimal('price', 8, 2);
-            $table->string('category')->nullable();
-            $table->string('image_url')->nullable();
+            $table->string('category')->nullable(); // Fillable category
+            $table->string('image_url')->nullable(); // Optional image
             $table->integer('stock_quantity')->default(0);
             $table->boolean('is_active')->default(true);
-            $table->boolean('has_image')->default(false);
             $table->timestamps();
         });
     }

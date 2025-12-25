@@ -17,9 +17,8 @@ return new class extends Migration
             $table->foreignId('product_id')->constrained()->onDelete('cascade');
             $table->integer('quantity');
             $table->decimal('unit_price', 8, 2);
-            $table->decimal('total_price', 10, 2);
-            $table->json('selected_addons')->nullable(); // Store selected addons as JSON
-            $table->text('special_notes')->nullable(); // Customer notes per item
+            $table->decimal('total_price', 10, 2); // Includes addons
+            $table->json('selected_addons')->nullable(); // [{name, price}, ...]
             $table->timestamps();
         });
     }

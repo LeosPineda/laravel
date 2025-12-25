@@ -13,23 +13,17 @@ return new class extends Migration
     {
         Schema::create('notifications', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')->nullable()->constrained()->onDelete('cascade'); // Customer notifications
-            $table->foreignId('vendor_id')->nullable()->constrained()->onDelete('cascade'); // Vendor notifications
+            $table->foreignId('user_id')->nullable()->constrained()->onDelete('cascade'); // Customer
+            $table->foreignId('vendor_id')->nullable()->constrained()->onDelete('cascade'); // Vendor
             $table->foreignId('order_id')->nullable()->constrained()->onDelete('cascade');
-            $table->string('type')->nullable(); // 'order', 'payment', 'system', 
-            $table->string('title')->nullable();
+            $table->string('type')->default('order'); // order, system
             $table->text('message');
-            $table->json('data')->nullable(); // Additional context data
-            $table->enum('priority', ['low', 'medium', 'high'])->default('medium');
             $table->boolean('is_read')->default(false);
-            $table->timestamp('read_at')->nullable();
             $table->timestamps();
 
-            // Performance indexes
-            $table->index(['user_id', 'read_at']);
-            $table->index(['vendor_id', 'read_at']);
-            $table->index('order_id');
-            $table->index('type');
+            // Indexes for quick lookups
+            $table->index(['user_id', 'is_read']);
+            $table->index(['vendor_id', 'is_read']);
         });
     }
 

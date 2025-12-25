@@ -18,10 +18,7 @@ return new class extends Migration
             $table->foreignId('product_id')->constrained()->onDelete('cascade');
             $table->integer('quantity');
             $table->decimal('unit_price', 8, 2);
-            $table->string('vendor_group_id')->nullable();
-            $table->decimal('total_with_addons', 10, 2)->nullable();
-            $table->json('selected_addons')->nullable();
-            $table->enum('status', ['active', 'ordered'])->default('active');
+            $table->json('selected_addons')->nullable(); // [{name, price}, ...]
             $table->timestamps();
         });
     }
