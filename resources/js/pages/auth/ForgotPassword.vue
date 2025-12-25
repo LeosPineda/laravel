@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Head, useForm } from '@inertiajs/vue3';
+import { ref, computed } from 'vue';
 
 defineProps<{
     status?: string;
@@ -9,8 +10,34 @@ const form = useForm({
     email: '',
 });
 
+const showVendorModal = ref(false);
+const vendorEmail = ref('');
+
+// Check if email belongs to a vendor
+const isVendorEmail = computed(() => {
+    // Simple check - in production, you might want to validate against backend
+    // This is a basic example - you can enhance this logic
+    return form.email.includes('vendor') || form.email.includes('@vendor.') || form.email.includes('restaurant');
+});
+
 const submit = () => {
+    if (isVendorEmail.value) {
+        vendorEmail.value = form.email;
+        showVendorModal.value = true;
+        return;
+    }
+
     form.post('/forgot-password');
+};
+
+const closeModal = () => {
+    showVendorModal.value = false;
+    form.reset();
+};
+
+const contactAdmin = () => {
+    // You could add a link to contact admin or redirect to support page
+    window.location.href = 'mailto:support@4rodzfoodcourt.com?subject=Password Reset Request&body=Please help me reset my vendor account password for email: ' + vendorEmail.value;
 };
 </script>
 
@@ -84,6 +111,75 @@ const submit = () => {
                         ← Back to Sign In
                     </a>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Vendor Password Reset Modal -->
+    <div
+        v-if="showVendorModal"
+        class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+        @click="closeModal"
+    >
+        <div
+            class="bg-white rounded-xl max-w-md w-full p-6 shadow-2xl"
+            @click.stop
+        >
+            <!-- Modal Header -->
+            <div class="flex items-center gap-3 mb-4">
+                <div class="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center">
+                    <svg class="w-5 h-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m0 0v2m0-2h2m-2 0H9m3-9a3 3 0 003 3v7a3 3 0 01-3 3H9a3 3 0 01-3-3V9a3 3 0 013-3h9z" />
+                    </svg>
+                </div>
+                <div>
+                    <h3 class="text-lg font-semibold text-[#1A1A1A]">Vendor Account Access Restricted</h3>
+                    <p class="text-sm text-[#1A1A1A]/60">Security Policy</p>
+                </div>
+            </div>
+
+            <!-- Modal Content -->
+            <div class="mb-6">
+                <p class="text-[#1A1A1A]/80 mb-4">
+                    We've detected that you're trying to reset a <strong>vendor account</strong> password.
+                </p>
+
+                <div class="bg-orange-50 border border-orange-200 rounded-lg p-4 mb-4">
+                    <div class="flex items-start gap-3">
+                        <svg class="w-5 h-5 text-orange-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <div>
+                            <p class="text-sm font-medium text-orange-800 mb-2">Important Security Notice:</p>
+                            <p class="text-sm text-orange-700">
+                                Vendor account passwords can only be changed by the <strong>Food Court Administrator</strong> for security purposes.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <p class="text-sm text-[#1A1A1A]/70">
+                    <strong>Email:</strong> {{ vendorEmail }}
+                </p>
+            </div>
+
+            <!-- Modal Actions -->
+            <div class="flex gap-3">
+                <button
+                    @click="contactAdmin"
+                    class="flex-1 py-2.5 px-4 bg-[#FF6B35] text-white font-medium rounded-lg hover:bg-[#FF6B35]/90 transition-colors flex items-center justify-center gap-2"
+                >
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                    </svg>
+                    Contact Administrator
+                </button>
+                <button
+                    @click="closeModal"
+                    class="flex-1 py-2.5 px-4 bg-gray-100 text-gray-700 font-medium rounded-lg hover:bg-gray-200 transition-colors"
+                >
+                    Close
+                </button>
             </div>
         </div>
     </div>
