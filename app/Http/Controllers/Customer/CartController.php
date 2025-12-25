@@ -26,8 +26,7 @@ class CartController extends Controller
             // Get all cart items for this customer, grouped by vendor
             $cartItems = CartItem::with([
                 'cart.vendor:id,brand_name,brand_image,qr_code_image',
-                'product:id,name,image_url',
-                'orderItem.addons'
+                'product:id,name,image_url'
             ])
             ->whereHas('cart', function ($query) use ($user) {
                 $query->where('user_id', $user->id);

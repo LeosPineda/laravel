@@ -177,8 +177,8 @@ class OrderController extends Controller
                 $cart->clear();
 
                 // Broadcast events
-                event(new OrderReceived($order));
-                event(new OrderStatusChanged($order, 'pending', 'Order placed successfully'));
+                event(new OrderReceived($order->vendor, $order));
+                event(new OrderStatusChanged($order->vendor, $order, $order->customer, 'pending', 'accepted'));
 
                 DB::commit();
 
@@ -448,7 +448,7 @@ class OrderController extends Controller
             ]);
 
             // Broadcast status change
-            event(new OrderStatusChanged($order, 'pending', 'cancelled'));
+            event(new OrderStatusChanged($order->vendor, $order, $order->customer, 'pending', 'cancelled'));
 
             return response()->json([
                 'message' => 'Order cancelled successfully',
