@@ -23,8 +23,8 @@ return [
     |--------------------------------------------------------------------------
     |
     | Here you may specify which password broker Fortify can use when a user
-    | is resetting their password. This configured value should match one
-    | of your password brokers setup in your "auth" configuration file.
+    | is resetting their password. This configured value should match one of
+    | your password brokers setup in your "auth" configuration file.
     |
     */
 
@@ -116,7 +116,6 @@ return [
 
     'limiters' => [
         'login' => 'login',
-        'two-factor' => 'two-factor',
     ],
 
     /*
@@ -147,11 +146,7 @@ return [
         Features::registration(),
         Features::resetPasswords(),
         // Features::emailVerification(), // Removed email verification
-        Features::twoFactorAuthentication([
-            'confirm' => true,
-            'confirmPassword' => true,
-            // 'window' => 0
-        ]),
+        // Features::twoFactorAuthentication(), // Disabled 2FA - too complex for food court app
     ],
 
 ];

@@ -28,10 +28,6 @@ Route::get('/reset-password', function () {
     return Inertia::render('auth/ResetPassword');
 })->name('reset-password');
 
-Route::get('/two-factor-challenge', function () {
-    return Inertia::render('auth/TwoFactorChallenge');
-})->name('two-factor.login');
-
 // Password reset route for email notifications (required by Laravel's ResetPassword notification)
 Route::get('/reset-password/{token}', function ($token) {
     return Inertia::render('auth/ResetPassword', [
