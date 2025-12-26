@@ -65,22 +65,32 @@ class MenuController extends Controller
                 ->select('id', 'brand_name', 'brand_image', 'description', 'qr_code_image')
                 ->firstOrFail();
 
-            // Get products with active status
-            $products = Product::where('vendor_id', $vendorId)
+            // Build product query
+            $query = Product::where('vendor_id', $vendorId)
                 ->where('is_active', true)
                 ->select('id', 'name', 'price', 'category', 'image_url', 'stock_quantity', 'is_active')
-                ->with(['addons' => function ($query) {
-                    $query->where('is_active', true)
-                          ->select('id', 'name', 'price', 'is_active');
-                }])
-                ->orderBy('category')
-                ->orderBy('name')
-                ->get();
+                ->with(['addons' => function ($q) {
+                    $q->where('is_active', true)
+                      ->select('id', 'name', 'price', 'is_active');
+                }]);
 
-            // Get unique categories
-            $categories = $products->pluck('category')
-                ->filter()
-                ->unique()
+            // Filter by category if provided
+            if ($request->has('category') && $request->category) {
+                $query->where('category', $request->category);
+            }
+
+            $query->orderBy('category')->orderBy('name');
+
+            // Paginate or get all based on request
+            $perPage = $request->get('per_page', 20);
+            $products = $request->has('all') ? $query->get() : $query->paginate($perPage);
+
+            // Get unique categories (from all products, not just current page)
+            $categories = Product::where('vendor_id', $vendorId)
+                ->where('is_active', true)
+                ->whereNotNull('category')
+                ->distinct()
+                ->pluck('category')
                 ->sort()
                 ->values()
                 ->all();
@@ -101,6 +111,47 @@ class MenuController extends Controller
             Log::error('Error getting vendor menu: ' . $e->getMessage());
             return response()->json([
                 'message' => 'Error retrieving vendor menu',
+                'success' => false
+            ], 500);
+        }
+    }
+
+    /**
+     * Get vendor's QR payment information (for checkout page)
+     */
+    public function getQrPayment(Request $request, $vendorId)
+    {
+        try {
+            $vendor = Vendor::where('id', $vendorId)
+                ->where('is_active', true)
+                ->firstOrFail();
+
+            if (!$vendor->qr_code_image) {
+                return response()->json([
+                    'message' => 'Vendor has no QR payment setup',
+                    'has_qr' => false,
+                    'success' => true
+                ]);
+            }
+
+            return response()->json([
+                'has_qr' => true,
+                'vendor_name' => $vendor->brand_name,
+                'qr_code_url' => Storage::url($vendor->qr_code_image),
+                'mobile_number' => $vendor->qr_mobile_number, // Customer can copy this
+                'download_url' => route('customer.vendor.qr-download', $vendor->id),
+                'success' => true
+            ]);
+
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json([
+                'message' => 'Vendor not found',
+                'success' => false
+            ], 404);
+        } catch (\Exception $e) {
+            Log::error('Error getting QR payment info: ' . $e->getMessage());
+            return response()->json([
+                'message' => 'Error getting QR payment info',
                 'success' => false
             ], 500);
         }

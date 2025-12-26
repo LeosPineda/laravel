@@ -13,15 +13,18 @@ class Notification extends Model
 
     protected $fillable = [
         'vendor_id',
+        'user_id',
         'type',
         'title',
         'message',
         'order_id',
         'is_read',
+        'read_at',
     ];
 
     protected $casts = [
         'is_read' => 'boolean',
+        'read_at' => 'datetime',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];
@@ -34,6 +37,14 @@ class Notification extends Model
     public function vendor(): BelongsTo
     {
         return $this->belongsTo(Vendor::class);
+    }
+
+    /**
+     * Get the user (customer) that owns the notification.
+     */
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
     }
 
     /**
@@ -50,6 +61,14 @@ class Notification extends Model
     public function scopeForVendor($query, int $vendorId)
     {
         return $query->where('vendor_id', $vendorId);
+    }
+
+    /**
+     * Scope a query to only include notifications for a specific user (customer).
+     */
+    public function scopeForUser($query, int $userId)
+    {
+        return $query->where('user_id', $userId);
     }
 
     /**

@@ -15,6 +15,7 @@ class Vendor extends Model
         'brand_logo',
         'brand_image',
         'qr_code_image',
+        'qr_mobile_number',
         'is_active',
     ];
 
@@ -31,14 +32,15 @@ class Vendor extends Model
         return $this->belongsTo(User::class);
     }
 
-    // TODO: Uncomment when Order model is created
-    // public function products()
-    // {
-    //     return $this->hasMany(Product::class);
-    // }
+    // Relationship to Products
+    public function products()
+    {
+        return $this->hasMany(Product::class);
+    }
 
-    // public function orders()
-    // {
-    //     return $this->hasMany(Order::class);
-    // }
+    // Relationship to Orders
+    public function orders()
+    {
+        return $this->hasMany(Order::class);
+    }
 }

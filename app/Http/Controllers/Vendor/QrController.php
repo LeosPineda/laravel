@@ -27,6 +27,7 @@ class QrController extends Controller
             $qrCodeData = [
                 'has_qr_code' => !empty($vendor->qr_code_image),
                 'qr_code_url' => $vendor->qr_code_image ? Storage::url($vendor->qr_code_image) : null,
+                'mobile_number' => $vendor->qr_mobile_number,
                 'last_updated' => $vendor->qr_code_image ? $vendor->updated_at->toISOString() : null,
             ];
 
@@ -55,6 +56,7 @@ class QrController extends Controller
 
             $request->validate([
                 'qr_code' => 'required|image|mimes:jpeg,png,jpg,gif|max:1024', // Max 1MB
+                'mobile_number' => 'nullable|string|max:20',
             ]);
 
             DB::beginTransaction();
@@ -68,15 +70,19 @@ class QrController extends Controller
                 // Store new QR code
                 $qrCodePath = $request->file('qr_code')->store('qr-codes', 'public');
 
-                $vendor->update([
-                    'qr_code_image' => $qrCodePath
-                ]);
+                $updateData = ['qr_code_image' => $qrCodePath];
+                if ($request->has('mobile_number')) {
+                    $updateData['qr_mobile_number'] = $request->mobile_number;
+                }
+
+                $vendor->update($updateData);
 
                 DB::commit();
 
                 return response()->json([
                     'message' => 'QR code uploaded successfully',
                     'qr_code_url' => Storage::url($qrCodePath),
+                    'mobile_number' => $vendor->qr_mobile_number,
                     'uploaded_at' => now()->toISOString()
                 ]);
 
@@ -304,6 +310,41 @@ class QrController extends Controller
             ]);
 
             return response()->json(['error' => 'Failed to fetch QR code statistics'], 500);
+        }
+    }
+
+    /**
+     * Update mobile number for QR payment.
+     */
+    public function updateMobileNumber(Request $request): JsonResponse
+    {
+        try {
+            $vendor = $this->getCurrentVendor();
+            if (!$vendor) {
+                return response()->json(['error' => 'Vendor not found'], 404);
+            }
+
+            $request->validate([
+                'mobile_number' => 'nullable|string|max:20',
+            ]);
+
+            $vendor->update([
+                'qr_mobile_number' => $request->mobile_number ?: null
+            ]);
+
+            return response()->json([
+                'message' => 'Mobile number updated successfully',
+                'mobile_number' => $vendor->qr_mobile_number,
+                'updated_at' => now()->toISOString()
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Error updating mobile number', [
+                'vendor_id' => auth()->id(),
+                'error' => $e->getMessage()
+            ]);
+
+            return response()->json(['error' => 'Failed to update mobile number'], 500);
         }
     }
 
