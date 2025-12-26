@@ -12,6 +12,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 
 class MenuController extends Controller
 {
@@ -100,6 +101,50 @@ class MenuController extends Controller
             Log::error('Error getting vendor menu: ' . $e->getMessage());
             return response()->json([
                 'message' => 'Error retrieving vendor menu',
+                'success' => false
+            ], 500);
+        }
+    }
+
+    /**
+     * Download vendor's QR code for payment
+     */
+    public function downloadQr(Request $request, $vendorId)
+    {
+        try {
+            $vendor = Vendor::where('id', $vendorId)
+                ->where('is_active', true)
+                ->firstOrFail();
+
+            if (!$vendor->qr_code_image) {
+                return response()->json([
+                    'message' => 'Vendor has no QR code available',
+                    'success' => false
+                ], 404);
+            }
+
+            $filePath = $vendor->qr_code_image;
+
+            if (!Storage::disk('public')->exists($filePath)) {
+                return response()->json([
+                    'message' => 'QR code file not found',
+                    'success' => false
+                ], 404);
+            }
+
+            $fileName = $vendor->brand_name . '-payment-qr.' . pathinfo($filePath, PATHINFO_EXTENSION);
+
+            return Storage::disk('public')->download($filePath, $fileName);
+
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json([
+                'message' => 'Vendor not found',
+                'success' => false
+            ], 404);
+        } catch (\Exception $e) {
+            Log::error('Error downloading QR code: ' . $e->getMessage());
+            return response()->json([
+                'message' => 'Error downloading QR code',
                 'success' => false
             ], 500);
         }
