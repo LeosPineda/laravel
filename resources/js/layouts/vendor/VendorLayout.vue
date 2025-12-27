@@ -58,6 +58,15 @@
               <span class="mr-3">📱</span>
               QR Code
             </Link>
+
+            <Link href="/vendor/notifications"
+                  :class="[$page.url.startsWith('/vendor/notifications')
+                          ? 'bg-orange-50 text-orange-700'
+                          : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900',
+                          'group flex items-center px-2 py-2 text-sm font-medium rounded-md']">
+              <span class="mr-3">🔔</span>
+              Notifications
+            </Link>
           </nav>
 
           <!-- Logout -->
@@ -129,6 +138,7 @@
 
 <script setup>
 import { Link } from '@inertiajs/vue3'
+import NotificationBell from '@/components/vendor/NotificationBell.vue'
 
 const logout = async () => {
   try {

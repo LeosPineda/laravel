@@ -84,6 +84,10 @@ Route::middleware(['auth', 'role:vendor'])->prefix('vendor')->name('vendor.')->g
     Route::get('/qr', function () {
         return Inertia::render('vendor/QrCode');
     })->name('qr');
+
+    Route::get('/notifications', function () {
+        return Inertia::render('vendor/Notifications');
+    })->name('notifications');
 });
 
 // Customer routes (frontend for customer ordering)

@@ -6,8 +6,39 @@
         <div class="flex items-center justify-between">
           <h1 class="text-xl font-bold text-gray-900">Products</h1>
           <div class="flex gap-2">
+            <!-- Bulk Actions -->
+            <template v-if="selectedProducts.length > 0">
+              <span class="text-sm text-gray-500 self-center">{{ selectedProducts.length }} selected</span>
+              <button
+                @click="bulkAction('activate')"
+                :disabled="bulkProcessing"
+                class="px-3 py-2 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 text-sm"
+              >
+                Activate
+              </button>
+              <button
+                @click="bulkAction('deactivate')"
+                :disabled="bulkProcessing"
+                class="px-3 py-2 bg-yellow-100 text-yellow-700 rounded-lg hover:bg-yellow-200 text-sm"
+              >
+                Deactivate
+              </button>
+              <button
+                @click="bulkAction('delete')"
+                :disabled="bulkProcessing"
+                class="px-3 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 text-sm"
+              >
+                Delete
+              </button>
+              <button
+                @click="clearSelection"
+                class="px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 text-sm"
+              >
+                Clear
+              </button>
+            </template>
             <button
-              @click="showCreateModal = true"
+              @click="openCreateModal"
               class="px-4 py-2 bg-orange-500 text-white rounded-xl hover:bg-orange-600"
             >
               Add Product
@@ -73,18 +104,35 @@
             <div
               v-for="product in products"
               :key="product.id"
-              class="bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-lg transition-shadow"
+              class="bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-lg transition-shadow relative"
             >
+              <!-- Selection Checkbox -->
+              <div class="absolute top-2 left-2 z-10 bg-white rounded p-1">
+                <input
+                  type="checkbox"
+                  :checked="selectedProducts.includes(product.id)"
+                  @change="toggleSelection(product.id)"
+                  class="w-5 h-5 rounded border-gray-300 text-orange-500 focus:ring-orange-500"
+                />
+              </div>
+
               <!-- Product Image -->
-              <div class="h-48 bg-gray-100 flex items-center justify-center">
+              <div class="h-48 bg-gray-100 flex items-center justify-center relative">
                 <img
                   v-if="product.image_url"
-                  :src="product.image_url"
+                  :src="getImageUrl(product.image_url)"
                   :alt="product.name"
                   class="w-full h-full object-cover"
                 />
                 <div v-else class="text-gray-400">
                   <span class="text-4xl">🍔</span>
+                </div>
+                <!-- Stock Badge -->
+                <div
+                  v-if="product.stock_quantity <= 5"
+                  class="absolute top-2 right-2 px-2 py-1 bg-red-500 text-white text-xs rounded-full"
+                >
+                  Low Stock: {{ product.stock_quantity }}
                 </div>
               </div>
 
@@ -105,7 +153,7 @@
                 <p class="text-sm text-gray-500 mb-2" v-if="product.category">{{ product.category }}</p>
 
                 <div class="flex items-center justify-between mb-3">
-                  <span class="text-lg font-bold text-orange-600">₱{{ product.price.toFixed(2) }}</span>
+                  <span class="text-lg font-bold text-orange-600">₱{{ parseFloat(product.price).toFixed(2) }}</span>
                   <span class="text-sm text-gray-500">Stock: {{ product.stock_quantity }}</span>
                 </div>
 
@@ -118,7 +166,7 @@
                       :key="addon.id"
                       class="px-2 py-1 bg-gray-100 text-gray-600 rounded text-xs"
                     >
-                      {{ addon.name }} (+₱{{ addon.price }})
+                      {{ addon.name }} (+₱{{ parseFloat(addon.price).toFixed(0) }})
                     </span>
                     <span v-if="product.addons.length > 3" class="px-2 py-1 bg-gray-100 text-gray-600 rounded text-xs">
                       +{{ product.addons.length - 3 }} more
@@ -127,26 +175,35 @@
                 </div>
 
                 <!-- Actions -->
-                <div class="flex gap-2">
+                <div class="flex gap-2 flex-wrap">
                   <button
-                    @click="editProduct(product)"
+                    @click="openEditModal(product)"
                     class="flex-1 px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 text-sm"
                   >
                     Edit
                   </button>
                   <button
+                    @click="openAddonManagement(product)"
+                    class="px-3 py-2 bg-orange-100 text-orange-700 rounded-lg hover:bg-orange-200 text-sm"
+                    title="Manage Add-ons"
+                  >
+                    🧀
+                  </button>
+                  <button
                     @click="toggleProductStatus(product)"
+                    :disabled="processingProduct === product.id"
                     :class="[
-                      'flex-1 px-3 py-2 rounded-lg text-sm',
+                      'px-3 py-2 rounded-lg text-sm',
                       product.is_active
                         ? 'bg-red-100 text-red-700 hover:bg-red-200'
                         : 'bg-green-100 text-green-700 hover:bg-green-200'
                     ]"
                   >
-                    {{ product.is_active ? 'Deactivate' : 'Activate' }}
+                    {{ product.is_active ? 'Disable' : 'Enable' }}
                   </button>
                   <button
                     @click="deleteProduct(product)"
+                    :disabled="processingProduct === product.id"
                     class="px-3 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 text-sm"
                   >
                     Delete
@@ -164,7 +221,7 @@
               {{ searchQuery || selectedCategory || selectedStatus ? 'Try adjusting your filters' : 'Get started by adding your first product' }}
             </p>
             <button
-              @click="showCreateModal = true"
+              @click="openCreateModal"
               class="px-6 py-3 bg-orange-500 text-white rounded-xl hover:bg-orange-600"
             >
               Add Product
@@ -198,20 +255,50 @@
         </div>
       </div>
     </div>
+
+    <!-- Product Form Modal -->
+    <ProductFormModal
+      :is-open="showProductModal"
+      :product-id="selectedProductId"
+      :categories="categories"
+      @close="closeProductModal"
+      @saved="handleProductSaved"
+    />
+
+    <!-- Addon Management Panel -->
+    <AddonManagement
+      :is-open="showAddonPanel"
+      :product-id="selectedProductForAddons?.id"
+      :product-name="selectedProductForAddons?.name"
+      @close="closeAddonPanel"
+      @updated="loadProducts"
+    />
   </VendorLayout>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue'
 import VendorLayout from '@/layouts/vendor/VendorLayout.vue'
+import ProductFormModal from '@/components/vendor/ProductFormModal.vue'
+import AddonManagement from '@/components/vendor/AddonManagement.vue'
 
 const products = ref([])
 const categories = ref([])
 const loading = ref(false)
+const processingProduct = ref(null)
+const bulkProcessing = ref(false)
 const searchQuery = ref('')
 const selectedCategory = ref('')
 const selectedStatus = ref('')
-const showCreateModal = ref(false)
+const selectedProducts = ref([])
+
+// Product Modal State
+const showProductModal = ref(false)
+const selectedProductId = ref(null)
+
+// Addon Panel State
+const showAddonPanel = ref(false)
+const selectedProductForAddons = ref(null)
 
 const pagination = ref({
   current_page: 1,
@@ -222,12 +309,18 @@ const pagination = ref({
 
 let searchTimeout = null
 
+const getImageUrl = (url) => {
+  if (!url) return null
+  if (url.startsWith('http')) return url
+  return `/storage/${url}`
+}
+
 const loadProducts = async () => {
   loading.value = true
   try {
     const params = new URLSearchParams({
-      page: pagination.value.current_page,
-      per_page: pagination.value.per_page
+      page: pagination.value.current_page.toString(),
+      per_page: pagination.value.per_page.toString()
     })
 
     if (searchQuery.value) params.append('search', searchQuery.value)
@@ -243,9 +336,9 @@ const loadProducts = async () => {
 
     if (response.ok) {
       const data = await response.json()
-      products.value = data.products
-      pagination.value = data.pagination
-      categories.value = data.categories
+      products.value = data.products || []
+      pagination.value = data.pagination || pagination.value
+      categories.value = data.categories || []
     }
   } catch (error) {
     console.error('Error loading products:', error)
@@ -267,7 +360,40 @@ const changePage = (page) => {
   loadProducts()
 }
 
+// Product Modal Functions
+const openCreateModal = () => {
+  selectedProductId.value = null
+  showProductModal.value = true
+}
+
+const openEditModal = (product) => {
+  selectedProductId.value = product.id
+  showProductModal.value = true
+}
+
+const closeProductModal = () => {
+  showProductModal.value = false
+  selectedProductId.value = null
+}
+
+const handleProductSaved = () => {
+  loadProducts()
+}
+
+// Addon Panel Functions
+const openAddonManagement = (product) => {
+  selectedProductForAddons.value = product
+  showAddonPanel.value = true
+}
+
+const closeAddonPanel = () => {
+  showAddonPanel.value = false
+  selectedProductForAddons.value = null
+}
+
+// Product Actions
 const toggleProductStatus = async (product) => {
+  processingProduct.value = product.id
   try {
     const response = await fetch(`/api/vendor/products/${product.id}/toggle-status`, {
       method: 'PATCH',
@@ -286,12 +412,15 @@ const toggleProductStatus = async (product) => {
   } catch (error) {
     console.error('Error toggling product status:', error)
     alert('Failed to update product status')
+  } finally {
+    processingProduct.value = null
   }
 }
 
 const deleteProduct = async (product) => {
   if (!confirm(`Are you sure you want to delete "${product.name}"?`)) return
 
+  processingProduct.value = product.id
   try {
     const response = await fetch(`/api/vendor/products/${product.id}`, {
       method: 'DELETE',
@@ -303,7 +432,6 @@ const deleteProduct = async (product) => {
 
     if (response.ok) {
       await loadProducts()
-      alert('Product deleted successfully!')
     } else {
       const error = await response.json()
       alert(error.error || 'Failed to delete product')
@@ -311,12 +439,58 @@ const deleteProduct = async (product) => {
   } catch (error) {
     console.error('Error deleting product:', error)
     alert('Failed to delete product')
+  } finally {
+    processingProduct.value = null
   }
 }
 
-const editProduct = (product) => {
-  // TODO: Implement edit functionality
-  alert('Edit functionality coming soon!')
+// Bulk Selection Functions
+const toggleSelection = (productId) => {
+  const index = selectedProducts.value.indexOf(productId)
+  if (index > -1) {
+    selectedProducts.value.splice(index, 1)
+  } else {
+    selectedProducts.value.push(productId)
+  }
+}
+
+const clearSelection = () => {
+  selectedProducts.value = []
+}
+
+const bulkAction = async (action) => {
+  const actionText = action === 'delete' ? 'delete' : action
+  if (!confirm(`Are you sure you want to ${actionText} ${selectedProducts.value.length} products?`)) return
+
+  bulkProcessing.value = true
+  try {
+    const response = await fetch('/api/vendor/products/bulk', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        product_ids: selectedProducts.value,
+        action: action
+      })
+    })
+
+    if (response.ok) {
+      const data = await response.json()
+      alert(data.message)
+      clearSelection()
+      await loadProducts()
+    } else {
+      const error = await response.json()
+      alert(error.error || `Failed to ${actionText} products`)
+    }
+  } catch (error) {
+    console.error('Error performing bulk action:', error)
+    alert(`Failed to ${actionText} products`)
+  } finally {
+    bulkProcessing.value = false
+  }
 }
 
 onMounted(async () => {

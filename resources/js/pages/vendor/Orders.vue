@@ -72,8 +72,16 @@
 
       <!-- Tab Content -->
       <div class="flex-1">
-        <IncomingOrders v-if="activeTab === 'incoming'" />
-        <OrderHistory v-if="activeTab === 'history'" />
+        <IncomingOrders
+          v-if="activeTab === 'incoming'"
+          ref="incomingOrdersRef"
+          @orders-updated="handleOrdersUpdated"
+        />
+        <OrderHistory
+          v-if="activeTab === 'history'"
+          ref="orderHistoryRef"
+          @orders-updated="handleOrdersUpdated"
+        />
       </div>
     </div>
   </VendorLayout>
@@ -86,10 +94,14 @@ import IncomingOrders from './IncomingOrders.vue'
 import OrderHistory from './OrderHistory.vue'
 
 const activeTab = ref('incoming')
+const incomingOrdersRef = ref(null)
+const orderHistoryRef = ref(null)
+
 const stats = ref({
   pending_orders: 0,
   accepted_orders: 0,
   ready_for_pickup_orders: 0,
+  completed_orders: 0,
   today_orders: 0
 })
 
@@ -108,6 +120,19 @@ const loadStats = async () => {
     }
   } catch (error) {
     console.error('Error loading stats:', error)
+  }
+}
+
+const handleOrdersUpdated = async () => {
+  // Refresh stats when orders change
+  await loadStats()
+
+  // Refresh both tabs if they exist
+  if (incomingOrdersRef.value?.loadOrders) {
+    incomingOrdersRef.value.loadOrders()
+  }
+  if (orderHistoryRef.value?.loadOrders) {
+    orderHistoryRef.value.loadOrders()
   }
 }
 
