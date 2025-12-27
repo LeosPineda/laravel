@@ -88,10 +88,14 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
+import { usePage } from '@inertiajs/vue3'
 import VendorLayout from '@/layouts/vendor/VendorLayout.vue'
 import IncomingOrders from './IncomingOrders.vue'
 import OrderHistory from './OrderHistory.vue'
+
+const page = usePage()
+const vendorId = ref(null)
 
 const activeTab = ref('incoming')
 const incomingOrdersRef = ref(null)
@@ -136,7 +140,39 @@ const handleOrdersUpdated = async () => {
   }
 }
 
+// Real-time subscription for stats bar updates
+const subscribeToChannel = () => {
+  if (window.Echo && vendorId.value) {
+    window.Echo.private(`vendor-orders.${vendorId.value}`)
+      .listen('.OrderReceived', () => {
+        console.log('Orders: New order received, refreshing stats')
+        loadStats()
+      })
+      .listen('.OrderStatusChanged', () => {
+        console.log('Orders: Order status changed, refreshing stats')
+        loadStats()
+      })
+  }
+}
+
+const unsubscribeFromChannel = () => {
+  if (window.Echo && vendorId.value) {
+    window.Echo.leave(`vendor-orders.${vendorId.value}`)
+  }
+}
+
 onMounted(async () => {
+  // Get vendor ID from user data
+  const user = page.props.auth?.user
+  vendorId.value = user?.vendor?.id || null
+
   await loadStats()
+
+  // Subscribe to real-time updates
+  subscribeToChannel()
+})
+
+onUnmounted(() => {
+  unsubscribeFromChannel()
 })
 </script>

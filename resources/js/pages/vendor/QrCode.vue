@@ -79,39 +79,6 @@
             </div>
           </div>
 
-          <!-- QR Payment Statistics -->
-          <div class="bg-white rounded-xl border border-gray-200 p-6 mb-6">
-            <h2 class="text-lg font-semibold text-gray-900 mb-4">QR Payment Statistics</h2>
-
-            <div v-if="loadingStats" class="text-center py-4">
-              <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500 mx-auto"></div>
-            </div>
-
-            <div v-else class="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div class="bg-orange-50 rounded-lg p-4 text-center">
-                <div class="text-2xl font-bold text-orange-600">{{ qrStats.qr_orders_this_month || 0 }}</div>
-                <div class="text-sm text-orange-700">QR Orders (Month)</div>
-              </div>
-
-              <div class="bg-green-50 rounded-lg p-4 text-center">
-                <div class="text-2xl font-bold text-green-600">₱{{ formatNumber(qrStats.qr_revenue_this_month) }}</div>
-                <div class="text-sm text-green-700">QR Revenue (Month)</div>
-              </div>
-
-              <div class="bg-blue-50 rounded-lg p-4 text-center">
-                <div class="text-2xl font-bold text-blue-600">{{ qrStats.total_qr_orders || 0 }}</div>
-                <div class="text-sm text-blue-700">Total QR Orders</div>
-              </div>
-
-              <div class="bg-purple-50 rounded-lg p-4 text-center">
-                <div class="text-2xl font-bold" :class="qrStats.has_qr_code ? 'text-green-600' : 'text-gray-400'">
-                  {{ qrStats.has_qr_code ? '✓' : '✗' }}
-                </div>
-                <div class="text-sm text-purple-700">QR Status</div>
-              </div>
-            </div>
-          </div>
-
           <!-- Upload New QR Code -->
           <div class="bg-white rounded-xl border border-gray-200 p-6 mb-6">
             <h2 class="text-lg font-semibold text-gray-900 mb-4">Upload QR Code</h2>
@@ -191,19 +158,6 @@ const selectedFile = ref(null)
 const uploading = ref(false)
 const updatingMobile = ref(false)
 const validationError = ref('')
-const loadingStats = ref(false)
-
-const qrStats = ref({
-  has_qr_code: false,
-  qr_orders_this_month: 0,
-  qr_revenue_this_month: 0,
-  total_qr_orders: 0,
-  qr_code_last_updated: null
-})
-
-const formatNumber = (num) => {
-  return (num || 0).toLocaleString()
-}
 
 const formatDate = (dateString) => {
   if (!dateString) return 'Never'
@@ -373,28 +327,7 @@ const previewQr = async () => {
   }
 }
 
-const loadQrStats = async () => {
-  loadingStats.value = true
-  try {
-    const response = await fetch('/api/vendor/qr/stats', {
-      headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token')}`,
-        'Content-Type': 'application/json'
-      }
-    })
-
-    if (response.ok) {
-      const data = await response.json()
-      qrStats.value = data
-    }
-  } catch (error) {
-    console.error('Error loading QR stats:', error)
-  } finally {
-    loadingStats.value = false
-  }
-}
-
 onMounted(async () => {
-  await Promise.all([loadQrData(), loadQrStats()])
+  await loadQrData()
 })
 </script>

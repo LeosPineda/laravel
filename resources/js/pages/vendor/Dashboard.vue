@@ -203,9 +203,12 @@
 </template>
 
 <script setup>
-import { Link } from '@inertiajs/vue3'
+import { Link, usePage } from '@inertiajs/vue3'
 import VendorLayout from '@/layouts/vendor/VendorLayout.vue'
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
+
+const page = usePage()
+const vendorId = ref(null)
 
 const stats = ref({
   today_orders: 0,
@@ -276,7 +279,39 @@ const refreshStats = async () => {
   await Promise.all([loadStats(), loadPendingOrders()])
 }
 
+// Real-time subscription for stats updates
+const subscribeToChannel = () => {
+  if (window.Echo && vendorId.value) {
+    window.Echo.private(`vendor-orders.${vendorId.value}`)
+      .listen('.OrderReceived', () => {
+        console.log('Dashboard: New order received, refreshing stats')
+        refreshStats()
+      })
+      .listen('.OrderStatusChanged', () => {
+        console.log('Dashboard: Order status changed, refreshing stats')
+        refreshStats()
+      })
+  }
+}
+
+const unsubscribeFromChannel = () => {
+  if (window.Echo && vendorId.value) {
+    window.Echo.leave(`vendor-orders.${vendorId.value}`)
+  }
+}
+
 onMounted(async () => {
+  // Get vendor ID from user data
+  const user = page.props.auth?.user
+  vendorId.value = user?.vendor?.id || null
+
   await refreshStats()
+
+  // Subscribe to real-time updates
+  subscribeToChannel()
+})
+
+onUnmounted(() => {
+  unsubscribeFromChannel()
 })
 </script>

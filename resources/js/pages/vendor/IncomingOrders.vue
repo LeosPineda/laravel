@@ -144,8 +144,10 @@
 import { ref, onMounted, onUnmounted } from 'vue'
 import { usePage } from '@inertiajs/vue3'
 import OrderDetailModal from '@/components/vendor/OrderDetailModal.vue'
+import { useToast } from '@/composables/useToast'
 
 const emit = defineEmits(['ordersUpdated'])
+const toast = useToast()
 
 // Get vendor ID for channel subscription
 const page = usePage()
@@ -302,12 +304,19 @@ const subscribeToChannel = () => {
       .listen('.OrderReceived', (e) => {
         console.log('New order received:', e)
         loadOrders()
-        // Show notification
-        if ('Notification' in window && Notification.permission === 'granted') {
-          new Notification('New Order!', {
-            body: `Order #${e.order?.order_number || 'N/A'} received`,
-            icon: '/fast-food.png'
-          })
+        // Show toast notification with sound
+        toast.newOrder(`New Order #${e.order?.order_number || 'N/A'} received!`)
+      })
+      .listen('.OrderStatusChanged', (e) => {
+        console.log('Order status changed:', e)
+        loadOrders()
+
+        // Show appropriate toast based on status change
+        const orderNum = e.order?.order_number || 'N/A'
+        const newStatus = e.new_status || e.order?.status
+
+        if (newStatus === 'cancelled') {
+          toast.warning(`Order #${orderNum} was cancelled by customer`)
         }
       })
   }
@@ -328,11 +337,6 @@ onMounted(async () => {
 
   // Subscribe to real-time updates
   subscribeToChannel()
-
-  // Request notification permission
-  if ('Notification' in window && Notification.permission === 'default') {
-    Notification.requestPermission()
-  }
 })
 
 onUnmounted(() => {
