@@ -81,10 +81,11 @@ class Order extends Model
 
     /**
      * Check if order is completed.
+     * Now: ready_for_pickup IS the completion status
      */
     public function isCompleted(): bool
     {
-        return $this->status === 'completed';
+        return $this->status === 'ready_for_pickup';
     }
 
     /**
@@ -97,14 +98,14 @@ class Order extends Model
 
     /**
      * Get order status for display.
+     * Updated: ready_for_pickup shows as "Completed"
      */
     public function getStatusDisplayAttribute(): string
     {
         return match ($this->status) {
             'pending' => 'Pending',
             'accepted' => 'Accepted',
-            'ready_for_pickup' => 'Ready for Pickup',
-            'completed' => 'Completed',
+            'ready_for_pickup' => 'Completed', // Now displays as "Completed"
             'cancelled' => 'Cancelled',
             default => ucfirst($this->status),
         };

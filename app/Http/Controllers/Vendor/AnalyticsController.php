@@ -15,6 +15,7 @@ class AnalyticsController extends Controller
 {
     /**
      * Get sales data for specified period.
+     * Simple approach: ready_for_pickup = completed
      */
     public function sales(Request $request): JsonResponse
     {
@@ -27,12 +28,12 @@ class AnalyticsController extends Controller
         $startDate = $this->getStartDate($period);
 
         $totalSales = Order::forVendor($vendor->id)
-            ->byStatus('completed')
+            ->byStatus('ready_for_pickup')
             ->where('created_at', '>=', $startDate)
             ->sum('total_amount');
 
         $totalOrders = Order::forVendor($vendor->id)
-            ->byStatus('completed')
+            ->byStatus('ready_for_pickup')
             ->where('created_at', '>=', $startDate)
             ->count();
 
@@ -46,6 +47,7 @@ class AnalyticsController extends Controller
 
     /**
      * Get best selling products.
+     * Simple approach: ready_for_pickup = completed
      */
     public function bestSellers(Request $request): JsonResponse
     {
@@ -57,7 +59,7 @@ class AnalyticsController extends Controller
         $limit = min($request->query('limit', 10), 50);
 
         $bestSellers = OrderItem::whereHas('order', function ($query) use ($vendor) {
-                $query->forVendor($vendor->id)->byStatus('completed');
+                $query->forVendor($vendor->id)->byStatus('ready_for_pickup');
             })
             ->with('product:id,name,price,image_url')
             ->select('product_id', DB::raw('SUM(quantity) as total_sold'))
@@ -71,6 +73,7 @@ class AnalyticsController extends Controller
 
     /**
      * Get order metrics.
+     * Simple approach: ready_for_pickup = completed
      */
     public function orderMetrics(): JsonResponse
     {
@@ -82,7 +85,7 @@ class AnalyticsController extends Controller
         return response()->json([
             'pending' => Order::forVendor($vendor->id)->byStatus('pending')->count(),
             'accepted' => Order::forVendor($vendor->id)->byStatus('accepted')->count(),
-            'completed' => Order::forVendor($vendor->id)->byStatus('completed')->count(),
+            'completed' => Order::forVendor($vendor->id)->byStatus('ready_for_pickup')->count(),
             'cancelled' => Order::forVendor($vendor->id)->byStatus('cancelled')->count(),
             'today' => Order::forVendor($vendor->id)->whereDate('created_at', today())->count(),
         ]);
@@ -90,6 +93,7 @@ class AnalyticsController extends Controller
 
     /**
      * Get revenue data.
+     * Simple approach: ready_for_pickup = completed
      */
     public function revenue(Request $request): JsonResponse
     {
@@ -102,12 +106,12 @@ class AnalyticsController extends Controller
         $startDate = $this->getStartDate($period);
 
         $periodRevenue = Order::forVendor($vendor->id)
-            ->byStatus('completed')
+            ->byStatus('ready_for_pickup')
             ->where('created_at', '>=', $startDate)
             ->sum('total_amount');
 
         $totalRevenue = Order::forVendor($vendor->id)
-            ->byStatus('completed')
+            ->byStatus('ready_for_pickup')
             ->sum('total_amount');
 
         return response()->json([
@@ -119,6 +123,7 @@ class AnalyticsController extends Controller
 
     /**
      * Get profit data (Revenue - Rent).
+     * Simple approach: ready_for_pickup = completed
      */
     public function profit(): JsonResponse
     {
@@ -129,7 +134,7 @@ class AnalyticsController extends Controller
 
         $rentCost = 3000;
         $totalRevenue = Order::forVendor($vendor->id)
-            ->byStatus('completed')
+            ->byStatus('ready_for_pickup')
             ->sum('total_amount');
 
         return response()->json([

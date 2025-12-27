@@ -20,31 +20,32 @@ class DashboardController extends Controller
         $totalRent = $activeVendorCount * $rentPerVendor;
 
         // Get order statistics
+        // Simple approach: ready_for_pickup = completed
         $totalOrders = Order::count();
-        $completedOrders = Order::where('status', 'completed')->count();
-        $pendingOrders = Order::where('status', 'pending')->count();
-        $totalRevenue = Order::where('status', 'completed')->sum('total_amount');
+        $completedOrders = Order::byStatus('ready_for_pickup')->count();
+        $pendingOrders = Order::byStatus('pending')->count();
+        $totalRevenue = Order::byStatus('ready_for_pickup')->sum('total_amount');
 
         // Today's stats
         $todayOrders = Order::whereDate('created_at', today())->count();
-        $todayRevenue = Order::whereDate('created_at', today())
-            ->where('status', 'completed')
+        $todayRevenue = Order::byStatus('ready_for_pickup')
+            ->whereDate('created_at', today())
             ->sum('total_amount');
 
         // This month's stats
         $monthlyOrders = Order::whereMonth('created_at', now()->month)
             ->whereYear('created_at', now()->year)
             ->count();
-        $monthlyRevenue = Order::whereMonth('created_at', now()->month)
+        $monthlyRevenue = Order::byStatus('ready_for_pickup')
+            ->whereMonth('created_at', now()->month)
             ->whereYear('created_at', now()->year)
-            ->where('status', 'completed')
             ->sum('total_amount');
 
         // Top vendors by revenue
         $topVendors = Vendor::with('user:id,name,email')
             ->withCount('orders')
             ->withSum(['orders as total_revenue' => function ($query) {
-                $query->where('status', 'completed');
+                $query->byStatus('ready_for_pickup');
             }], 'total_amount')
             ->orderByDesc('total_revenue')
             ->take(5)

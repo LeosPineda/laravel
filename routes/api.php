@@ -10,7 +10,22 @@ use App\Http\Controllers\Customer\CartController;
 use App\Http\Controllers\Customer\MenuController;
 use App\Http\Controllers\Customer\NotificationController as CustomerNotificationController;
 use App\Http\Controllers\Customer\OrderController as CustomerOrderController;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+
+// Public API routes (no authentication required)
+Route::post('/test', function () {
+    return response()->json(['message' => 'API is working']);
+});
+
+// Authenticated routes
+Route::middleware('auth:sanctum')->group(function () {
+    // Logout endpoint
+    Route::post('/logout', function (Request $request) {
+        $request->user()->currentAccessToken()->delete();
+        return response()->json(['message' => 'Logged out successfully']);
+    })->name('logout');
+});
 
 // Vendor API Routes (60 requests per minute)
 Route::middleware(['auth:sanctum', 'role:vendor', 'throttle:60,1'])->prefix('vendor')->name('vendor.')->group(function () {
@@ -107,6 +122,8 @@ Route::middleware(['auth:sanctum', 'role:customer', 'throttle:60,1'])->prefix('c
     Route::get('/notifications/count', [CustomerNotificationController::class, 'count'])->name('notifications.count');
     Route::get('/notifications/recent', [CustomerNotificationController::class, 'recent'])->name('notifications.recent');
     Route::post('/notifications/mark-all-read', [CustomerNotificationController::class, 'markAllAsRead'])->name('notifications.mark-all');
+    Route::delete('/notifications/clear-all', [CustomerNotificationController::class, 'clearAll'])->name('notifications.clear-all');
+    Route::post('/notifications/cleanup', [CustomerNotificationController::class, 'cleanup'])->name('notifications.cleanup');
     Route::post('/notifications/{notification}/read', [CustomerNotificationController::class, 'markAsRead'])->name('notifications.read');
     Route::delete('/notifications/{notification}', [CustomerNotificationController::class, 'destroy'])->name('notifications.destroy');
 });

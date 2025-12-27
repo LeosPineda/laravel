@@ -20,8 +20,7 @@ return new class extends Migration
             $table->enum('status', [
                 'pending',      // Order just placed
                 'accepted',     // Vendor accepted
-                'ready_for_pickup', // Food is ready
-                'completed',    // Customer picked up
+                'ready_for_pickup', // Food is ready (NOW THE FINAL STATUS)
                 'cancelled',    // Vendor declined
             ])->default('pending');
             $table->decimal('total_amount', 10, 2);

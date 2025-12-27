@@ -34,8 +34,8 @@ class OrderController extends Controller
                 ->with(['items.product', 'customer'])
                 ->orderBy('created_at', 'desc');
 
-            // Apply status filter
-            if ($status && in_array($status, ['pending', 'accepted', 'ready_for_pickup', 'completed', 'cancelled'])) {
+            // Apply status filter - removed 'completed' status
+            if ($status && in_array($status, ['pending', 'accepted', 'ready_for_pickup', 'cancelled'])) {
                 $query->byStatus($status);
             }
 
@@ -101,10 +101,6 @@ class OrderController extends Controller
     public function accept(Request $request, Order $order): JsonResponse
     {
         try {
-            $request->validate([
-                'undo_timeout' => 'integer|min:1|max:60'
-            ]);
-
             $vendor = $this->getCurrentVendor();
             if (!$vendor || $order->vendor_id !== $vendor->id) {
                 return response()->json(['error' => 'Order not found'], 404);
@@ -130,8 +126,7 @@ class OrderController extends Controller
 
                 return response()->json([
                     'message' => 'Order accepted successfully',
-                    'order' => $order->fresh(['items.product', 'customer']),
-                    'undo_timeout' => $request->input('undo_timeout', 5)
+                    'order' => $order->fresh(['items.product', 'customer'])
                 ]);
 
             } catch (\Exception $e) {
@@ -155,10 +150,6 @@ class OrderController extends Controller
     public function decline(Request $request, Order $order): JsonResponse
     {
         try {
-            $request->validate([
-                'undo_timeout' => 'integer|min:1|max:60'
-            ]);
-
             $vendor = $this->getCurrentVendor();
             if (!$vendor || $order->vendor_id !== $vendor->id) {
                 return response()->json(['error' => 'Order not found'], 404);
@@ -184,8 +175,7 @@ class OrderController extends Controller
 
                 return response()->json([
                     'message' => 'Order declined successfully',
-                    'order' => $order->fresh(['items.product', 'customer']),
-                    'undo_timeout' => $request->input('undo_timeout', 5)
+                    'order' => $order->fresh(['items.product', 'customer'])
                 ]);
 
             } catch (\Exception $e) {
@@ -204,7 +194,8 @@ class OrderController extends Controller
     }
 
     /**
-     * Mark order as ready for pickup.
+     * Mark order as ready for pickup (FINAL STATUS).
+     * This is the completion point - ready_for_pickup = completed
      */
     public function markReady(Order $order): JsonResponse
     {
@@ -224,7 +215,8 @@ class OrderController extends Controller
 
             try {
                 $order->update([
-                    'status' => 'ready_for_pickup'
+                    'status' => 'ready_for_pickup',
+                    'completed_at' => now() // Mark as completed immediately
                 ]);
 
                 // Broadcast status change event
@@ -233,7 +225,7 @@ class OrderController extends Controller
                 DB::commit();
 
                 return response()->json([
-                    'message' => 'Order marked as ready for pickup',
+                    'message' => 'Order marked as ready and completed',
                     'order' => $order->fresh(['items.product', 'customer'])
                 ]);
 
@@ -249,106 +241,6 @@ class OrderController extends Controller
             ]);
 
             return response()->json(['error' => 'Failed to mark order as ready'], 500);
-        }
-    }
-
-    /**
-     * Complete an order (for internal use).
-     */
-    public function complete(Order $order): JsonResponse
-    {
-        try {
-            $vendor = $this->getCurrentVendor();
-            if (!$vendor || $order->vendor_id !== $vendor->id) {
-                return response()->json(['error' => 'Order not found'], 404);
-            }
-
-            if (!$order->isReadyForPickup()) {
-                return response()->json(['error' => 'Order must be ready for pickup first'], 400);
-            }
-
-            $oldStatus = $order->status;
-
-            DB::beginTransaction();
-
-            try {
-                $order->update([
-                    'status' => 'completed',
-                    'completed_at' => now()
-                ]);
-
-                // Broadcast status change event
-                event(new OrderStatusChanged($vendor, $order, $order->customer, $oldStatus, 'completed'));
-
-                DB::commit();
-
-                return response()->json([
-                    'message' => 'Order completed successfully',
-                    'order' => $order->fresh(['items.product', 'customer'])
-                ]);
-
-            } catch (\Exception $e) {
-                DB::rollBack();
-                throw $e;
-            }
-
-        } catch (\Exception $e) {
-            Log::error('Error completing order', [
-                'order_id' => $order->id,
-                'error' => $e->getMessage()
-            ]);
-
-            return response()->json(['error' => 'Failed to complete order'], 500);
-        }
-    }
-
-    /**
-     * Undo the last action (accept/decline).
-     */
-    public function undo(Order $order): JsonResponse
-    {
-        try {
-            $vendor = $this->getCurrentVendor();
-            if (!$vendor || $order->vendor_id !== $vendor->id) {
-                return response()->json(['error' => 'Order not found'], 404);
-            }
-
-            if (!in_array($order->status, ['accepted', 'cancelled'])) {
-                return response()->json(['error' => 'Order cannot be undone'], 400);
-            }
-
-            $oldStatus = $order->status;
-            $newStatus = 'pending';
-
-            DB::beginTransaction();
-
-            try {
-                $order->update([
-                    'status' => $newStatus
-                ]);
-
-                // Broadcast status change event
-                event(new OrderStatusChanged($vendor, $order, $order->customer, $oldStatus, $newStatus));
-
-                DB::commit();
-
-                return response()->json([
-                    'message' => 'Order action undone successfully',
-                    'order' => $order->fresh(['items.product', 'customer'])
-                ]);
-
-            } catch (\Exception $e) {
-                DB::rollBack();
-                throw $e;
-            }
-
-        } catch (\Exception $e) {
-            Log::error('Error undoing order action', [
-                'order_id' => $order->id,
-                'error' => $e->getMessage()
-            ]);
-
-            return response()->json(['error' => 'Failed to undo order action'], 500);
         }
     }
 
@@ -442,6 +334,7 @@ class OrderController extends Controller
 
     /**
      * Calculate order statistics for a vendor.
+     * Updated: completed orders = ready_for_pickup orders
      */
     private function getOrderStats(int $vendorId): array
     {
@@ -449,13 +342,13 @@ class OrderController extends Controller
             'total_orders' => Order::forVendor($vendorId)->count(),
             'pending_orders' => Order::forVendor($vendorId)->byStatus('pending')->count(),
             'accepted_orders' => Order::forVendor($vendorId)->byStatus('accepted')->count(),
-            'completed_orders' => Order::forVendor($vendorId)->byStatus('completed')->count(),
+            'completed_orders' => Order::forVendor($vendorId)->byStatus('ready_for_pickup')->count(),
             'cancelled_orders' => Order::forVendor($vendorId)->byStatus('cancelled')->count(),
             'today_orders' => Order::forVendor($vendorId)
                 ->whereDate('created_at', today())
                 ->count(),
             'today_revenue' => Order::forVendor($vendorId)
-                ->byStatus('completed')
+                ->byStatus('ready_for_pickup')
                 ->whereDate('created_at', today())
                 ->sum('total_amount'),
             'this_week_orders' => Order::forVendor($vendorId)

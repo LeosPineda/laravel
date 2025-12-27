@@ -44,8 +44,8 @@ Route::get('/dashboard', function () {
 
     return match ($user->role) {
         'superadmin' => redirect()->route('superadmin.dashboard'),
-        // Vendor and customer frontends have been removed - redirect to appropriate API or login
-        'vendor', 'customer' => redirect()->route('login'),
+        'vendor' => redirect()->route('vendor.dashboard'),
+        'customer' => redirect()->route('customer.menu'),
         default => redirect()->route('login'),
     };
 })->middleware('auth')->name('dashboard');
@@ -61,6 +61,37 @@ Route::middleware(['auth', 'role:superadmin'])->prefix('superadmin')->name('supe
     Route::post('/vendors/{vendor}', [SuperadminVendorController::class, 'update'])->name('vendors.update');
     Route::patch('/vendors/{vendor}/toggle-active', [SuperadminVendorController::class, 'toggleActive'])->name('vendors.toggle-active');
     Route::delete('/vendors/{vendor}', [SuperadminVendorController::class, 'destroy'])->name('vendors.destroy');
+});
+
+// Vendor routes (frontend for vendor management)
+Route::middleware(['auth', 'role:vendor'])->prefix('vendor')->name('vendor.')->group(function () {
+    Route::get('/dashboard', function () {
+        return Inertia::render('vendor/Dashboard');
+    })->name('dashboard');
+
+    Route::get('/orders', function () {
+        return Inertia::render('vendor/Orders');
+    })->name('orders');
+
+    Route::get('/products', function () {
+        return Inertia::render('vendor/Products');
+    })->name('products');
+
+    Route::get('/analytics', function () {
+        return Inertia::render('vendor/Analytics');
+    })->name('analytics');
+
+    Route::get('/qr', function () {
+        return Inertia::render('vendor/QrCode');
+    })->name('qr');
+});
+
+// Customer routes (frontend for customer ordering)
+Route::middleware(['auth', 'role:customer'])->prefix('customer')->name('customer.')->group(function () {
+    Route::get('/menu', function () {
+        // Placeholder for customer menu interface
+        return Inertia::render('customer/Menu');
+    })->name('menu');
 });
 
 // Note: Vendor and Customer API routes should be defined in routes/api.php

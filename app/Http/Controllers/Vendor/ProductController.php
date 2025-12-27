@@ -89,7 +89,7 @@ class ProductController extends Controller
             $request->validate([
                 'name' => 'required|string|max:255|unique:products,name,vendor_id,' . $this->getCurrentVendor()->id,
                 'price' => 'required|numeric|min:0.01',
-                'category' => 'required|string|max:100',
+                'category' => 'nullable|string|max:100',
                 'stock_quantity' => 'required|integer|min:0',
                 'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
                 'addons' => 'nullable|array',
@@ -207,7 +207,7 @@ class ProductController extends Controller
                     })
                 ],
                 'price' => 'required|numeric|min:0.01',
-                'category' => 'required|string|max:100',
+                'category' => 'nullable|string|max:100',
                 'stock_quantity' => 'required|integer|min:0',
                 'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
             ]);

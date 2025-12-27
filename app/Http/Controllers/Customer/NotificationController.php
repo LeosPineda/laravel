@@ -164,4 +164,52 @@ class NotificationController extends Controller
             return response()->json(['error' => 'Failed to delete notification'], 500);
         }
     }
+
+    /**
+     * Clear all notifications.
+     */
+    public function clearAll(): JsonResponse
+    {
+        try {
+            $user = Auth::user();
+
+            $deleted = Notification::where('user_id', $user->id)->delete();
+
+            return response()->json([
+                'message' => "Deleted {$deleted} notifications",
+                'deleted_count' => $deleted,
+                'success' => true
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Error clearing notifications: ' . $e->getMessage());
+            return response()->json(['error' => 'Failed to clear notifications'], 500);
+        }
+    }
+
+    /**
+     * Cleanup old notifications (older than 30 days).
+     */
+    public function cleanup(): JsonResponse
+    {
+        try {
+            $user = Auth::user();
+            $daysOld = 30;
+            $cutoffDate = now()->subDays($daysOld);
+
+            $deleted = Notification::where('user_id', $user->id)
+                ->where('created_at', '<', $cutoffDate)
+                ->delete();
+
+            return response()->json([
+                'message' => "Cleaned up {$deleted} old notifications",
+                'deleted_count' => $deleted,
+                'success' => true
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Error cleaning up notifications: ' . $e->getMessage());
+            return response()->json(['error' => 'Failed to cleanup notifications'], 500);
+        }
+    }
 }

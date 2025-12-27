@@ -382,25 +382,74 @@ class OrderController extends Controller
                 ], 400);
             }
 
+            // Calculate subtotals
+            $itemsSubtotal = 0;
+            $addonsSubtotal = 0;
+
+            $formattedItems = $order->items->map(function ($item) use (&$itemsSubtotal, &$addonsSubtotal) {
+                $basePrice = $item->unit_price * $item->quantity;
+                $itemsSubtotal += $basePrice;
+
+                $addons = $item->selected_addons ?? [];
+                $addonTotal = collect($addons)->sum('price') * $item->quantity;
+                $addonsSubtotal += $addonTotal;
+
+                return [
+                    'name' => $item->product->name,
+                    'quantity' => $item->quantity,
+                    'unit_price' => number_format($item->unit_price, 2),
+                    'base_total' => number_format($basePrice, 2),
+                    'addons' => collect($addons)->map(function ($addon) use ($item) {
+                        return [
+                            'name' => $addon['name'],
+                            'price' => number_format($addon['price'], 2),
+                            'total' => number_format($addon['price'] * $item->quantity, 2)
+                        ];
+                    }),
+                    'addon_total' => number_format($addonTotal, 2),
+                    'line_total' => number_format($item->total_price, 2)
+                ];
+            });
+
             // Generate receipt data
             $receipt = [
+                // Header
+                'receipt_id' => 'RCP-' . str_pad($order->id, 6, '0', STR_PAD_LEFT),
                 'order_number' => $order->order_number,
+                'order_date' => $order->created_at->format('F d, Y'),
+                'order_time' => $order->created_at->format('g:i A'),
+
+                // Vendor Info
                 'vendor_name' => $order->vendor->brand_name,
+                'vendor_logo' => $order->vendor->brand_image,
+
+                // Customer Info
+                'customer_name' => $user->name,
                 'table_number' => $order->table_number,
-                'order_date' => $order->created_at->format('m/d/Y g:i A'),
-                'items' => $order->items->map(function ($item) {
-                    return [
-                        'name' => $item->product->name,
-                        'quantity' => $item->quantity,
-                        'unit_price' => $item->unit_price,
-                        'total_price' => $item->total_price,
-                        'addons' => $item->selected_addons ?? []
-                    ];
-                }),
-                'total_amount' => $order->total_amount,
-                'payment_method' => $order->payment_method,
-                'status' => $order->status,
-                'footer_message' => 'Thank you for your order! 🍽️ Enjoy your meal!'
+
+                // Order Items
+                'items' => $formattedItems,
+                'item_count' => $order->items->sum('quantity'),
+
+                // Pricing Breakdown
+                'subtotal' => number_format($itemsSubtotal, 2),
+                'addons_total' => number_format($addonsSubtotal, 2),
+                'total_amount' => number_format($order->total_amount, 2),
+
+                // Payment Info
+                'payment_method' => $order->payment_method === 'qr_code' ? 'QR Code Payment' : 'Pay at Cashier',
+                'payment_status' => $order->status === 'completed' ? 'Paid' : 'Pending',
+
+                // Special Instructions
+                'special_instructions' => $order->special_instructions,
+
+                // Status
+                'status' => ucfirst(str_replace('_', ' ', $order->status)),
+                'completed_at' => $order->status === 'completed' ? $order->updated_at->format('F d, Y g:i A') : null,
+
+                // Footer
+                'footer_message' => 'Thank you for your order! 🍽️ Enjoy your meal!',
+                'generated_at' => now()->format('F d, Y g:i A')
             ];
 
             return response()->json([
