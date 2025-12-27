@@ -17,21 +17,33 @@
               This number will appear alongside your QR code at checkout.
             </p>
 
+            <!-- Success Message -->
+            <div v-if="mobileUpdateSuccess" class="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg flex items-center gap-2">
+              <span class="text-green-600">✓</span>
+              <span class="text-green-700 text-sm">Mobile number updated successfully!</span>
+            </div>
+
             <div class="flex gap-2">
               <input
                 v-model="mobileNumber"
                 type="text"
                 placeholder="09123456789"
                 class="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                :class="{ 'border-green-500': mobileUpdateSuccess }"
               />
               <button
                 @click="updateMobileNumber"
                 :disabled="updatingMobile"
                 class="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 disabled:opacity-50"
               >
-                {{ updatingMobile ? 'Updating...' : 'Update' }}
+                {{ updatingMobile ? 'Saving...' : 'Save' }}
               </button>
             </div>
+
+            <!-- Saved indicator -->
+            <p v-if="qrData.mobile_number" class="text-xs text-gray-500 mt-2">
+              Currently saved: <span class="font-medium text-gray-700">{{ qrData.mobile_number }}</span>
+            </p>
           </div>
 
           <!-- Current QR Code Section -->
@@ -51,7 +63,7 @@
                 <div class="space-y-4">
                   <div class="flex gap-2">
                     <button
-                      @click="previewQr"
+                      @click="showPreviewModal = true"
                       class="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600"
                     >
                       Preview
@@ -134,13 +146,58 @@
         </div>
       </div>
     </div>
+
+    <!-- Preview Modal -->
+    <Teleport to="body">
+      <div
+        v-if="showPreviewModal"
+        class="fixed inset-0 z-50 flex items-center justify-center"
+        @click="showPreviewModal = false"
+      >
+        <!-- Backdrop -->
+        <div class="absolute inset-0 bg-black/70"></div>
+
+        <!-- Modal Content -->
+        <div class="relative z-10 max-w-lg w-full mx-4" @click.stop>
+          <div class="bg-white rounded-2xl p-6">
+            <!-- Header -->
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="text-lg font-bold text-gray-900">QR Code Preview</h3>
+              <button
+                @click="showPreviewModal = false"
+                class="text-gray-400 hover:text-gray-600 text-2xl leading-none"
+              >
+                ×
+              </button>
+            </div>
+
+            <!-- QR Image -->
+            <div class="flex justify-center mb-4">
+              <img
+                :src="qrData.qr_code_url"
+                alt="QR Code Preview"
+                class="max-w-full max-h-96 object-contain rounded-lg border border-gray-200"
+              />
+            </div>
+
+            <!-- Close Button -->
+            <button
+              @click="showPreviewModal = false"
+              class="w-full py-3 bg-gray-500 text-white rounded-xl hover:bg-gray-600"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      </div>
+    </Teleport>
   </VendorLayout>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue'
 import VendorLayout from '@/layouts/vendor/VendorLayout.vue'
-import { apiGet, apiPost, apiPatch, apiDelete, apiUpload } from '@/composables/useApi'
+import { apiGet, apiPatch, apiDelete, apiUpload } from '@/composables/useApi'
 
 const qrData = ref({
   has_qr_code: false,
@@ -154,6 +211,8 @@ const selectedFile = ref(null)
 const uploading = ref(false)
 const updatingMobile = ref(false)
 const validationError = ref('')
+const showPreviewModal = ref(false)
+const mobileUpdateSuccess = ref(false)
 
 const formatFileSize = (bytes) => {
   if (bytes === 0) return '0 Bytes'
@@ -233,12 +292,17 @@ const uploadQr = async () => {
 
 const updateMobileNumber = async () => {
   updatingMobile.value = true
+  mobileUpdateSuccess.value = false
   try {
     const response = await apiPatch('/api/vendor/qr/mobile', { mobile_number: mobileNumber.value })
 
     if (response.ok) {
       await loadQrData()
-      alert('Mobile number updated successfully!')
+      mobileUpdateSuccess.value = true
+      // Auto-hide success message after 3 seconds
+      setTimeout(() => {
+        mobileUpdateSuccess.value = false
+      }, 3000)
     } else {
       const error = await response.json()
       alert(error.error || 'Failed to update mobile number')
@@ -267,23 +331,6 @@ const removeQr = async () => {
   } catch (error) {
     console.error('Error removing QR code:', error)
     alert('Failed to remove QR code')
-  }
-}
-
-const previewQr = async () => {
-  try {
-    const response = await apiGet('/api/vendor/qr/preview')
-
-    if (response.ok) {
-      const data = await response.json()
-      window.open(data.preview_url, '_blank')
-    } else {
-      const error = await response.json()
-      alert(error.error || 'Failed to preview QR code')
-    }
-  } catch (error) {
-    console.error('Error previewing QR code:', error)
-    alert('Failed to preview QR code')
   }
 }
 

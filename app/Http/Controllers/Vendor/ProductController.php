@@ -86,8 +86,18 @@ class ProductController extends Controller
     public function store(Request $request): JsonResponse
     {
         try {
+            $vendor = $this->getCurrentVendor();
+            if (!$vendor) {
+                return response()->json(['error' => 'Vendor not found'], 404);
+            }
+
             $request->validate([
-                'name' => 'required|string|max:255|unique:products,name,vendor_id,' . $this->getCurrentVendor()->id,
+                'name' => [
+                    'required',
+                    'string',
+                    'max:255',
+                    Rule::unique('products', 'name')->where('vendor_id', $vendor->id),
+                ],
                 'price' => 'required|numeric|min:0.01',
                 'category' => 'nullable|string|max:100',
                 'stock_quantity' => 'required|integer|min:0',
@@ -97,11 +107,6 @@ class ProductController extends Controller
                 'addons.*.price' => 'required|numeric|min:0',
                 'addons.*.is_active' => 'boolean',
             ]);
-
-            $vendor = $this->getCurrentVendor();
-            if (!$vendor) {
-                return response()->json(['error' => 'Vendor not found'], 404);
-            }
 
             DB::beginTransaction();
 

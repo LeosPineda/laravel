@@ -18,17 +18,9 @@ Route::post('/test', function () {
     return response()->json(['message' => 'API is working']);
 });
 
-// Authenticated routes
-Route::middleware('auth:sanctum')->group(function () {
-    // Logout endpoint
-    Route::post('/logout', function (Request $request) {
-        $request->user()->currentAccessToken()->delete();
-        return response()->json(['message' => 'Logged out successfully']);
-    })->name('logout');
-});
-
 // Vendor API Routes (60 requests per minute)
-Route::middleware(['auth:sanctum', 'role:vendor', 'throttle:60,1'])->prefix('vendor')->name('vendor.')->group(function () {
+// Using 'web' auth since this is an Inertia app with session-based authentication
+Route::middleware(['web', 'auth', 'role:vendor', 'throttle:60,1'])->prefix('vendor')->name('vendor.')->group(function () {
     // Analytics
     Route::get('/analytics/sales', [AnalyticsController::class, 'sales'])->name('analytics.sales');
     Route::get('/analytics/best-sellers', [AnalyticsController::class, 'bestSellers'])->name('analytics.best-sellers');
@@ -88,7 +80,8 @@ Route::middleware(['auth:sanctum', 'role:vendor', 'throttle:60,1'])->prefix('ven
 });
 
 // Customer API Routes (60 requests per minute)
-Route::middleware(['auth:sanctum', 'role:customer', 'throttle:60,1'])->prefix('customer')->name('customer.')->group(function () {
+// Using 'web' auth since this is an Inertia app with session-based authentication
+Route::middleware(['web', 'auth', 'role:customer', 'throttle:60,1'])->prefix('customer')->name('customer.')->group(function () {
     // Menu & Vendors
     Route::get('/vendors', [MenuController::class, 'vendors'])->name('vendors');
     Route::get('/vendors/{vendor}', [MenuController::class, 'vendorMenu'])->name('vendor.menu');
