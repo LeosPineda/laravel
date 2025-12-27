@@ -1,6 +1,6 @@
 <template>
   <VendorLayout>
-    <div class="min-h-screen bg-white">
+    <div class="bg-white">
       <!-- Header -->
       <div class="bg-white border-b border-gray-200 px-6 py-4">
         <div class="flex items-center justify-between">

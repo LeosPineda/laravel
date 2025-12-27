@@ -1,14 +1,9 @@
 <template>
   <VendorLayout>
-    <div class="min-h-screen bg-white">
+    <div class="bg-white">
       <!-- Header -->
       <div class="bg-white border-b border-gray-200 px-6 py-4">
-        <div class="flex items-center justify-between">
-          <h1 class="text-xl font-bold text-gray-900">QR Code Payment</h1>
-          <div class="text-sm text-gray-500">
-            Last updated: {{ formatDate(qrData.last_updated) }}
-          </div>
-        </div>
+        <h1 class="text-xl font-bold text-gray-900">QR Code Payment</h1>
       </div>
 
       <!-- QR Code Content -->
@@ -145,6 +140,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import VendorLayout from '@/layouts/vendor/VendorLayout.vue'
+import { apiGet, apiPost, apiPatch, apiDelete, apiUpload } from '@/composables/useApi'
 
 const qrData = ref({
   has_qr_code: false,
@@ -159,11 +155,6 @@ const uploading = ref(false)
 const updatingMobile = ref(false)
 const validationError = ref('')
 
-const formatDate = (dateString) => {
-  if (!dateString) return 'Never'
-  return new Date(dateString).toLocaleDateString()
-}
-
 const formatFileSize = (bytes) => {
   if (bytes === 0) return '0 Bytes'
   const k = 1024
@@ -174,13 +165,7 @@ const formatFileSize = (bytes) => {
 
 const loadQrData = async () => {
   try {
-    const response = await fetch('/api/vendor/qr', {
-      headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token')}`,
-        'Content-Type': 'application/json'
-      }
-    })
-
+    const response = await apiGet('/api/vendor/qr')
     if (response.ok) {
       const data = await response.json()
       qrData.value = data
@@ -228,16 +213,9 @@ const uploadQr = async () => {
       formData.append('mobile_number', mobileNumber.value)
     }
 
-    const response = await fetch('/api/vendor/qr', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token')}`
-      },
-      body: formData
-    })
+    const response = await apiUpload('/api/vendor/qr', formData)
 
     if (response.ok) {
-      const data = await response.json()
       await loadQrData()
       clearSelectedFile()
       alert('QR code uploaded successfully!')
@@ -256,14 +234,7 @@ const uploadQr = async () => {
 const updateMobileNumber = async () => {
   updatingMobile.value = true
   try {
-    const response = await fetch('/api/vendor/qr/mobile', {
-      method: 'PATCH',
-      headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token')}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ mobile_number: mobileNumber.value })
-    })
+    const response = await apiPatch('/api/vendor/qr/mobile', { mobile_number: mobileNumber.value })
 
     if (response.ok) {
       await loadQrData()
@@ -284,13 +255,7 @@ const removeQr = async () => {
   if (!confirm('Are you sure you want to remove the QR code?')) return
 
   try {
-    const response = await fetch('/api/vendor/qr', {
-      method: 'DELETE',
-      headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token')}`,
-        'Content-Type': 'application/json'
-      }
-    })
+    const response = await apiDelete('/api/vendor/qr')
 
     if (response.ok) {
       await loadQrData()
@@ -307,12 +272,7 @@ const removeQr = async () => {
 
 const previewQr = async () => {
   try {
-    const response = await fetch('/api/vendor/qr/preview', {
-      headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token')}`,
-        'Content-Type': 'application/json'
-      }
-    })
+    const response = await apiGet('/api/vendor/qr/preview')
 
     if (response.ok) {
       const data = await response.json()

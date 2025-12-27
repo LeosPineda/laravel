@@ -1,6 +1,6 @@
 <template>
   <VendorLayout>
-    <div class="min-h-screen bg-white">
+    <div class="bg-white">
       <!-- Header -->
       <div class="bg-white border-b border-gray-200 px-6 py-4">
         <div class="flex items-center justify-between">
@@ -281,6 +281,7 @@ import { ref, onMounted } from 'vue'
 import VendorLayout from '@/layouts/vendor/VendorLayout.vue'
 import ProductFormModal from '@/components/vendor/ProductFormModal.vue'
 import AddonManagement from '@/components/vendor/AddonManagement.vue'
+import { apiGet, apiPost, apiPatch, apiDelete } from '@/composables/useApi'
 
 const products = ref([])
 const categories = ref([])
@@ -318,21 +319,15 @@ const getImageUrl = (url) => {
 const loadProducts = async () => {
   loading.value = true
   try {
-    const params = new URLSearchParams({
-      page: pagination.value.current_page.toString(),
-      per_page: pagination.value.per_page.toString()
-    })
+    const params = {
+      page: pagination.value.current_page,
+      per_page: pagination.value.per_page,
+      search: searchQuery.value || undefined,
+      category: selectedCategory.value || undefined,
+      status: selectedStatus.value || undefined
+    }
 
-    if (searchQuery.value) params.append('search', searchQuery.value)
-    if (selectedCategory.value) params.append('category', selectedCategory.value)
-    if (selectedStatus.value) params.append('status', selectedStatus.value)
-
-    const response = await fetch(`/api/vendor/products?${params}`, {
-      headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token')}`,
-        'Content-Type': 'application/json'
-      }
-    })
+    const response = await apiGet('/api/vendor/products', params)
 
     if (response.ok) {
       const data = await response.json()
@@ -395,13 +390,7 @@ const closeAddonPanel = () => {
 const toggleProductStatus = async (product) => {
   processingProduct.value = product.id
   try {
-    const response = await fetch(`/api/vendor/products/${product.id}/toggle-status`, {
-      method: 'PATCH',
-      headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token')}`,
-        'Content-Type': 'application/json'
-      }
-    })
+    const response = await apiPatch(`/api/vendor/products/${product.id}/toggle-status`)
 
     if (response.ok) {
       await loadProducts()
@@ -422,13 +411,7 @@ const deleteProduct = async (product) => {
 
   processingProduct.value = product.id
   try {
-    const response = await fetch(`/api/vendor/products/${product.id}`, {
-      method: 'DELETE',
-      headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token')}`,
-        'Content-Type': 'application/json'
-      }
-    })
+    const response = await apiDelete(`/api/vendor/products/${product.id}`)
 
     if (response.ok) {
       await loadProducts()
@@ -464,16 +447,9 @@ const bulkAction = async (action) => {
 
   bulkProcessing.value = true
   try {
-    const response = await fetch('/api/vendor/products/bulk', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token')}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        product_ids: selectedProducts.value,
-        action: action
-      })
+    const response = await apiPost('/api/vendor/products/bulk', {
+      product_ids: selectedProducts.value,
+      action: action
     })
 
     if (response.ok) {

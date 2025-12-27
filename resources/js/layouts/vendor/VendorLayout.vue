@@ -13,63 +13,59 @@
 
         <!-- Navigation -->
         <div class="mt-8 flex-grow flex flex-col">
-          <nav class="flex-1 px-2 space-y-1">
+          <nav class="flex-1 px-3 space-y-2">
             <Link href="/vendor/dashboard"
                   :class="[$page.url.startsWith('/vendor/dashboard')
-                          ? 'bg-orange-50 text-orange-700'
-                          : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900',
-                          'group flex items-center px-2 py-2 text-sm font-medium rounded-md']">
-              <span class="mr-3">🏠</span>
+                          ? 'bg-orange-50 text-orange-700 border-l-4 border-orange-500'
+                          : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900 border-l-4 border-transparent',
+                          'group flex items-center px-4 py-3 text-base font-medium rounded-lg transition-all']">
+              <span class="mr-4 text-xl">🏠</span>
               Dashboard
             </Link>
 
             <Link href="/vendor/orders"
                   :class="[$page.url.startsWith('/vendor/orders')
-                          ? 'bg-orange-50 text-orange-700'
-                          : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900',
-                          'group flex items-center px-2 py-2 text-sm font-medium rounded-md']">
-              <span class="mr-3">📦</span>
+                          ? 'bg-orange-50 text-orange-700 border-l-4 border-orange-500'
+                          : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900 border-l-4 border-transparent',
+                          'group flex items-center px-4 py-3 text-base font-medium rounded-lg transition-all']">
+              <span class="mr-4 text-xl">📦</span>
               Orders
             </Link>
 
             <Link href="/vendor/products"
                   :class="[$page.url.startsWith('/vendor/products')
-                          ? 'bg-orange-50 text-orange-700'
-                          : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900',
-                          'group flex items-center px-2 py-2 text-sm font-medium rounded-md']">
-              <span class="mr-3">🍔</span>
+                          ? 'bg-orange-50 text-orange-700 border-l-4 border-orange-500'
+                          : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900 border-l-4 border-transparent',
+                          'group flex items-center px-4 py-3 text-base font-medium rounded-lg transition-all']">
+              <span class="mr-4 text-xl">🍔</span>
               Products
             </Link>
 
             <Link href="/vendor/analytics"
                   :class="[$page.url.startsWith('/vendor/analytics')
-                          ? 'bg-orange-50 text-orange-700'
-                          : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900',
-                          'group flex items-center px-2 py-2 text-sm font-medium rounded-md']">
-              <span class="mr-3">📊</span>
+                          ? 'bg-orange-50 text-orange-700 border-l-4 border-orange-500'
+                          : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900 border-l-4 border-transparent',
+                          'group flex items-center px-4 py-3 text-base font-medium rounded-lg transition-all']">
+              <span class="mr-4 text-xl">📊</span>
               Analytics
             </Link>
 
             <Link href="/vendor/qr"
                   :class="[$page.url.startsWith('/vendor/qr')
-                          ? 'bg-orange-50 text-orange-700'
-                          : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900',
-                          'group flex items-center px-2 py-2 text-sm font-medium rounded-md']">
-              <span class="mr-3">📱</span>
+                          ? 'bg-orange-50 text-orange-700 border-l-4 border-orange-500'
+                          : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900 border-l-4 border-transparent',
+                          'group flex items-center px-4 py-3 text-base font-medium rounded-lg transition-all']">
+              <span class="mr-4 text-xl">📱</span>
               QR Code
             </Link>
           </nav>
 
           <!-- Logout -->
-          <div class="flex-shrink-0 flex border-t border-gray-200 p-4">
+          <div class="flex-shrink-0 border-t border-gray-200 p-4">
             <button @click="logout"
-                    class="flex-shrink-0 w-full group block">
-              <div class="flex items-center">
-                <span class="mr-3">🚪</span>
-                <span class="text-sm font-medium text-gray-600 group-hover:text-gray-900">
-                  Logout
-                </span>
-              </div>
+                    class="w-full flex items-center px-4 py-3 text-base font-medium text-red-600 hover:bg-red-50 rounded-lg transition-all">
+              <span class="mr-4 text-xl">🚪</span>
+              Logout
             </button>
           </div>
         </div>
@@ -77,7 +73,7 @@
     </div>
 
     <!-- Main Content -->
-    <div class="flex flex-col flex-1">
+    <div class="flex flex-col flex-1 overflow-hidden">
       <!-- Mobile Header -->
       <div class="md:hidden bg-white border-b border-gray-200 px-4 py-3">
         <div class="flex items-center gap-3">
@@ -89,7 +85,7 @@
       </div>
 
       <!-- Page Content -->
-      <main class="flex-1">
+      <main class="flex-1 overflow-y-auto">
         <slot />
       </main>
 
@@ -147,8 +143,17 @@ const logout = async () => {
 </script>
 
 <style scoped>
-/* Add padding to main content to account for mobile bottom nav */
-main {
-  padding-bottom: 4rem;
+/* Add padding to main content to account for mobile bottom nav - mobile only */
+@media (max-width: 767px) {
+  main {
+    padding-bottom: 4rem;
+  }
+}
+
+/* Desktop: no extra padding needed */
+@media (min-width: 768px) {
+  main {
+    padding-bottom: 0;
+  }
 }
 </style>

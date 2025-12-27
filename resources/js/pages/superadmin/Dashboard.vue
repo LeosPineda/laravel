@@ -4,15 +4,39 @@ import { Head, Link, router } from '@inertiajs/vue3';
 interface TopVendor {
     id: number;
     brand_name: string;
+    brand_logo: string | null;
+    is_active: boolean;
+    user_name: string | null;
+    user_email: string | null;
+    total_orders: number;
     total_revenue: number;
     net_profit: number;
 }
 
 interface Statistics {
     vendor_count: number;
+    active_vendor_count: number;
+    customer_count: number;
     rent_per_vendor: number;
     total_rent: number;
+    total_orders: number;
+    completed_orders: number;
+    pending_orders: number;
+    total_revenue: number;
+    today_orders: number;
+    today_revenue: number;
+    monthly_orders: number;
+    monthly_revenue: number;
     top_vendors: TopVendor[];
+    recent_orders: Array<{
+        id: number;
+        order_number: string;
+        vendor_name: string | null;
+        customer_name: string | null;
+        total_amount: number;
+        status: string;
+        created_at: string;
+    }>;
 }
 
 defineProps<{
