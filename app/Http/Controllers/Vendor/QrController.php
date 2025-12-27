@@ -267,6 +267,7 @@ class QrController extends Controller
 
     /**
      * Get QR code statistics.
+     * FIXED: Now uses ready_for_pickup status instead of completed
      */
     public function getStatistics(): JsonResponse
     {
@@ -284,10 +285,10 @@ class QrController extends Controller
                 ->where('created_at', '>=', now()->subMonth())
                 ->count();
 
-            // Get QR payment revenue
+            // Get QR payment revenue - FIXED: Uses ready_for_pickup instead of completed
             $qrRevenue = \App\Models\Order::forVendor($vendor->id)
                 ->where('payment_method', 'qr_code')
-                ->where('status', 'completed')
+                ->where('status', 'ready_for_pickup')  // ✅ FIXED: Now uses simplified workflow status
                 ->where('created_at', '>=', now()->subMonth())
                 ->sum('total_amount');
 

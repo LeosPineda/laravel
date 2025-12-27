@@ -36,15 +36,14 @@ Route::middleware(['auth:sanctum', 'role:vendor', 'throttle:60,1'])->prefix('ven
     Route::get('/analytics/revenue', [AnalyticsController::class, 'revenue'])->name('analytics.revenue');
     Route::get('/analytics/profit', [AnalyticsController::class, 'profit'])->name('analytics.profit');
 
-    // Orders
+    // Orders - FIXED: Removed complete() and undo() routes that don't exist
     Route::get('/orders', [VendorOrderController::class, 'index'])->name('orders.index');
     Route::get('/orders/stats', [VendorOrderController::class, 'stats'])->name('orders.stats');
     Route::get('/orders/{order}', [VendorOrderController::class, 'show'])->name('orders.show');
     Route::patch('/orders/{order}/accept', [VendorOrderController::class, 'accept'])->name('orders.accept');
     Route::patch('/orders/{order}/decline', [VendorOrderController::class, 'decline'])->name('orders.decline');
     Route::patch('/orders/{order}/ready', [VendorOrderController::class, 'markReady'])->name('orders.ready');
-    Route::patch('/orders/{order}/complete', [VendorOrderController::class, 'complete'])->name('orders.complete');
-    Route::post('/orders/{order}/undo', [VendorOrderController::class, 'undo'])->name('orders.undo');
+    // Removed: complete() and undo() routes - methods don't exist anymore
     Route::delete('/orders/batch', [VendorOrderController::class, 'batchDelete'])->name('orders.batch-delete');
 
     // Products
