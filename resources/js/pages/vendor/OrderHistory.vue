@@ -3,19 +3,18 @@
     <!-- Content -->
     <div class="p-6">
       <div class="max-w-4xl mx-auto">
-        <!-- Filters -->
+        <!-- Filters & Bulk Actions -->
         <div class="bg-white rounded-xl border border-gray-200 p-4 mb-6">
-          <div class="flex gap-4 flex-wrap">
+          <div class="flex items-center gap-4 flex-wrap">
             <!-- Status Filter -->
             <select
               v-model="selectedStatus"
               @change="handleStatusChange"
               class="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
             >
-              <option value="">All Non-Pending</option>
-              <option value="accepted">Accepted (In Progress)</option>
-              <option value="ready_for_pickup">Ready for Pickup</option>
-              <option value="cancelled">Cancelled</option>
+              <option value="">All History</option>
+              <option value="ready_for_pickup">✅ Completed</option>
+              <option value="cancelled">❌ Declined</option>
             </select>
 
             <!-- Search -->
@@ -23,9 +22,27 @@
               v-model="searchQuery"
               @input="debouncedSearch"
               type="text"
-              placeholder="Search by order number or table..."
-              class="flex-1 min-w-48 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+              placeholder="Search order # or table..."
+              class="flex-1 min-w-40 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
             />
+
+            <!-- Bulk Actions -->
+            <div class="flex items-center gap-2">
+              <button
+                v-if="orders.length > 0"
+                @click="toggleSelectAll"
+                class="px-3 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50"
+              >
+                {{ allSelected ? 'Deselect All' : 'Select All' }}
+              </button>
+              <button
+                v-if="selectedOrders.length > 0"
+                @click="openBulkDeleteModal"
+                class="px-3 py-2 text-sm bg-red-100 text-red-700 rounded-lg hover:bg-red-200"
+              >
+                Delete ({{ selectedOrders.length }})
+              </button>
+            </div>
           </div>
         </div>
 
@@ -36,118 +53,111 @@
         </div>
 
         <!-- Orders List -->
-        <div v-else-if="orders.length > 0" class="space-y-4">
+        <div v-else-if="orders.length > 0" class="space-y-3">
           <div
             v-for="order in orders"
             :key="order.id"
             :class="[
-              'bg-white rounded-xl border-2 p-6 hover:shadow-lg transition-shadow',
-              getBorderColor(order.status)
+              'bg-white rounded-xl border-2 p-4 transition-all',
+              selectedOrders.includes(order.id) ? 'border-orange-400 bg-orange-50' : getBorderColor(order.status),
+              'hover:shadow-md'
             ]"
           >
-            <!-- Order Header -->
-            <div class="flex items-center justify-between mb-4 flex-wrap gap-2">
-              <div class="flex items-center gap-4 flex-wrap">
-                <div class="text-lg font-bold text-gray-900">#{{ order.order_number }}</div>
-                <span
-                  :class="[
-                    'px-3 py-1 rounded-full text-sm font-medium',
-                    getStatusColor(order.status)
-                  ]"
-                >
-                  {{ getStatusText(order.status) }}
-                </span>
-                <span class="text-gray-500">Table {{ order.table_number || 'N/A' }}</span>
-                <span class="text-gray-500">{{ formatDateTime(order.created_at) }}</span>
-              </div>
+            <div class="flex items-start gap-3">
+              <!-- Checkbox -->
+              <input
+                type="checkbox"
+                :checked="selectedOrders.includes(order.id)"
+                @change="toggleOrderSelection(order.id)"
+                class="mt-1 w-4 h-4 text-orange-500 rounded border-gray-300 focus:ring-orange-500"
+              />
 
-              <div class="flex items-center gap-2">
-                <span class="text-lg font-bold text-orange-600">₱{{ parseFloat(order.total_amount).toFixed(2) }}</span>
-              </div>
-            </div>
-
-            <!-- Order Items Preview -->
-            <div class="mb-4">
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
-                <div v-for="item in order.items?.slice(0, 3)" :key="item.id" class="flex justify-between">
-                  <span class="text-gray-700">{{ item.quantity }}x {{ item.product?.name || 'Product' }}</span>
-                  <span class="text-gray-600">₱{{ (parseFloat(item.price) * item.quantity).toFixed(2) }}</span>
+              <!-- Order Info -->
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center justify-between flex-wrap gap-2 mb-2">
+                  <div class="flex items-center gap-2 flex-wrap">
+                    <span class="font-bold text-gray-900">#{{ order.order_number }}</span>
+                    <span
+                      :class="[
+                        'px-2 py-0.5 rounded-full text-xs font-medium',
+                        order.status === 'ready_for_pickup' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                      ]"
+                    >
+                      {{ order.status === 'ready_for_pickup' ? 'Completed' : 'Declined' }}
+                    </span>
+                    <span class="text-sm text-gray-500">Table {{ order.table_number || 'N/A' }}</span>
+                  </div>
+                  <span class="font-bold text-orange-600">₱{{ parseFloat(order.total_amount).toFixed(2) }}</span>
                 </div>
-                <div v-if="order.items?.length > 3" class="text-gray-500 italic">
-                  +{{ order.items.length - 3 }} more items...
+
+                <!-- Items -->
+                <div class="text-sm text-gray-600 mb-2">
+                  <span v-for="(item, idx) in order.items?.slice(0, 3)" :key="item.id">
+                    {{ item.quantity }}x {{ item.product?.name }}<span v-if="idx < Math.min(order.items.length, 3) - 1">, </span>
+                  </span>
+                  <span v-if="order.items?.length > 3" class="text-gray-400"> +{{ order.items.length - 3 }} more</span>
+                </div>
+
+                <!-- Timestamp -->
+                <div class="text-xs text-gray-400">
+                  {{ formatDateTime(order.created_at) }}
+                  <span v-if="order.status === 'ready_for_pickup' && order.completed_at">
+                    • Completed {{ formatDateTime(order.completed_at) }}
+                  </span>
                 </div>
               </div>
-            </div>
 
-            <!-- Completed At for Ready Orders -->
-            <div v-if="order.status === 'ready_for_pickup' && order.completed_at" class="mb-4">
-              <span class="text-sm text-green-600">
-                ✅ Completed at {{ formatDateTime(order.completed_at) }}
-              </span>
-            </div>
-
-            <!-- Action Buttons Based on Status -->
-            <div class="flex gap-2 flex-wrap">
-              <button
-                @click="openOrderDetail(order)"
-                class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
-              >
-                View Details
-              </button>
-
-              <!-- Accepted Orders -->
-              <template v-if="order.status === 'accepted'">
+              <!-- Actions -->
+              <div class="flex items-center gap-2 flex-shrink-0">
+                <!-- View Receipt (completed only) -->
                 <button
-                  @click="markReady(order)"
-                  :disabled="processingOrder === order.id"
-                  class="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 disabled:opacity-50"
+                  v-if="order.status === 'ready_for_pickup'"
+                  @click="openReceiptModal(order)"
+                  class="px-3 py-1.5 text-sm bg-green-100 text-green-700 rounded-lg hover:bg-green-200"
                 >
-                  {{ processingOrder === order.id ? 'Marking Ready...' : 'Mark Ready for Pickup' }}
+                  📄 Receipt
                 </button>
-              </template>
-
-              <!-- Ready Orders - Can be deleted -->
-              <template v-if="order.status === 'ready_for_pickup' || order.status === 'cancelled'">
                 <button
-                  @click="deleteOrder(order)"
-                  :disabled="processingOrder === order.id"
-                  class="px-4 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 disabled:opacity-50"
+                  @click="openOrderDetail(order)"
+                  class="px-3 py-1.5 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
                 >
-                  Delete
+                  View
                 </button>
-              </template>
+                <button
+                  @click="openDeleteModal(order)"
+                  class="px-3 py-1.5 text-sm bg-red-100 text-red-700 rounded-lg hover:bg-red-200"
+                >
+                  🗑️
+                </button>
+              </div>
             </div>
           </div>
         </div>
 
         <!-- Empty State -->
         <div v-else class="text-center py-12">
-          <div class="text-6xl mb-4">📋</div>
-          <h3 class="text-lg font-medium text-gray-900 mb-2">No orders found</h3>
-          <p class="text-gray-500 mb-6">
-            {{ searchQuery || selectedStatus ? 'Try adjusting your filters' : 'No orders to display' }}
-          </p>
+          <div class="text-5xl mb-4">📋</div>
+          <h3 class="text-lg font-medium text-gray-900 mb-2">No order history</h3>
+          <p class="text-gray-500">Completed and declined orders will appear here</p>
         </div>
 
         <!-- Pagination -->
         <div v-if="pagination.total > pagination.per_page" class="mt-6 flex items-center justify-between">
           <div class="text-sm text-gray-500">
-            Showing {{ ((pagination.current_page - 1) * pagination.per_page) + 1 }} to
-            {{ Math.min(pagination.current_page * pagination.per_page, pagination.total) }} of
-            {{ pagination.total }} results
+            {{ pagination.total }} orders
           </div>
           <div class="flex gap-2">
             <button
               @click="changePage(pagination.current_page - 1)"
               :disabled="pagination.current_page <= 1"
-              class="px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              class="px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50"
             >
               Previous
             </button>
             <button
               @click="changePage(pagination.current_page + 1)"
               :disabled="pagination.current_page >= pagination.last_page"
-              class="px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              class="px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50"
             >
               Next
             </button>
@@ -160,33 +170,115 @@
     <OrderDetailModal
       :is-open="showOrderModal"
       :order-id="selectedOrderId"
-      :processing="processingOrder !== null"
+      :processing="false"
       @close="closeOrderModal"
-      @markReady="handleMarkReadyFromModal"
+    />
+
+    <!-- Receipt Modal -->
+    <Teleport to="body">
+      <div
+        v-if="showReceiptModal && receiptOrder"
+        class="fixed inset-0 z-50 flex items-center justify-center p-4"
+      >
+        <div class="fixed inset-0 bg-black/50" @click="showReceiptModal = false"></div>
+        <div class="relative bg-white rounded-2xl max-w-md w-full max-h-[80vh] overflow-y-auto" @click.stop>
+          <!-- Receipt Header -->
+          <div class="bg-orange-500 text-white px-6 py-4 rounded-t-2xl">
+            <div class="flex items-center justify-between">
+              <h3 class="text-lg font-bold">Order Receipt</h3>
+              <button @click="showReceiptModal = false" class="text-white/80 hover:text-white text-xl">×</button>
+            </div>
+          </div>
+
+          <!-- Receipt Content -->
+          <div class="p-6">
+            <div class="text-center mb-4">
+              <p class="text-2xl font-bold text-gray-900">#{{ receiptOrder.order_number }}</p>
+              <p class="text-sm text-gray-500">Table {{ receiptOrder.table_number || 'N/A' }}</p>
+            </div>
+
+            <div class="border-t border-b border-dashed border-gray-300 py-4 my-4">
+              <div v-for="item in receiptOrder.items" :key="item.id" class="flex justify-between mb-2 text-sm">
+                <span>{{ item.quantity }}x {{ item.product?.name }}</span>
+                <span>₱{{ parseFloat(item.total_price).toFixed(2) }}</span>
+              </div>
+            </div>
+
+            <div class="flex justify-between font-bold text-lg">
+              <span>Total</span>
+              <span class="text-orange-600">₱{{ parseFloat(receiptOrder.total_amount).toFixed(2) }}</span>
+            </div>
+
+            <div class="mt-4 text-xs text-gray-400 text-center">
+              <p>{{ formatDateTime(receiptOrder.completed_at || receiptOrder.created_at) }}</p>
+              <p>Payment: {{ receiptOrder.payment_method === 'qr_code' ? 'QR Code' : 'Cash' }}</p>
+            </div>
+          </div>
+
+          <!-- Download Button -->
+          <div class="px-6 pb-6">
+            <button
+              @click="downloadReceipt"
+              class="w-full py-3 bg-orange-500 text-white rounded-xl hover:bg-orange-600 font-medium"
+            >
+              📥 Download Receipt
+            </button>
+          </div>
+        </div>
+      </div>
+    </Teleport>
+
+    <!-- Delete Confirmation Modal -->
+    <ConfirmModal
+      :is-open="showDeleteModal"
+      title="Delete Order"
+      :message="`Delete order #${deleteTarget?.order_number}? This cannot be undone.`"
+      confirm-text="Delete"
+      :loading="deleting"
+      icon="🗑️"
+      variant="danger"
+      @confirm="confirmDelete"
+      @cancel="showDeleteModal = false"
+    />
+
+    <!-- Bulk Delete Confirmation Modal -->
+    <ConfirmModal
+      :is-open="showBulkDeleteModal"
+      title="Delete Selected Orders"
+      :message="`Delete ${selectedOrders.length} selected orders? This cannot be undone.`"
+      confirm-text="Delete All"
+      :loading="deleting"
+      icon="🗑️"
+      variant="danger"
+      @confirm="confirmBulkDelete"
+      @cancel="showBulkDeleteModal = false"
     />
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
-import { usePage } from '@inertiajs/vue3'
+import { ref, computed, onMounted } from 'vue'
 import OrderDetailModal from '@/components/vendor/OrderDetailModal.vue'
+import ConfirmModal from '@/components/ui/ConfirmModal.vue'
+import { useToast } from '@/composables/useToast'
 
-const emit = defineEmits(['ordersUpdated'])
-
-// Get vendor ID for channel subscription
-const page = usePage()
-const vendorId = ref(null)
+const toast = useToast()
 
 const orders = ref([])
 const loading = ref(false)
-const processingOrder = ref(null)
 const selectedStatus = ref('')
 const searchQuery = ref('')
+const selectedOrders = ref([])
 
-// Modal state
+// Modals
 const showOrderModal = ref(false)
 const selectedOrderId = ref(null)
+const showReceiptModal = ref(false)
+const receiptOrder = ref(null)
+const showDeleteModal = ref(false)
+const showBulkDeleteModal = ref(false)
+const deleteTarget = ref(null)
+const deleting = ref(false)
 
 const pagination = ref({
   current_page: 1,
@@ -197,31 +289,12 @@ const pagination = ref({
 
 let searchTimeout = null
 
+const allSelected = computed(() => {
+  return orders.value.length > 0 && selectedOrders.value.length === orders.value.length
+})
+
 const getBorderColor = (status) => {
-  const colors = {
-    'accepted': 'border-blue-300',
-    'ready_for_pickup': 'border-green-300',
-    'cancelled': 'border-red-300'
-  }
-  return colors[status] || 'border-gray-200'
-}
-
-const getStatusColor = (status) => {
-  const colors = {
-    'accepted': 'bg-blue-100 text-blue-700',
-    'ready_for_pickup': 'bg-green-100 text-green-700',
-    'cancelled': 'bg-red-100 text-red-700'
-  }
-  return colors[status] || 'bg-gray-100 text-gray-700'
-}
-
-const getStatusText = (status) => {
-  const texts = {
-    'accepted': 'Accepted',
-    'ready_for_pickup': 'Ready for Pickup',
-    'cancelled': 'Cancelled'
-  }
-  return texts[status] || status
+  return status === 'ready_for_pickup' ? 'border-green-200' : 'border-red-200'
 }
 
 const formatDateTime = (dateString) => {
@@ -236,18 +309,16 @@ const formatDateTime = (dateString) => {
 
 const loadOrders = async () => {
   loading.value = true
+  selectedOrders.value = []
   try {
     const params = new URLSearchParams({
       page: pagination.value.current_page.toString(),
       per_page: pagination.value.per_page.toString()
     })
 
-    // If no specific status selected, don't send status param
-    // The backend will return all orders, we'll filter out pending
     if (selectedStatus.value) {
       params.append('status', selectedStatus.value)
     }
-
     if (searchQuery.value) {
       params.append('search', searchQuery.value)
     }
@@ -261,12 +332,10 @@ const loadOrders = async () => {
 
     if (response.ok) {
       const data = await response.json()
-      // Filter out pending orders for history view
-      let filteredOrders = data.orders || []
-      if (!selectedStatus.value) {
-        filteredOrders = filteredOrders.filter(order => order.status !== 'pending')
-      }
-      orders.value = filteredOrders
+      // Only show completed and cancelled orders
+      orders.value = (data.orders || []).filter(o =>
+        o.status === 'ready_for_pickup' || o.status === 'cancelled'
+      )
       pagination.value = data.pagination || pagination.value
     }
   } catch (error) {
@@ -294,10 +363,25 @@ const changePage = (page) => {
   loadOrders()
 }
 
-const refreshOrders = async () => {
-  await loadOrders()
+// Selection
+const toggleOrderSelection = (orderId) => {
+  const index = selectedOrders.value.indexOf(orderId)
+  if (index > -1) {
+    selectedOrders.value.splice(index, 1)
+  } else {
+    selectedOrders.value.push(orderId)
+  }
 }
 
+const toggleSelectAll = () => {
+  if (allSelected.value) {
+    selectedOrders.value = []
+  } else {
+    selectedOrders.value = orders.value.map(o => o.id)
+  }
+}
+
+// Modal handlers
 const openOrderDetail = (order) => {
   selectedOrderId.value = order.id
   showOrderModal.value = true
@@ -308,11 +392,10 @@ const closeOrderModal = () => {
   selectedOrderId.value = null
 }
 
-const markReady = async (order) => {
-  processingOrder.value = order.id
+const openReceiptModal = async (order) => {
+  // Load full order details for receipt
   try {
-    const response = await fetch(`/api/vendor/orders/${order.id}/ready`, {
-      method: 'PATCH',
+    const response = await fetch(`/api/vendor/orders/${order.id}`, {
       headers: {
         'Authorization': `Bearer ${localStorage.getItem('token')}`,
         'Content-Type': 'application/json'
@@ -320,90 +403,114 @@ const markReady = async (order) => {
     })
 
     if (response.ok) {
-      await loadOrders()
-      emit('ordersUpdated')
+      const data = await response.json()
+      receiptOrder.value = data.order
+      showReceiptModal.value = true
     } else {
-      const error = await response.json()
-      alert(error.error || 'Failed to mark order as ready')
+      toast.error('Failed to load receipt')
     }
   } catch (error) {
-    console.error('Error marking order ready:', error)
-    alert('Failed to mark order as ready')
-  } finally {
-    processingOrder.value = null
+    console.error('Error loading receipt:', error)
+    toast.error('Failed to load receipt')
   }
 }
 
-const deleteOrder = async (order) => {
-  if (!confirm(`Are you sure you want to delete order #${order.order_number}?`)) return
+const downloadReceipt = () => {
+  // Create printable receipt
+  const receiptContent = `
+ORDER RECEIPT
+=============
+Order #: ${receiptOrder.value.order_number}
+Table: ${receiptOrder.value.table_number || 'N/A'}
+Date: ${formatDateTime(receiptOrder.value.completed_at || receiptOrder.value.created_at)}
 
-  processingOrder.value = order.id
+Items:
+${receiptOrder.value.items?.map(i => `${i.quantity}x ${i.product?.name} - ₱${parseFloat(i.total_price).toFixed(2)}`).join('\n')}
+
+TOTAL: ₱${parseFloat(receiptOrder.value.total_amount).toFixed(2)}
+Payment: ${receiptOrder.value.payment_method === 'qr_code' ? 'QR Code' : 'Cash'}
+  `.trim()
+
+  const blob = new Blob([receiptContent], { type: 'text/plain' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `receipt-${receiptOrder.value.order_number}.txt`
+  a.click()
+  URL.revokeObjectURL(url)
+
+  toast.success('Receipt downloaded!')
+}
+
+// Delete handlers
+const openDeleteModal = (order) => {
+  deleteTarget.value = order
+  showDeleteModal.value = true
+}
+
+const openBulkDeleteModal = () => {
+  showBulkDeleteModal.value = true
+}
+
+const confirmDelete = async () => {
+  if (!deleteTarget.value) return
+  deleting.value = true
   try {
-    // Use batch delete endpoint with single order
     const response = await fetch('/api/vendor/orders/batch', {
       method: 'DELETE',
       headers: {
         'Authorization': `Bearer ${localStorage.getItem('token')}`,
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({ order_ids: [order.id] })
+      body: JSON.stringify({ order_ids: [deleteTarget.value.id] })
     })
 
     if (response.ok) {
+      toast.success('Order deleted')
       await loadOrders()
-      emit('ordersUpdated')
     } else {
-      const error = await response.json()
-      alert(error.error || 'Failed to delete order')
+      toast.error('Failed to delete order')
     }
   } catch (error) {
-    console.error('Error deleting order:', error)
-    alert('Failed to delete order')
+    toast.error('Failed to delete order')
   } finally {
-    processingOrder.value = null
+    deleting.value = false
+    showDeleteModal.value = false
+    deleteTarget.value = null
   }
 }
 
-// Modal action handlers
-const handleMarkReadyFromModal = async (order) => {
-  await markReady(order)
-  closeOrderModal()
-}
+const confirmBulkDelete = async () => {
+  if (selectedOrders.value.length === 0) return
+  deleting.value = true
+  try {
+    const response = await fetch('/api/vendor/orders/batch', {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ order_ids: selectedOrders.value })
+    })
 
-// Real-time subscription
-const subscribeToChannel = () => {
-  if (window.Echo && vendorId.value) {
-    window.Echo.private(`vendor-orders.${vendorId.value}`)
-      .listen('.OrderStatusChanged', (e) => {
-        console.log('Order status changed:', e)
-        loadOrders()
-      })
-  }
-}
-
-const unsubscribeFromChannel = () => {
-  if (window.Echo && vendorId.value) {
-    window.Echo.leave(`vendor-orders.${vendorId.value}`)
+    if (response.ok) {
+      toast.success(`${selectedOrders.value.length} orders deleted`)
+      selectedOrders.value = []
+      await loadOrders()
+    } else {
+      toast.error('Failed to delete orders')
+    }
+  } catch (error) {
+    toast.error('Failed to delete orders')
+  } finally {
+    deleting.value = false
+    showBulkDeleteModal.value = false
   }
 }
 
 onMounted(async () => {
-  // Get vendor ID from user data
-  const user = page.props.auth?.user
-  vendorId.value = user?.vendor?.id || null
-
   await loadOrders()
-
-  // Subscribe to real-time updates
-  subscribeToChannel()
 })
 
-onUnmounted(() => {
-  unsubscribeFromChannel()
-})
-
-// Expose loadOrders for parent component to call
-defineExpose({
-  loadOrders
-})
+defineExpose({ loadOrders })
 </script>
