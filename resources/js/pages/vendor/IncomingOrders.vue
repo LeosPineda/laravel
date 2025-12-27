@@ -4,14 +4,6 @@
     <div class="bg-white border-b border-gray-200 px-6 py-4">
       <div class="flex items-center justify-between">
         <h1 class="text-xl font-bold text-gray-900">Incoming Orders</h1>
-        <div class="flex gap-2">
-          <button
-            @click="refreshOrders"
-            class="px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
-          >
-            Refresh
-          </button>
-        </div>
       </div>
     </div>
 
@@ -202,10 +194,6 @@ const debouncedSearch = () => {
 const changePage = (page) => {
   pagination.value.current_page = page
   loadOrders()
-}
-
-const refreshOrders = async () => {
-  await loadOrders()
 }
 
 const viewOrderDetails = async (order) => {

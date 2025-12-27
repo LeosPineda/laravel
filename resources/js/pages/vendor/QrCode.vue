@@ -14,7 +14,32 @@
       <!-- QR Code Content -->
       <div class="p-6">
         <div class="max-w-4xl mx-auto">
-          <!-- QR Code Preview Section -->
+          <!-- Mobile Number Section - Always Visible -->
+          <div class="bg-white rounded-xl border border-gray-200 p-6 mb-6">
+            <h2 class="text-lg font-semibold text-gray-900 mb-4">Mobile Number for Payments</h2>
+            <p class="text-sm text-gray-600 mb-4">
+              Optional mobile number that customers can copy if QR code scanning fails.
+              This number will appear alongside your QR code at checkout.
+            </p>
+
+            <div class="flex gap-2">
+              <input
+                v-model="mobileNumber"
+                type="text"
+                placeholder="09123456789"
+                class="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+              />
+              <button
+                @click="updateMobileNumber"
+                :disabled="updatingMobile"
+                class="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 disabled:opacity-50"
+              >
+                {{ updatingMobile ? 'Updating...' : 'Update' }}
+              </button>
+            </div>
+          </div>
+
+          <!-- Current QR Code Section -->
           <div class="bg-white rounded-xl border border-gray-200 p-6 mb-6">
             <h2 class="text-lg font-semibold text-gray-900 mb-4">Current QR Code</h2>
 
@@ -26,28 +51,9 @@
                 </div>
               </div>
 
-              <!-- QR Code Info -->
+              <!-- QR Code Actions -->
               <div class="flex-1">
                 <div class="space-y-4">
-                  <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Mobile Number</label>
-                    <div class="flex gap-2">
-                      <input
-                        v-model="mobileNumber"
-                        type="text"
-                        placeholder="09123456789"
-                        class="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
-                      />
-                      <button
-                        @click="updateMobileNumber"
-                        :disabled="updatingMobile"
-                        class="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 disabled:opacity-50"
-                      >
-                        {{ updatingMobile ? 'Updating...' : 'Update' }}
-                      </button>
-                    </div>
-                  </div>
-
                   <div class="flex gap-2">
                     <button
                       @click="previewQr"
