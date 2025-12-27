@@ -90,6 +90,12 @@
           <div class="bg-white rounded-xl border border-gray-200 p-6 mb-6">
             <h2 class="text-lg font-semibold text-gray-900 mb-4">Upload QR Code</h2>
 
+            <!-- Upload Success Message -->
+            <div v-if="uploadSuccess" class="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg flex items-center gap-2">
+              <span class="text-green-600">✓</span>
+              <span class="text-green-700 text-sm">QR code uploaded successfully!</span>
+            </div>
+
             <form @submit.prevent="uploadQr">
               <div class="space-y-4">
                 <div>
@@ -147,6 +153,19 @@
       </div>
     </div>
 
+    <!-- Delete Confirmation Modal -->
+    <ConfirmModal
+      :is-open="showDeleteModal"
+      title="Remove QR Code"
+      message="Are you sure you want to remove your QR code? Customers won't be able to see your payment QR until you upload a new one."
+      confirm-text="Remove"
+      :loading="removingQr"
+      icon="📱"
+      variant="danger"
+      @confirm="confirmRemoveQr"
+      @cancel="showDeleteModal = false"
+    />
+
     <!-- Preview Modal -->
     <Teleport to="body">
       <div
@@ -197,6 +216,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import VendorLayout from '@/layouts/vendor/VendorLayout.vue'
+import ConfirmModal from '@/components/ui/ConfirmModal.vue'
 import { apiGet, apiPatch, apiDelete, apiUpload } from '@/composables/useApi'
 
 const qrData = ref({
@@ -213,6 +233,9 @@ const updatingMobile = ref(false)
 const validationError = ref('')
 const showPreviewModal = ref(false)
 const mobileUpdateSuccess = ref(false)
+const showDeleteModal = ref(false)
+const removingQr = ref(false)
+const uploadSuccess = ref(false)
 
 const formatFileSize = (bytes) => {
   if (bytes === 0) return '0 Bytes'
@@ -265,6 +288,7 @@ const uploadQr = async () => {
   if (!selectedFile.value) return
 
   uploading.value = true
+  uploadSuccess.value = false
   try {
     const formData = new FormData()
     formData.append('qr_code', selectedFile.value)
@@ -277,7 +301,11 @@ const uploadQr = async () => {
     if (response.ok) {
       await loadQrData()
       clearSelectedFile()
-      alert('QR code uploaded successfully!')
+      uploadSuccess.value = true
+      // Auto-hide success message after 3 seconds
+      setTimeout(() => {
+        uploadSuccess.value = false
+      }, 3000)
     } else {
       const error = await response.json()
       alert(error.error || 'Failed to upload QR code')
@@ -315,15 +343,19 @@ const updateMobileNumber = async () => {
   }
 }
 
-const removeQr = async () => {
-  if (!confirm('Are you sure you want to remove the QR code?')) return
+// Open delete modal
+const removeQr = () => {
+  showDeleteModal.value = true
+}
 
+// Confirm QR removal
+const confirmRemoveQr = async () => {
+  removingQr.value = true
   try {
     const response = await apiDelete('/api/vendor/qr')
 
     if (response.ok) {
       await loadQrData()
-      alert('QR code removed successfully!')
     } else {
       const error = await response.json()
       alert(error.error || 'Failed to remove QR code')
@@ -331,6 +363,9 @@ const removeQr = async () => {
   } catch (error) {
     console.error('Error removing QR code:', error)
     alert('Failed to remove QR code')
+  } finally {
+    removingQr.value = false
+    showDeleteModal.value = false
   }
 }
 

@@ -222,6 +222,19 @@
       @close="closeProductModal"
       @saved="handleProductSaved"
     />
+
+    <!-- Delete Confirmation Modal -->
+    <ConfirmModal
+      :is-open="showDeleteModal"
+      :title="deleteModalConfig.title"
+      :message="deleteModalConfig.message"
+      :confirm-text="deleteModalConfig.confirmText"
+      :loading="processingDelete"
+      icon="🗑️"
+      variant="danger"
+      @confirm="confirmDelete"
+      @cancel="cancelDelete"
+    />
   </VendorLayout>
 </template>
 
@@ -229,6 +242,7 @@
 import { ref, computed, onMounted } from 'vue'
 import VendorLayout from '@/layouts/vendor/VendorLayout.vue'
 import ProductFormModal from '@/components/vendor/ProductFormModal.vue'
+import ConfirmModal from '@/components/ui/ConfirmModal.vue'
 import { apiGet, apiPost, apiDelete } from '@/composables/useApi'
 
 const products = ref([])
@@ -243,6 +257,16 @@ const selectedProducts = ref([])
 // Product Modal State
 const showProductModal = ref(false)
 const selectedProductId = ref(null)
+
+// Delete Modal State
+const showDeleteModal = ref(false)
+const processingDelete = ref(false)
+const deleteTarget = ref(null) // single product or 'bulk'
+const deleteModalConfig = ref({
+  title: 'Delete Product',
+  message: 'Are you sure you want to delete this product?',
+  confirmText: 'Delete'
+})
 
 const pagination = ref({
   current_page: 1,
@@ -322,26 +346,72 @@ const handleProductSaved = () => {
   loadProducts()
 }
 
-// Product Actions
-const deleteProduct = async (product) => {
-  if (!confirm(`Are you sure you want to delete "${product.name}"?`)) return
+// Product Actions - Open delete modal
+const deleteProduct = (product) => {
+  deleteTarget.value = product
+  deleteModalConfig.value = {
+    title: 'Delete Product',
+    message: `Are you sure you want to delete "${product.name}"? This action cannot be undone.`,
+    confirmText: 'Delete'
+  }
+  showDeleteModal.value = true
+}
 
-  processingProduct.value = product.id
+// Bulk delete - Open modal
+const bulkDelete = () => {
+  deleteTarget.value = 'bulk'
+  deleteModalConfig.value = {
+    title: 'Delete Products',
+    message: `Are you sure you want to delete ${selectedProducts.value.length} products? This action cannot be undone.`,
+    confirmText: `Delete ${selectedProducts.value.length} Products`
+  }
+  showDeleteModal.value = true
+}
+
+// Confirm delete action
+const confirmDelete = async () => {
+  processingDelete.value = true
+
   try {
-    const response = await apiDelete(`/api/vendor/products/${product.id}`)
+    if (deleteTarget.value === 'bulk') {
+      // Bulk delete
+      const response = await apiPost('/api/vendor/products/bulk', {
+        product_ids: selectedProducts.value,
+        action: 'delete'
+      })
 
-    if (response.ok) {
-      await loadProducts()
+      if (response.ok) {
+        clearSelection()
+        await loadProducts()
+      } else {
+        const error = await response.json()
+        alert(error.error || 'Failed to delete products')
+      }
     } else {
-      const error = await response.json()
-      alert(error.error || 'Failed to delete product')
+      // Single product delete
+      const product = deleteTarget.value
+      const response = await apiDelete(`/api/vendor/products/${product.id}`)
+
+      if (response.ok) {
+        await loadProducts()
+      } else {
+        const error = await response.json()
+        alert(error.error || 'Failed to delete product')
+      }
     }
   } catch (error) {
-    console.error('Error deleting product:', error)
-    alert('Failed to delete product')
+    console.error('Error deleting:', error)
+    alert('Failed to delete')
   } finally {
-    processingProduct.value = null
+    processingDelete.value = false
+    showDeleteModal.value = false
+    deleteTarget.value = null
   }
+}
+
+const cancelDelete = () => {
+  showDeleteModal.value = false
+  deleteTarget.value = null
 }
 
 // Selection Functions
@@ -364,33 +434,6 @@ const toggleSelectAll = () => {
 
 const clearSelection = () => {
   selectedProducts.value = []
-}
-
-const bulkDelete = async () => {
-  if (!confirm(`Are you sure you want to delete ${selectedProducts.value.length} products?`)) return
-
-  bulkProcessing.value = true
-  try {
-    const response = await apiPost('/api/vendor/products/bulk', {
-      product_ids: selectedProducts.value,
-      action: 'delete'
-    })
-
-    if (response.ok) {
-      const data = await response.json()
-      alert(data.message)
-      clearSelection()
-      await loadProducts()
-    } else {
-      const error = await response.json()
-      alert(error.error || 'Failed to delete products')
-    }
-  } catch (error) {
-    console.error('Error performing bulk delete:', error)
-    alert('Failed to delete products')
-  } finally {
-    bulkProcessing.value = false
-  }
 }
 
 onMounted(async () => {
