@@ -59,8 +59,8 @@
           </div>
 
           <div class="text-center">
-            <div class="text-2xl font-bold text-green-600">{{ stats.completed_orders || 0 }}</div>
-            <div class="text-sm text-gray-600">Completed</div>
+            <div class="text-2xl font-bold text-green-600">{{ stats.ready_for_pickup_orders || 0 }}</div>
+            <div class="text-sm text-gray-600">Ready</div>
           </div>
 
           <div class="text-center">
@@ -89,7 +89,7 @@ const activeTab = ref('incoming')
 const stats = ref({
   pending_orders: 0,
   accepted_orders: 0,
-  completed_orders: 0,
+  ready_for_pickup_orders: 0,
   today_orders: 0
 })
 

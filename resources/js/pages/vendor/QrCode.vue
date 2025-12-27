@@ -56,12 +56,6 @@
                       Preview
                     </button>
                     <button
-                      @click="showPublicUrl"
-                      class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
-                    >
-                      Get Public URL
-                    </button>
-                    <button
                       @click="removeQr"
                       class="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600"
                     >
@@ -136,66 +130,6 @@
               </div>
             </form>
           </div>
-
-          <!-- Statistics -->
-          <div class="bg-white rounded-xl border border-gray-200 p-6">
-            <h2 class="text-lg font-semibold text-gray-900 mb-4">QR Payment Statistics</h2>
-
-            <div v-if="loadingStats" class="text-center py-4">
-              <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500 mx-auto"></div>
-              <p class="text-sm text-gray-500 mt-2">Loading statistics...</p>
-            </div>
-
-            <div v-else class="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div class="bg-orange-50 rounded-lg p-4">
-                <div class="text-2xl font-bold text-orange-600">{{ stats.qr_orders_this_month || 0 }}</div>
-                <div class="text-sm text-orange-700">QR Orders This Month</div>
-              </div>
-
-              <div class="bg-green-50 rounded-lg p-4">
-                <div class="text-2xl font-bold text-green-600">₱{{ (stats.qr_revenue_this_month || 0).toLocaleString() }}</div>
-                <div class="text-sm text-green-700">QR Revenue This Month</div>
-              </div>
-
-              <div class="bg-blue-50 rounded-lg p-4">
-                <div class="text-2xl font-bold text-blue-600">{{ stats.total_qr_orders || 0 }}</div>
-                <div class="text-sm text-blue-700">Total QR Orders</div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Public URL Modal -->
-      <div v-if="showModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" @click="closeModal">
-        <div class="bg-white rounded-xl p-6 max-w-md w-full mx-4" @click.stop>
-          <div class="flex items-center justify-between mb-4">
-            <h3 class="text-lg font-semibold">Public QR Code URL</h3>
-            <button @click="closeModal" class="text-gray-400 hover:text-gray-600">
-              <span class="text-xl">×</span>
-            </button>
-          </div>
-          <div class="space-y-4">
-            <div>
-              <p class="text-sm text-gray-600 mb-2">Share this URL with customers:</p>
-              <div class="flex gap-2">
-                <input
-                  :value="publicUrl"
-                  readonly
-                  class="flex-1 px-3 py-2 border border-gray-300 rounded-lg bg-gray-50"
-                />
-                <button
-                  @click="copyToClipboard"
-                  class="px-3 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600"
-                >
-                  Copy
-                </button>
-              </div>
-            </div>
-            <p class="text-xs text-gray-500">
-              Customers can access this QR code directly without logging in.
-            </p>
-          </div>
         </div>
       </div>
     </div>
@@ -213,20 +147,11 @@ const qrData = ref({
   last_updated: null
 })
 
-const stats = ref({
-  qr_orders_this_month: 0,
-  qr_revenue_this_month: 0,
-  total_qr_orders: 0
-})
-
 const mobileNumber = ref('')
 const selectedFile = ref(null)
 const uploading = ref(false)
 const updatingMobile = ref(false)
-const loadingStats = ref(false)
 const validationError = ref('')
-const showModal = ref(false)
-const publicUrl = ref('')
 
 const formatDate = (dateString) => {
   if (!dateString) return 'Never'
@@ -257,27 +182,6 @@ const loadQrData = async () => {
     }
   } catch (error) {
     console.error('Error loading QR data:', error)
-  }
-}
-
-const loadStats = async () => {
-  loadingStats.value = true
-  try {
-    const response = await fetch('/api/vendor/qr/stats', {
-      headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token')}`,
-        'Content-Type': 'application/json'
-      }
-    })
-
-    if (response.ok) {
-      const data = await response.json()
-      stats.value = data
-    }
-  } catch (error) {
-    console.error('Error loading stats:', error)
-  } finally {
-    loadingStats.value = false
   }
 }
 
@@ -329,7 +233,6 @@ const uploadQr = async () => {
     if (response.ok) {
       const data = await response.json()
       await loadQrData()
-      await loadStats()
       clearSelectedFile()
       alert('QR code uploaded successfully!')
     } else {
@@ -385,7 +288,6 @@ const removeQr = async () => {
 
     if (response.ok) {
       await loadQrData()
-      await loadStats()
       alert('QR code removed successfully!')
     } else {
       const error = await response.json()
@@ -419,45 +321,7 @@ const previewQr = async () => {
   }
 }
 
-const showPublicUrl = async () => {
-  try {
-    const response = await fetch('/api/vendor/qr/public-url', {
-      headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token')}`,
-        'Content-Type': 'application/json'
-      }
-    })
-
-    if (response.ok) {
-      const data = await response.json()
-      publicUrl.value = data.public_url
-      showModal.value = true
-    } else {
-      const error = await response.json()
-      alert(error.error || 'Failed to get public URL')
-    }
-  } catch (error) {
-    console.error('Error getting public URL:', error)
-    alert('Failed to get public URL')
-  }
-}
-
-const closeModal = () => {
-  showModal.value = false
-  publicUrl.value = ''
-}
-
-const copyToClipboard = async () => {
-  try {
-    await navigator.clipboard.writeText(publicUrl.value)
-    alert('URL copied to clipboard!')
-  } catch (error) {
-    console.error('Error copying to clipboard:', error)
-  }
-}
-
 onMounted(async () => {
   await loadQrData()
-  await loadStats()
 })
 </script>

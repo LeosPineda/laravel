@@ -61,7 +61,7 @@
             <div class="bg-white rounded-xl border border-gray-200 p-6 mb-6">
               <h2 class="text-lg font-semibold text-gray-900 mb-4">Order Status Metrics</h2>
 
-              <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+              <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div class="bg-yellow-50 rounded-lg p-4 text-center">
                   <div class="text-2xl font-bold text-yellow-600">{{ orderMetrics.pending || 0 }}</div>
                   <div class="text-sm text-yellow-700">Pending</div>
@@ -73,18 +73,13 @@
                 </div>
 
                 <div class="bg-green-50 rounded-lg p-4 text-center">
-                  <div class="text-2xl font-bold text-green-600">{{ orderMetrics.completed || 0 }}</div>
-                  <div class="text-sm text-green-700">Completed</div>
+                  <div class="text-2xl font-bold text-green-600">{{ orderMetrics.ready_for_pickup || 0 }}</div>
+                  <div class="text-sm text-green-700">Ready</div>
                 </div>
 
                 <div class="bg-red-50 rounded-lg p-4 text-center">
                   <div class="text-2xl font-bold text-red-600">{{ orderMetrics.cancelled || 0 }}</div>
                   <div class="text-sm text-red-700">Cancelled</div>
-                </div>
-
-                <div class="bg-gray-50 rounded-lg p-4 text-center">
-                  <div class="text-2xl font-bold text-gray-600">{{ orderMetrics.today || 0 }}</div>
-                  <div class="text-sm text-gray-700">Today</div>
                 </div>
               </div>
             </div>
@@ -180,9 +175,8 @@ const sales = ref({
 const orderMetrics = ref({
   pending: 0,
   accepted: 0,
-  completed: 0,
-  cancelled: 0,
-  today: 0
+  ready_for_pickup: 0,
+  cancelled: 0
 })
 
 const revenue = ref({
