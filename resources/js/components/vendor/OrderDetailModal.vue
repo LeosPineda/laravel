@@ -148,8 +148,8 @@
                       <span class="text-gray-600">Add-ons total:</span>
                       <span class="text-gray-900">₱{{ getAddonsTotal().toFixed(2) }}</span>
                     </div>
-                    <div class="flex justify-between font-semibold text-lg border-t border-gray-">
-                      <span class="text-gray300 pt-2-900">Total:</span>
+                    <div class="flex justify-between font-semibold text-lg border-t border-gray-200 pt-2">
+                      <span class="text-gray-900">Total:</span>
                       <span class="text-gray-900">₱{{ parseFloat(order.total_amount).toFixed(2) }}</span>
                     </div>
                   </div>
