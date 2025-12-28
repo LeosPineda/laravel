@@ -1,20 +1,56 @@
 <template>
   <VendorLayout>
-    <div class="bg-white min-h-screen">
-      <!-- Header -->
-      <div class="bg-white border-b border-gray-200 px-6 py-4">
-        <div class="flex items-center justify-between">
-          <h1 class="text-xl font-bold text-gray-900">Products</h1>
-          <div class="flex gap-2">
+    <div class="bg-white">
+      <!-- Sticky Filters Header -->
+      <div class="sticky top-0 z-40 bg-white border-b border-gray-200 px-4 py-3">
+        <div class="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
+          <!-- Search -->
+          <div class="flex-1">
+            <input
+              v-model="searchQuery"
+              @input="debouncedSearch"
+              type="text"
+              placeholder="Search products..."
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 text-sm"
+            />
+          </div>
+
+          <!-- Category Filter -->
+          <div class="w-full sm:w-40">
+            <select
+              v-model="selectedCategory"
+              @change="loadProducts"
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 text-sm"
+            >
+              <option value="">All Categories</option>
+              <option v-for="category in categories" :key="category" :value="category">
+                {{ category }}
+              </option>
+            </select>
+          </div>
+
+          <!-- Select All Checkbox -->
+          <div class="flex items-center gap-2">
+            <input
+              type="checkbox"
+              :checked="allSelected"
+              @change="toggleSelectAll"
+              class="w-4 h-4 rounded border-gray-300 text-orange-500 focus:ring-orange-500"
+            />
+            <label class="text-sm text-gray-600">Select All</label>
+          </div>
+
+          <!-- Actions -->
+          <div class="flex gap-2 ml-auto">
             <!-- Bulk Delete (only shown when items selected) -->
             <template v-if="selectedProducts.length > 0">
-              <span class="text-sm text-gray-500 self-center">{{ selectedProducts.length }} selected</span>
+              <span class="text-sm text-gray-500 self-center hidden sm:inline">{{ selectedProducts.length }} selected</span>
               <button
                 @click="bulkDelete"
                 :disabled="bulkProcessing"
                 class="px-3 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 text-sm"
               >
-                Delete Selected
+                Delete
               </button>
               <button
                 @click="clearSelection"
@@ -25,7 +61,7 @@
             </template>
             <button
               @click="openCreateModal"
-              class="px-4 py-2 bg-orange-500 text-white rounded-xl hover:bg-orange-600"
+              class="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 text-sm font-medium"
             >
               Add Product
             </button>
@@ -33,136 +69,86 @@
         </div>
       </div>
 
-      <!-- Products Content -->
-      <div class="p-6">
-        <div class="max-w-6xl mx-auto">
-          <!-- Filters -->
-          <div class="bg-white rounded-xl border border-gray-200 p-4 mb-6">
-            <div class="flex flex-col md:flex-row gap-4">
-              <!-- Search -->
-              <div class="flex-1">
-                <input
-                  v-model="searchQuery"
-                  @input="debouncedSearch"
-                  type="text"
-                  placeholder="Search products..."
-                  class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
-                />
-              </div>
+      <!-- Products Grid -->
+      <div class="px-4 py-4">
+        <!-- Loading State -->
+        <div v-if="loading" class="text-center py-12">
+          <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500 mx-auto"></div>
+          <p class="text-gray-500 mt-4">Loading products...</p>
+        </div>
 
-              <!-- Category Filter -->
-              <div class="w-full md:w-48">
-                <select
-                  v-model="selectedCategory"
-                  @change="loadProducts"
-                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
-                >
-                  <option value="">All Categories</option>
-                  <option v-for="category in categories" :key="category" :value="category">
-                    {{ category }}
-                  </option>
-                </select>
-              </div>
+        <!-- Products Grid - Consistent Layout -->
+        <div v-else-if="products.length > 0" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
+          <div
+            v-for="product in products"
+            :key="product.id"
+            class="bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-md transition-shadow relative group flex flex-col h-full"
+          >
+            <!-- Selection Checkbox -->
+            <div class="absolute top-1 left-1 z-10">
+              <input
+                type="checkbox"
+                :checked="selectedProducts.includes(product.id)"
+                @change="toggleSelection(product.id)"
+                class="w-4 h-4 rounded border-gray-300 text-orange-500 focus:ring-orange-500"
+              />
+            </div>
 
-              <!-- Select All Checkbox -->
-              <div class="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  :checked="allSelected"
-                  @change="toggleSelectAll"
-                  class="w-5 h-5 rounded border-gray-300 text-orange-500 focus:ring-orange-500"
-                />
-                <label class="text-sm text-gray-600">Select All</label>
+            <!-- Product Image - Fixed Height -->
+            <div class="h-24 bg-gray-100 flex items-center justify-center relative flex-shrink-0">
+              <img
+                v-if="product.image_url"
+                :src="getImageUrl(product.image_url)"
+                :alt="product.name"
+                class="w-full h-full object-cover"
+              />
+              <div v-else class="text-gray-400">
+                <span class="text-2xl">🍔</span>
+              </div>
+              <!-- Stock Badge -->
+              <div
+                v-if="product.stock_quantity <= 5"
+                class="absolute top-1 right-1 px-1 py-0.5 bg-red-500 text-white text-xs rounded"
+              >
+                {{ product.stock_quantity }}
               </div>
             </div>
-          </div>
 
-          <!-- Loading State -->
-          <div v-if="loading" class="text-center py-12">
-            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto"></div>
-            <p class="text-gray-500 mt-4">Loading products...</p>
-          </div>
-
-          <!-- Products Grid -->
-          <div v-else-if="products.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <div
-              v-for="product in products"
-              :key="product.id"
-              class="bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-lg transition-shadow flex flex-col relative"
-            >
-              <!-- Selection Checkbox -->
-              <div class="absolute top-2 left-2 z-10 bg-white rounded p-1 shadow-sm">
-                <input
-                  type="checkbox"
-                  :checked="selectedProducts.includes(product.id)"
-                  @change="toggleSelection(product.id)"
-                  class="w-5 h-5 rounded border-gray-300 text-orange-500 focus:ring-orange-500 bg-white shadow"
-                />
+            <!-- Product Info - Consistent Spacing -->
+            <div class="p-2 flex flex-col flex-1 space-y-1.5">
+              <!-- Product Name & Category - Always Visible -->
+              <div class="space-y-0.5">
+                <h3 class="font-medium text-gray-900 text-sm line-clamp-1 leading-tight">{{ product.name }}</h3>
+                <p class="text-xs text-gray-500 truncate">{{ product.category || 'Uncategorized' }}</p>
               </div>
 
-              <!-- Product Image -->
-              <div class="h-48 bg-gray-100 flex items-center justify-center relative">
-                <img
-                  v-if="product.image_url"
-                  :src="getImageUrl(product.image_url)"
-                  :alt="product.name"
-                  class="w-full h-full object-cover"
-                />
-                <div v-else class="text-gray-400">
-                  <span class="text-4xl">🍔</span>
-                </div>
-                <!-- Stock Badge -->
-                <div
-                  v-if="product.stock_quantity <= 5"
-                  class="absolute top-2 right-2 px-2 py-1 bg-red-500 text-white text-xs rounded-full"
-                >
-                  Low Stock: {{ product.stock_quantity }}
-                </div>
+              <!-- Price & Stock - Always Visible -->
+              <div class="flex items-center justify-between">
+                <span class="text-sm font-bold text-orange-600">₱{{ parseFloat(product.price).toFixed(0) }}</span>
+                <span class="text-xs text-gray-500">Stock: {{ product.stock_quantity }}</span>
               </div>
 
-              <!-- Product Info -->
-              <div class="p-4 flex flex-col flex-1">
-                <div class="flex items-start justify-between mb-2">
-                  <h3 class="font-semibold text-gray-900 line-clamp-1">{{ product.name }}</h3>
-                </div>
+              <!-- Addons Info - Only if Available -->
+              <div v-if="product.addons && product.addons.length > 0" class="text-xs text-gray-400">
+                {{ product.addons.length }} add-ons available
+              </div>
 
-                <p class="text-sm text-gray-500 mb-2">{{ product.category || 'Uncategorized' }}</p>
+              <!-- Spacer to push actions to bottom -->
+              <div class="flex-1"></div>
 
-                <div class="flex items-center justify-between mb-3">
-                  <span class="text-lg font-bold text-orange-600">₱{{ parseFloat(product.price).toFixed(2) }}</span>
-                  <span class="text-sm text-gray-500">Stock: {{ product.stock_quantity }}</span>
-                </div>
-
-                <!-- Addons Display -->
-                <div class="mb-4 flex-1">
-                  <p class="text-xs text-gray-500 mb-1">Add-ons ({{ product.addons?.length || 0 }}):</p>
-                  <div v-if="product.addons && product.addons.length > 0" class="flex flex-wrap gap-1">
-                    <span
-                      v-for="addon in product.addons.slice(0, 4)"
-                      :key="addon.id"
-                      class="px-2 py-0.5 bg-orange-50 text-orange-700 rounded text-xs"
-                    >
-                      {{ addon.name }} +₱{{ parseFloat(addon.price).toFixed(0) }}
-                    </span>
-                    <span v-if="product.addons.length > 4" class="px-2 py-0.5 bg-gray-100 text-gray-600 rounded text-xs">
-                      +{{ product.addons.length - 4 }} more
-                    </span>
-                  </div>
-                  <p v-else class="text-xs text-gray-400 italic">No add-ons</p>
-                </div>
-
-                <!-- Actions - Fixed at bottom -->
-                <div class="grid grid-cols-2 gap-2 mt-auto">
+              <!-- Actions - Always at Bottom -->
+              <div class="pt-2 border-t border-gray-100">
+                <div class="grid grid-cols-2 gap-1">
                   <button
                     @click="openEditModal(product)"
-                    class="px-3 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 text-sm font-medium"
+                    class="px-2 py-1.5 bg-orange-500 text-white rounded text-xs hover:bg-orange-600 font-medium"
                   >
                     Edit
                   </button>
                   <button
                     @click="deleteProduct(product)"
                     :disabled="processingProduct === product.id"
-                    class="px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 text-sm"
+                    class="px-2 py-1.5 bg-gray-100 text-gray-700 rounded text-xs hover:bg-gray-200 disabled:opacity-50"
                   >
                     Delete
                   </button>
@@ -170,51 +156,51 @@
               </div>
             </div>
           </div>
+        </div>
 
-          <!-- Empty State -->
-          <div v-else class="text-center py-12">
-            <div class="text-6xl mb-4">🍔</div>
-            <h3 class="text-lg font-medium text-gray-900 mb-2">No products found</h3>
-            <p class="text-gray-500 mb-6">
-              {{ searchQuery || selectedCategory ? 'Try adjusting your filters' : 'Get started by adding your first product' }}
-            </p>
-            <button
-              @click="openCreateModal"
-              class="px-6 py-3 bg-orange-500 text-white rounded-xl hover:bg-orange-600"
-            >
-              Add Product
-            </button>
+        <!-- Empty State -->
+        <div v-else class="text-center py-12">
+          <div class="text-4xl mb-4">🍔</div>
+          <h3 class="text-lg font-medium text-gray-900 mb-2">No products found</h3>
+          <p class="text-gray-500 mb-6">
+            {{ searchQuery || selectedCategory ? 'Try adjusting your filters' : 'Get started by adding your first product' }}
+          </p>
+          <button
+            @click="openCreateModal"
+            class="px-6 py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600"
+          >
+            Add Product
+          </button>
+        </div>
+
+        <!-- Pagination -->
+        <div v-if="pagination.total > pagination.per_page" class="mt-6 flex items-center justify-between">
+          <div class="text-sm text-gray-500">
+            Showing {{ ((pagination.current_page - 1) * pagination.per_page) + 1 }} to
+            {{ Math.min(pagination.current_page * pagination.per_page, pagination.total) }} of
+            {{ pagination.total }} results
           </div>
-
-          <!-- Pagination -->
-          <div v-if="pagination.total > pagination.per_page" class="mt-6 flex items-center justify-between">
-            <div class="text-sm text-gray-500">
-              Showing {{ ((pagination.current_page - 1) * pagination.per_page) + 1 }} to
-              {{ Math.min(pagination.current_page * pagination.per_page, pagination.total) }} of
-              {{ pagination.total }} results
-            </div>
-            <div class="flex gap-2">
-              <button
-                @click="changePage(pagination.current_page - 1)"
-                :disabled="pagination.current_page <= 1"
-                class="px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Previous
-              </button>
-              <button
-                @click="changePage(pagination.current_page + 1)"
-                :disabled="pagination.current_page >= pagination.last_page"
-                class="px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Next
-              </button>
-            </div>
+          <div class="flex gap-2">
+            <button
+              @click="changePage(pagination.current_page - 1)"
+              :disabled="pagination.current_page <= 1"
+              class="px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+            >
+              Previous
+            </button>
+            <button
+              @click="changePage(pagination.current_page + 1)"
+              :disabled="pagination.current_page >= pagination.last_page"
+              class="px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+            >
+              Next
+            </button>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Product Form Modal (includes inline addon management) -->
+    <!-- Product Form Modal -->
     <ProductFormModal
       :is-open="showProductModal"
       :product-id="selectedProductId"
@@ -261,7 +247,7 @@ const selectedProductId = ref(null)
 // Delete Modal State
 const showDeleteModal = ref(false)
 const processingDelete = ref(false)
-const deleteTarget = ref(null) // single product or 'bulk'
+const deleteTarget = ref(null)
 const deleteModalConfig = ref({
   title: 'Delete Product',
   message: 'Are you sure you want to delete this product?',
@@ -271,7 +257,7 @@ const deleteModalConfig = ref({
 const pagination = ref({
   current_page: 1,
   last_page: 1,
-  per_page: 20,
+  per_page: 48, // Show more products per page
   total: 0
 })
 
@@ -346,7 +332,7 @@ const handleProductSaved = () => {
   loadProducts()
 }
 
-// Product Actions - Open delete modal
+// Product Actions
 const deleteProduct = (product) => {
   deleteTarget.value = product
   deleteModalConfig.value = {
@@ -357,7 +343,6 @@ const deleteProduct = (product) => {
   showDeleteModal.value = true
 }
 
-// Bulk delete - Open modal
 const bulkDelete = () => {
   deleteTarget.value = 'bulk'
   deleteModalConfig.value = {
@@ -368,13 +353,11 @@ const bulkDelete = () => {
   showDeleteModal.value = true
 }
 
-// Confirm delete action
 const confirmDelete = async () => {
   processingDelete.value = true
 
   try {
     if (deleteTarget.value === 'bulk') {
-      // Bulk delete
       const response = await apiPost('/api/vendor/products/bulk', {
         product_ids: selectedProducts.value,
         action: 'delete'
@@ -388,7 +371,6 @@ const confirmDelete = async () => {
         alert(error.error || 'Failed to delete products')
       }
     } else {
-      // Single product delete
       const product = deleteTarget.value
       const response = await apiDelete(`/api/vendor/products/${product.id}`)
 

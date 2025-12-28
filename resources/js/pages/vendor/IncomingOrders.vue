@@ -36,130 +36,138 @@
 
     <!-- Content -->
     <div class="p-6">
-      <div class="max-w-4xl mx-auto">
-        <!-- Loading -->
-        <div v-if="loading" class="text-center py-12">
-          <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto"></div>
-          <p class="text-gray-500 mt-4">Loading orders...</p>
-        </div>
+      <!-- Loading -->
+      <div v-if="loading" class="text-center py-12">
+        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto"></div>
+        <p class="text-gray-500 mt-4">Loading orders...</p>
+      </div>
 
-        <!-- Pending Orders -->
-        <div v-else-if="activeTab === 'pending'">
-          <div v-if="pendingOrders.length > 0" class="space-y-4">
-            <div
-              v-for="order in pendingOrders"
-              :key="order.id"
-              class="bg-white rounded-xl border-2 border-yellow-300 p-5 hover:shadow-lg transition-shadow"
-            >
-              <div class="flex items-start justify-between mb-3">
-                <div>
-                  <div class="flex items-center gap-2">
-                    <span class="text-lg font-bold text-gray-900">#{{ order.order_number }}</span>
-                    <span class="px-2 py-0.5 bg-yellow-100 text-yellow-700 rounded-full text-xs font-medium">New</span>
-                  </div>
-                  <p class="text-sm text-gray-500">Table {{ order.table_number || 'N/A' }} • {{ formatTime(order.created_at) }}</p>
+      <!-- Pending Orders Grid -->
+      <div v-else-if="activeTab === 'pending'">
+        <div v-if="pendingOrders.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div
+            v-for="order in pendingOrders"
+            :key="order.id"
+            class="bg-white rounded-lg border-2 border-yellow-300 p-4 hover:shadow-md transition-shadow"
+          >
+            <!-- Header -->
+            <div class="flex items-start justify-between mb-3">
+              <div>
+                <div class="flex items-center gap-2 mb-1">
+                  <span class="text-sm font-bold text-gray-900">#{{ order.order_number?.replace('ORD-', '') }}</span>
+                  <span class="px-1.5 py-0.5 bg-yellow-100 text-yellow-700 rounded text-xs font-medium">New</span>
                 </div>
-                <span class="text-lg font-bold text-orange-600">₱{{ parseFloat(order.total_amount).toFixed(2) }}</span>
+                <p class="text-xs text-gray-500">Table {{ order.table_number || 'N/A' }}</p>
+                <p class="text-xs text-gray-500">{{ formatTime(order.created_at) }}</p>
               </div>
-
-              <!-- Items Preview -->
-              <div class="mb-3 text-sm text-gray-600">
-                <span v-for="(item, idx) in order.items?.slice(0, 3)" :key="item.id">
-                  {{ item.quantity }}x {{ item.product?.name }}<span v-if="idx < Math.min(order.items.length, 3) - 1">, </span>
-                </span>
-                <span v-if="order.items?.length > 3" class="text-gray-400">+{{ order.items.length - 3 }} more</span>
-              </div>
-
-              <!-- Special Instructions Alert -->
-              <div v-if="order.special_instructions" class="mb-3 px-3 py-2 bg-yellow-50 border-l-4 border-yellow-400 text-sm text-yellow-800">
-                ⚠️ {{ order.special_instructions }}
-              </div>
-
-              <!-- Actions -->
-              <div class="flex gap-2">
-                <button @click="openOrderDetail(order)" class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 text-sm">
-                  View Details
-                </button>
-                <button
-                  @click="declineOrder(order)"
-                  :disabled="processingOrder === order.id"
-                  class="px-4 py-2 bg-white border border-red-300 text-red-600 rounded-lg hover:bg-red-50 text-sm disabled:opacity-50"
-                >
-                  Decline
-                </button>
-                <button
-                  @click="acceptOrder(order)"
-                  :disabled="processingOrder === order.id"
-                  class="flex-1 px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 text-sm font-medium disabled:opacity-50"
-                >
-                  {{ processingOrder === order.id ? 'Accepting...' : '✓ Accept' }}
-                </button>
-              </div>
+              <span class="text-sm font-bold text-orange-600">₱{{ parseFloat(order.total_amount).toFixed(0) }}</span>
             </div>
-          </div>
 
-          <!-- Empty Pending -->
-          <div v-else class="text-center py-12">
-            <div class="text-5xl mb-4">📭</div>
-            <h3 class="text-lg font-medium text-gray-900 mb-2">No pending orders</h3>
-            <p class="text-gray-500">New orders will appear here</p>
+            <!-- Items Preview -->
+            <div class="text-xs text-gray-600 mb-3 line-clamp-2">
+              <span v-for="(item, idx) in order.items?.slice(0, 2)" :key="item.id">
+                {{ item.quantity }}x {{ item.product?.name }}<span v-if="idx < Math.min(order.items.length, 2) - 1">, </span>
+              </span>
+              <span v-if="order.items?.length > 2" class="text-gray-400">+{{ order.items.length - 2 }} more</span>
+            </div>
+
+            <!-- Special Instructions Alert -->
+            <div v-if="order.special_instructions" class="mb-3 px-2 py-1 bg-yellow-50 border-l-2 border-yellow-400 text-xs text-yellow-800">
+              ⚠️ {{ order.special_instructions }}
+            </div>
+
+            <!-- Actions -->
+            <div class="flex gap-1">
+              <button
+                @click="openOrderDetail(order)"
+                class="flex-1 px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs hover:bg-gray-200"
+              >
+                Details
+              </button>
+              <button
+                @click="declineOrder(order)"
+                :disabled="processingOrder === order.id"
+                class="px-2 py-1 bg-red-100 text-red-600 rounded text-xs hover:bg-red-200 disabled:opacity-50"
+              >
+                ✕
+              </button>
+              <button
+                @click="acceptOrder(order)"
+                :disabled="processingOrder === order.id"
+                class="flex-1 px-2 py-1 bg-green-500 text-white rounded text-xs hover:bg-green-600 disabled:opacity-50"
+              >
+                {{ processingOrder === order.id ? '...' : '✓' }}
+              </button>
+            </div>
           </div>
         </div>
 
-        <!-- Accepted/Preparing Orders -->
-        <div v-else-if="activeTab === 'accepted'">
-          <div v-if="acceptedOrders.length > 0" class="space-y-4">
-            <div
-              v-for="order in acceptedOrders"
-              :key="order.id"
-              class="bg-white rounded-xl border-2 border-blue-300 p-5 hover:shadow-lg transition-shadow"
-            >
-              <div class="flex items-start justify-between mb-3">
-                <div>
-                  <div class="flex items-center gap-2">
-                    <span class="text-lg font-bold text-gray-900">#{{ order.order_number }}</span>
-                    <span class="px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full text-xs font-medium">Preparing</span>
-                  </div>
-                  <p class="text-sm text-gray-500">Table {{ order.table_number || 'N/A' }} • {{ formatTime(order.created_at) }}</p>
+        <!-- Empty Pending -->
+        <div v-else class="text-center py-12">
+          <div class="text-5xl mb-4">📭</div>
+          <h3 class="text-lg font-medium text-gray-900 mb-2">No pending orders</h3>
+          <p class="text-gray-500">New orders will appear here</p>
+        </div>
+      </div>
+
+      <!-- Accepted/Preparing Orders Grid -->
+      <div v-else-if="activeTab === 'accepted'">
+        <div v-if="acceptedOrders.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div
+            v-for="order in acceptedOrders"
+            :key="order.id"
+            class="bg-white rounded-lg border-2 border-blue-300 p-4 hover:shadow-md transition-shadow"
+          >
+            <!-- Header -->
+            <div class="flex items-start justify-between mb-3">
+              <div>
+                <div class="flex items-center gap-2 mb-1">
+                  <span class="text-sm font-bold text-gray-900">#{{ order.order_number?.replace('ORD-', '') }}</span>
+                  <span class="px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded text-xs font-medium">Preparing</span>
                 </div>
-                <span class="text-lg font-bold text-orange-600">₱{{ parseFloat(order.total_amount).toFixed(2) }}</span>
+                <p class="text-xs text-gray-500">Table {{ order.table_number || 'N/A' }}</p>
+                <p class="text-xs text-gray-500">{{ formatTime(order.created_at) }}</p>
               </div>
+              <span class="text-sm font-bold text-orange-600">₱{{ parseFloat(order.total_amount).toFixed(0) }}</span>
+            </div>
 
-              <!-- Items Preview -->
-              <div class="mb-3 text-sm text-gray-600">
-                <span v-for="(item, idx) in order.items?.slice(0, 3)" :key="item.id">
-                  {{ item.quantity }}x {{ item.product?.name }}<span v-if="idx < Math.min(order.items.length, 3) - 1">, </span>
-                </span>
-                <span v-if="order.items?.length > 3" class="text-gray-400">+{{ order.items.length - 3 }} more</span>
-              </div>
+            <!-- Items Preview -->
+            <div class="text-xs text-gray-600 mb-3 line-clamp-2">
+              <span v-for="(item, idx) in order.items?.slice(0, 2)" :key="item.id">
+                {{ item.quantity }}x {{ item.product?.name }}<span v-if="idx < Math.min(order.items.length, 2) - 1">, </span>
+              </span>
+              <span v-if="order.items?.length > 2" class="text-gray-400">+{{ order.items.length - 2 }} more</span>
+            </div>
 
-              <!-- Special Instructions -->
-              <div v-if="order.special_instructions" class="mb-3 px-3 py-2 bg-yellow-50 border-l-4 border-yellow-400 text-sm text-yellow-800">
-                ⚠️ {{ order.special_instructions }}
-              </div>
+            <!-- Special Instructions -->
+            <div v-if="order.special_instructions" class="mb-3 px-2 py-1 bg-yellow-50 border-l-2 border-yellow-400 text-xs text-yellow-800">
+              ⚠️ {{ order.special_instructions }}
+            </div>
 
-              <!-- Actions -->
-              <div class="flex gap-2">
-                <button @click="openOrderDetail(order)" class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 text-sm">
-                  View Details
-                </button>
-                <button
-                  @click="markReady(order)"
-                  :disabled="processingOrder === order.id"
-                  class="flex-1 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 text-sm font-medium disabled:opacity-50"
-                >
-                  {{ processingOrder === order.id ? 'Processing...' : '🍳 Mark Ready for Pickup' }}
-                </button>
-              </div>
+            <!-- Actions -->
+            <div class="flex gap-1">
+              <button
+                @click="openOrderDetail(order)"
+                class="flex-1 px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs hover:bg-gray-200"
+              >
+                Details
+              </button>
+              <button
+                @click="markReady(order)"
+                :disabled="processingOrder === order.id"
+                class="flex-1 px-2 py-1 bg-blue-500 text-white rounded text-xs hover:bg-blue-600 disabled:opacity-50"
+              >
+                {{ processingOrder === order.id ? '...' : '🍳' }}
+              </button>
             </div>
           </div>
+        </div>
 
-          <!-- Empty Accepted -->
-          <div v-else class="text-center py-12">
-            <div class="text-5xl mb-4">👨‍🍳</div>
-            <h3 class="text-lg font-medium text-gray-900 mb-2">No orders being prepared</h3>
-            <p class="text-gray-500">Accepted orders will appear here</p>
-          </div>
+        <!-- Empty Accepted -->
+        <div v-else class="text-center py-12">
+          <div class="text-5xl mb-4">👨‍🍳</div>
+          <h3 class="text-lg font-medium text-gray-900 mb-2">No orders being prepared</h3>
+          <p class="text-gray-500">Accepted orders will appear here</p>
         </div>
       </div>
     </div>
@@ -453,3 +461,12 @@ onUnmounted(() => {
 
 defineExpose({ loadOrders })
 </script>
+
+<style scoped>
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+</style>
