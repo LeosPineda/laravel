@@ -44,33 +44,107 @@ const contactAdmin = () => {
 <template>
     <Head title="Forgot Password" />
 
-    <div class="min-h-screen flex items-center justify-center bg-[#F5F5F5] px-4">
-        <div class="w-full max-w-md">
-            <!-- Logo/Brand -->
-            <div class="text-center mb-8">
-                <h1 class="text-3xl font-bold text-[#1A1A1A]">Food Court</h1>
-                <p class="text-[#1A1A1A]/60 mt-2">Reset your password</p>
+    <div class="min-h-screen flex flex-col lg:flex-row bg-white">
+        <!-- Left Side - Branding (Full Width) -->
+        <div class="hidden lg:flex lg:w-1/2 bg-[#F5F5F5] p-12 xl:p-16 flex-col justify-between relative">
+            <!-- Decorative Elements -->
+            <div class="absolute top-0 right-0 w-80 h-80 bg-[#FF6B35]/5 rounded-full -translate-y-1/2 translate-x-1/2"></div>
+            <div class="absolute bottom-0 left-0 w-64 h-64 bg-[#FF6B35]/5 rounded-full translate-y-1/2 -translate-x-1/2"></div>
+
+            <!-- Content -->
+            <div class="relative z-10">
+                <!-- Logo -->
+                <div class="flex items-center gap-4">
+                    <img src="/fast-food.png" alt="4Rodz" class="w-16 h-16 rounded-xl" />
+                    <span class="text-2xl font-bold text-[#1A1A1A]">4Rodz Food Court</span>
+                </div>
             </div>
 
-            <!-- Card -->
-            <div class="bg-white rounded-xl shadow-sm border border-[#E0E0E0] p-8">
+            <!-- Main Content -->
+            <div class="relative z-10 max-w-lg ml-8 xl:ml-12">
+                <h1 class="text-4xl xl:text-5xl font-bold text-[#1A1A1A] leading-tight mb-6">
+                    Forgot your<br>
+                    <span class="text-[#FF6B35]">password?</span>
+                </h1>
+                <p class="text-[#1A1A1A]/70 text-lg leading-relaxed mb-10">
+                    Don't worry! We'll help you reset your password and get back to ordering your favorite food.
+                </p>
+
+                <!-- Features -->
+                <div class="space-y-5">
+                    <div class="flex items-center gap-5 p-5 bg-white rounded-2xl border border-[#E0E0E0] shadow-sm">
+                        <div class="w-14 h-14 bg-[#FF6B35]/10 rounded-xl flex items-center justify-center shrink-0">
+                            <svg class="w-7 h-7 text-[#FF6B35]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+                            </svg>
+                        </div>
+                        <div>
+                            <h3 class="font-semibold text-[#1A1A1A] text-lg">Secure Reset</h3>
+                            <p class="text-[#1A1A1A]/60 text-sm">Get a secure link to reset your password</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-5 p-5 bg-white rounded-2xl border border-[#E0E0E0] shadow-sm">
+                        <div class="w-14 h-14 bg-[#FF6B35]/10 rounded-xl flex items-center justify-center shrink-0">
+                            <svg class="w-7 h-7 text-[#FF6B35]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m0 0v2m0-2h2m-2 0H9m3-9a3 3 0 003 3v7a3 3 0 01-3 3H9a3 3 0 01-3-3V9a3 3 0 013-3h9z" />
+                            </svg>
+                        </div>
+                        <div>
+                            <h3 class="font-semibold text-[#1A1A1A] text-lg">Quick Recovery</h3>
+                            <p class="text-[#1A1A1A]/60 text-sm">Reset your password in minutes</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-5 p-5 bg-white rounded-2xl border border-[#E0E0E0] shadow-sm">
+                        <div class="w-14 h-14 bg-[#FF6B35]/10 rounded-xl flex items-center justify-center shrink-0">
+                            <svg class="w-7 h-7 text-[#FF6B35]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                        </div>
+                        <div>
+                            <h3 class="font-semibold text-[#1A1A1A] text-lg">Account Security</h3>
+                            <p class="text-[#1A1A1A]/60 text-sm">Your account stays protected</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <div class="relative z-10">
+                <p class="text-[#1A1A1A]/40 text-base">&copy; 2024 4Rodz Food Court</p>
+            </div>
+        </div>
+
+        <!-- Right Side - Form (60% white) -->
+        <div class="flex-1 flex items-center justify-center p-6 sm:p-8 lg:p-16 bg-white">
+            <div class="w-full max-w-[480px]">
+                <!-- Mobile Header -->
+                <div class="lg:hidden text-center mb-8">
+                    <div class="flex items-center justify-center gap-3 mb-4">
+                        <img src="/fast-food.png" alt="4Rodz" class="w-14 h-14 rounded-2xl shadow-lg" />
+                    </div>
+                    <h1 class="text-2xl font-bold text-[#1A1A1A]">4Rodz Food Court</h1>
+                    <p class="text-[#1A1A1A]/50 text-sm mt-1">Order • Pick up • Enjoy</p>
+                </div>
+
+                <!-- Welcome Text -->
+                <div class="mb-10">
+                    <h2 class="text-3xl sm:text-4xl font-bold text-[#1A1A1A]">Reset password</h2>
+                    <p class="text-[#1A1A1A]/60 mt-3 text-lg">Enter your email to receive a reset link</p>
+                </div>
+
                 <!-- Status Message -->
                 <div
                     v-if="status"
-                    class="mb-6 p-3 bg-green-50 border border-green-200 rounded-lg text-center text-sm text-green-700"
+                    class="mb-6 p-4 bg-green-50 border border-green-100 rounded-xl text-center text-sm text-green-700"
                 >
                     {{ status }}
                 </div>
 
-                <p class="text-sm text-[#1A1A1A]/70 mb-6">
-                    Enter your email address and we'll send you a link to reset your password.
-                </p>
-
                 <form @submit.prevent="submit" class="space-y-6">
                     <!-- Email -->
                     <div>
-                        <label for="email" class="block text-sm font-medium text-[#1A1A1A] mb-2">
-                            Email Address
+                        <label for="email" class="block text-base font-medium text-[#1A1A1A] mb-3">
+                            Email address
                         </label>
                         <input
                             id="email"
@@ -79,9 +153,9 @@ const contactAdmin = () => {
                             required
                             autofocus
                             autocomplete="email"
-                            placeholder="email@example.com"
-                            class="w-full px-4 py-3 border border-[#E0E0E0] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FF6B35] focus:border-transparent transition-all"
-                            :class="{ 'border-red-500': form.errors.email }"
+                            placeholder="Enter your email"
+                            class="w-full px-5 py-4 border border-[#E0E0E0] rounded-xl bg-[#F5F5F5] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#FF6B35]/20 focus:border-[#FF6B35] transition-all text-[#1A1A1A] placeholder:text-[#1A1A1A]/40 text-lg"
+                            :class="{ 'border-red-400 focus:ring-red-400/20 focus:border-red-400': form.errors.email }"
                         />
                         <p v-if="form.errors.email" class="mt-2 text-sm text-red-600">
                             {{ form.errors.email }}
@@ -92,7 +166,7 @@ const contactAdmin = () => {
                     <button
                         type="submit"
                         :disabled="form.processing"
-                        class="w-full py-3 px-4 bg-[#FF6B35] text-white font-semibold rounded-lg hover:bg-[#FF6B35]/90 focus:outline-none focus:ring-2 focus:ring-[#FF6B35] focus:ring-offset-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                        class="w-full py-5 px-6 bg-[#FF6B35] text-white font-semibold rounded-xl hover:bg-[#e55f2f] active:scale-[0.99] focus:outline-none focus:ring-4 focus:ring-[#FF6B35]/20 transition-all disabled:opacity-60 disabled:cursor-not-allowed text-lg"
                     >
                         <span v-if="form.processing" class="flex items-center justify-center gap-2">
                             <svg class="animate-spin h-5 w-5" viewBox="0 0 24 24">
@@ -106,9 +180,9 @@ const contactAdmin = () => {
                 </form>
 
                 <!-- Back to Login -->
-                <div class="mt-6 text-center">
-                    <a href="/login" class="text-sm text-[#FF6B35] font-medium hover:text-[#FF6B35]/80 transition-colors">
-                        ← Back to Sign In
+                <div class="mt-10 text-center">
+                    <a href="/login" class="text-[#1A1A1A]/60 text-lg">
+                        <span class="font-medium text-[#FF6B35] hover:underline">← Back to Sign In</span>
                     </a>
                 </div>
             </div>

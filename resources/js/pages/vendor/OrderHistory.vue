@@ -42,14 +42,54 @@
         <p class="text-gray-500 mt-4">Loading orders...</p>
       </div>
 
+      <!-- Controls -->
+      <div v-if="!loading" class="mb-4 p-3 bg-gray-50 rounded-lg border">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-4">
+            <button
+              @click="toggleSelectAll"
+              class="px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-100"
+            >
+              {{ allSelected ? 'Deselect All' : 'Select All' }}
+            </button>
+            <button
+              v-if="selectedOrders.length > 0"
+              @click="deleteSelected"
+              class="px-3 py-1 text-sm bg-red-600 text-white rounded hover:bg-red-700"
+            >
+              Delete Selected ({{ selectedOrders.length }})
+            </button>
+            <button
+              @click="unselectAll"
+              class="px-3 py-1 text-sm bg-orange-600 text-white rounded hover:bg-orange-700"
+            >
+              Unselect All
+            </button>
+          </div>
+          <div class="text-sm text-gray-600">
+            {{ orders.length }} orders • {{ selectedOrders.length }} selected
+          </div>
+        </div>
+      </div>
+
       <!-- Completed Orders -->
-      <div v-else-if="activeTab === 'completed'">
+      <div v-if="activeTab === 'completed'">
         <div v-if="completedOrders.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           <div
             v-for="order in completedOrders"
             :key="order.id"
-            class="bg-white rounded-lg border-2 border-green-300 p-6"
+            class="bg-white rounded-lg border-2 border-green-300 p-6 relative"
           >
+            <!-- Checkbox -->
+            <div class="absolute top-3 right-3">
+              <input
+                type="checkbox"
+                :checked="selectedOrders.includes(order.id)"
+                @change="toggleOrderSelection(order.id)"
+                class="w-4 h-4 text-orange-600 bg-gray-100 border-gray-300 rounded focus:ring-orange-500"
+              />
+            </div>
+
             <div class="flex items-start justify-between mb-4">
               <div>
                 <div class="mb-2">
@@ -93,13 +133,23 @@
       </div>
 
       <!-- Cancelled Orders -->
-      <div v-else-if="activeTab === 'cancelled'">
+      <div v-if="activeTab === 'cancelled'">
         <div v-if="cancelledOrders.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           <div
             v-for="order in cancelledOrders"
             :key="order.id"
-            class="bg-white rounded-lg border-2 border-red-300 p-6"
+            class="bg-white rounded-lg border-2 border-red-300 p-6 relative"
           >
+            <!-- Checkbox -->
+            <div class="absolute top-3 right-3">
+              <input
+                type="checkbox"
+                :checked="selectedOrders.includes(order.id)"
+                @change="toggleOrderSelection(order.id)"
+                class="w-4 h-4 text-orange-600 bg-gray-100 border-gray-300 rounded focus:ring-orange-500"
+              />
+            </div>
+
             <div class="flex items-start justify-between mb-4">
               <div>
                 <div class="mb-2">
@@ -171,7 +221,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import OrderDetailModal from '@/components/vendor/OrderDetailModal.vue'
 import { useToast } from '@/composables/useToast'
 
@@ -180,6 +230,7 @@ const toast = useToast()
 const orders = ref([])
 const loading = ref(false)
 const activeTab = ref('completed')
+const selectedOrders = ref([])
 
 // Modal
 const showOrderModal = ref(false)
@@ -198,6 +249,7 @@ const completedOrders = computed(() => orders.value.filter(o => o.status === 're
 const cancelledOrders = computed(() => orders.value.filter(o => o.status === 'cancelled'))
 const completedCount = computed(() => completedOrders.value.length)
 const cancelledCount = computed(() => cancelledOrders.value.length)
+const allSelected = computed(() => orders.value.length > 0 && selectedOrders.value.length === orders.value.length)
 
 const formatTime = (dateString) => {
   if (!dateString) return ''
@@ -225,6 +277,8 @@ const loadOrders = async () => {
         o.status === 'ready_for_pickup' || o.status === 'cancelled'
       )
       pagination.value = data.pagination || pagination.value
+      // Clear selections when reloading
+      selectedOrders.value = []
     }
   } catch (error) {
     console.error('Error loading orders:', error)
@@ -296,6 +350,93 @@ const deleteOrder = async (order) => {
     console.error('Error deleting order:', error)
     toast.error('Failed to delete order')
   }
+}
+
+// Selection functions
+const toggleOrderSelection = (orderId) => {
+  const index = selectedOrders.value.indexOf(orderId)
+  if (index > -1) {
+    selectedOrders.value.splice(index, 1)
+  } else {
+    selectedOrders.value.push(orderId)
+  }
+}
+
+const toggleSelectAll = () => {
+  if (allSelected.value) {
+    selectedOrders.value = []
+  } else {
+    selectedOrders.value = orders.value.map(order => order.id)
+  }
+}
+
+const deleteSelected = async () => {
+  if (selectedOrders.value.length === 0) return
+
+  if (!confirm(`Delete ${selectedOrders.value.length} selected orders? This cannot be undone.`)) return
+
+  try {
+    const deletePromises = selectedOrders.value.map(orderId =>
+      fetch(`/api/vendor/orders/${orderId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Content-Type': 'application/json'
+        }
+      })
+    )
+
+    const responses = await Promise.all(deletePromises)
+    const allSuccessful = responses.every(response => response.ok)
+
+    if (allSuccessful) {
+      toast.success(`${selectedOrders.value.length} orders deleted successfully`)
+      selectedOrders.value = []
+      await loadOrders()
+    } else {
+      toast.error('Some orders failed to delete')
+    }
+  } catch (error) {
+    console.error('Error deleting orders:', error)
+    toast.error('Failed to delete orders')
+  }
+}
+
+const clearAll = async () => {
+  if (orders.value.length === 0) return
+
+  if (!confirm(`Delete ALL ${orders.value.length} orders? This cannot be undone.`)) return
+
+  try {
+    const deletePromises = orders.value.map(order =>
+      fetch(`/api/vendor/orders/${order.id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Content-Type': 'application/json'
+        }
+      })
+    )
+
+    const responses = await Promise.all(deletePromises)
+    const allSuccessful = responses.every(response => response.ok)
+
+    if (allSuccessful) {
+      toast.success('All orders cleared successfully')
+      selectedOrders.value = []
+      await loadOrders()
+    } else {
+      toast.error('Some orders failed to delete')
+    }
+  } catch (error) {
+    console.error('Error clearing orders:', error)
+    toast.error('Failed to clear orders')
+  }
+}
+
+const unselectAll = () => {
+  selectedOrders.value = []
+  toast.info('All selections cleared')
 }
 
 onMounted(() => {

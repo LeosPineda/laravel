@@ -14,11 +14,11 @@
       <!-- Tab Navigation -->
       <div class="bg-white border-b border-gray-200">
         <div class="px-4">
-          <nav class="flex space-x-8">
+          <nav class="flex space-x-12">
             <button
               @click="activeTab = 'incoming'"
               :class="[
-                'py-3 px-1 border-b-2 font-medium text-sm',
+                'py-5 px-4 border-b-2 font-medium text-base',
                 activeTab === 'incoming'
                   ? 'border-orange-500 text-orange-600'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
@@ -33,7 +33,7 @@
             <button
               @click="activeTab = 'history'"
               :class="[
-                'py-3 px-1 border-b-2 font-medium text-sm',
+                'py-5 px-4 border-b-2 font-medium text-base',
                 activeTab === 'history'
                   ? 'border-orange-500 text-orange-600'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
@@ -45,86 +45,31 @@
         </div>
       </div>
 
-      <!-- Statistics and Filters Section -->
-      <div class="bg-gray-50 px-4 py-2 border-b border-gray-200">
+      <!-- Statistics and Search Section -->
+      <div class="bg-gray-50 px-4 py-3 border-b border-gray-200">
         <div class="flex items-center justify-between">
-          <!-- Stats -->
-          <div class="flex gap-6">
+          <!-- Stats - Left side -->
+          <div class="flex gap-8">
             <div class="text-center">
-              <div class="text-lg font-bold text-yellow-600">{{ stats.pending_orders || 0 }}</div>
-              <div class="text-xs text-gray-600">Pending</div>
+              <div class="text-xl font-bold text-yellow-600">{{ stats.pending_orders || 0 }}</div>
+              <div class="text-sm text-gray-600">Pending</div>
             </div>
             <div class="text-center">
-              <div class="text-lg font-bold text-blue-600">{{ stats.accepted_orders || 0 }}</div>
-              <div class="text-xs text-gray-600">Accepted</div>
+              <div class="text-xl font-bold text-blue-600">{{ stats.accepted_orders || 0 }}</div>
+              <div class="text-sm text-gray-600">Accepted</div>
             </div>
             <div class="text-center">
-              <div class="text-lg font-bold text-green-600">{{ stats.completed_orders || 0 }}</div>
-              <div class="text-xs text-gray-600">Completed</div>
+              <div class="text-xl font-bold text-green-600">{{ stats.completed_orders || 0 }}</div>
+              <div class="text-sm text-gray-600">Completed</div>
             </div>
             <div class="text-center">
-              <div class="text-lg font-bold text-gray-600">{{ stats.today_orders || 0 }}</div>
-              <div class="text-xs text-gray-600">Today</div>
+              <div class="text-xl font-bold text-gray-600">{{ stats.today_orders || 0 }}</div>
+              <div class="text-sm text-gray-600">Today</div>
             </div>
           </div>
 
-          <!-- Filters for Incoming Orders -->
-          <div v-if="activeTab === 'incoming'" class="flex items-center gap-4">
-            <div class="flex items-center gap-2">
-              <label class="text-sm text-gray-600">Sort by:</label>
-              <select
-                v-model="incomingFilters.sortBy"
-                @change="handleIncomingFiltersChange"
-                class="px-3 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
-              >
-                <option value="created_at">Time Received</option>
-                <option value="updated_at">Time Updated</option>
-                <option value="total_amount">Amount</option>
-              </select>
-              <button
-                @click="incomingFilters.sortOrder = incomingFilters.sortOrder === 'asc' ? 'desc' : 'asc'"
-                class="px-2 py-1 border border-gray-300 rounded text-sm hover:bg-gray-100"
-              >
-                {{ incomingFilters.sortOrder === 'asc' ? '↑' : '↓' }}
-              </button>
-            </div>
-            <div class="flex items-center gap-2">
-              <label class="text-sm text-gray-600">Search:</label>
-              <input
-                v-model="incomingFilters.search"
-                @input="debouncedIncomingSearch"
-                type="text"
-                placeholder="Order number, table..."
-                class="px-3 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 w-48"
-              />
-            </div>
-          </div>
-
-          <!-- Filters for Order History -->
-          <div v-if="activeTab === 'history'" class="flex items-center gap-4">
-            <div class="flex items-center gap-2">
-              <label class="text-sm text-gray-600">Status:</label>
-              <select
-                v-model="historyFilters.status"
-                @change="handleHistoryFiltersChange"
-                class="px-3 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
-              >
-                <option value="">All</option>
-                <option value="cancelled">Declined</option>
-                <option value="ready_for_pickup">Completed</option>
-              </select>
-            </div>
-            <div class="flex items-center gap-2">
-              <label class="text-sm text-gray-600">Search:</label>
-              <input
-                v-model="historyFilters.search"
-                @input="debouncedHistorySearch"
-                type="text"
-                placeholder="Order number, table..."
-                class="px-3 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 w-48"
-              />
-            </div>
-          </div>
+          <!-- Empty space on right for balance -->
+          <div></div>
         </div>
       </div>
 
@@ -133,13 +78,11 @@
         <IncomingOrders
           v-if="activeTab === 'incoming'"
           ref="incomingOrdersRef"
-          :filters="incomingFilters"
           @orders-updated="handleOrdersUpdated"
         />
         <OrderHistory
           v-if="activeTab === 'history'"
           ref="orderHistoryRef"
-          :filters="historyFilters"
           @orders-updated="handleOrdersUpdated"
         />
       </div>
@@ -168,20 +111,6 @@ const stats = ref({
   completed_orders: 0,
   today_orders: 0
 })
-
-const incomingFilters = ref({
-  sortBy: 'created_at',
-  sortOrder: 'desc',
-  search: ''
-})
-
-const historyFilters = ref({
-  status: '',
-  search: ''
-})
-
-let incomingSearchTimeout = null
-let historySearchTimeout = null
 
 const loadStats = async () => {
   try {
@@ -212,32 +141,6 @@ const handleOrdersUpdated = async () => {
   if (orderHistoryRef.value?.loadOrders) {
     orderHistoryRef.value.loadOrders()
   }
-}
-
-const handleIncomingFiltersChange = () => {
-  if (incomingOrdersRef.value?.loadOrders) {
-    incomingOrdersRef.value.loadOrders()
-  }
-}
-
-const handleHistoryFiltersChange = () => {
-  if (orderHistoryRef.value?.loadOrders) {
-    orderHistoryRef.value.loadOrders()
-  }
-}
-
-const debouncedIncomingSearch = () => {
-  clearTimeout(incomingSearchTimeout)
-  incomingSearchTimeout = setTimeout(() => {
-    handleIncomingFiltersChange()
-  }, 300)
-}
-
-const debouncedHistorySearch = () => {
-  clearTimeout(historySearchTimeout)
-  historySearchTimeout = setTimeout(() => {
-    handleHistoryFiltersChange()
-  }, 300)
 }
 
 // Real-time subscription for stats bar updates

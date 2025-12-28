@@ -42,8 +42,27 @@
         <p class="text-gray-500 mt-4">Loading orders...</p>
       </div>
 
+      <!-- Search Control - Stays on Top -->
+      <div v-if="!loading" class="mb-4 p-3 bg-gray-50 rounded-lg border sticky top-0 z-10">
+        <div class="flex items-center gap-4">
+          <div class="flex items-center gap-2">
+            <label class="text-sm text-gray-600">Search:</label>
+            <input
+              v-model="searchQuery"
+              @input="debouncedSearch"
+              type="text"
+              placeholder="Order number, table..."
+              class="px-3 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 w-48"
+            />
+          </div>
+          <div class="text-sm text-gray-600 ml-auto">
+            {{ allOrders.length }} orders
+          </div>
+        </div>
+      </div>
+
       <!-- Pending Orders -->
-      <div v-else-if="activeTab === 'pending'">
+      <div v-if="activeTab === 'pending'">
         <div v-if="pendingOrders.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           <div
             v-for="order in pendingOrders"
@@ -93,7 +112,7 @@
       </div>
 
       <!-- Accepted Orders -->
-      <div v-else-if="activeTab === 'accepted'">
+      <div v-if="activeTab === 'accepted'">
         <div v-if="acceptedOrders.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           <div
             v-for="order in acceptedOrders"
@@ -147,10 +166,17 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { usePage } from '@inertiajs/vue3'
 import OrderDetailModal from '@/components/vendor/OrderDetailModal.vue'
 import { useToast } from '@/composables/useToast'
+
+const props = defineProps({
+  filters: {
+    type: Object,
+    default: () => ({})
+  }
+})
 
 const emit = defineEmits(['ordersUpdated'])
 const toast = useToast()
@@ -161,15 +187,43 @@ const allOrders = ref([])
 const loading = ref(false)
 const activeTab = ref('pending')
 
+// Local filter state
+const searchQuery = ref('')
+let searchTimeout = null
+
 // Modal
 const showOrderModal = ref(false)
 const selectedOrderId = ref(null)
 
 // Computed
-const pendingOrders = computed(() => allOrders.value.filter(o => o.status === 'pending'))
-const acceptedOrders = computed(() => allOrders.value.filter(o => o.status === 'accepted'))
+const pendingOrders = computed(() => {
+  let filtered = allOrders.value.filter(o => o.status === 'pending')
+  return applySearch(filtered)
+})
+
+const acceptedOrders = computed(() => {
+  let filtered = allOrders.value.filter(o => o.status === 'accepted')
+  return applySearch(filtered)
+})
+
 const pendingCount = computed(() => pendingOrders.value.length)
 const acceptedCount = computed(() => acceptedOrders.value.length)
+
+// Helper function to apply search only
+const applySearch = (orders) => {
+  let filtered = [...orders]
+
+  // Apply search
+  if (searchQuery.value) {
+    const searchTerm = searchQuery.value.toLowerCase()
+    filtered = filtered.filter(order =>
+      order.order_number?.toLowerCase().includes(searchTerm) ||
+      order.table_number?.toString().includes(searchTerm)
+    )
+  }
+
+  return filtered
+}
 
 const formatTime = (dateString) => {
   if (!dateString) return ''
@@ -178,7 +232,12 @@ const formatTime = (dateString) => {
 
 const loadOrders = async () => {
   try {
-    const response = await fetch('/api/vendor/orders?per_page=50', {
+    loading.value = true
+    const params = new URLSearchParams({
+      per_page: '50'
+    })
+
+    const response = await fetch(`/api/vendor/orders?${params}`, {
       headers: {
         'Authorization': `Bearer ${localStorage.getItem('token')}`,
         'Content-Type': 'application/json'
@@ -195,6 +254,8 @@ const loadOrders = async () => {
     }
   } catch (error) {
     toast.error('Failed to load orders')
+  } finally {
+    loading.value = false
   }
 }
 
@@ -284,6 +345,13 @@ const subscribeToChannel = () => {
         loadOrders()
       })
   }
+}
+
+const debouncedSearch = () => {
+  clearTimeout(searchTimeout)
+  searchTimeout = setTimeout(() => {
+    // Search is handled by computed properties, no need to reload
+  }, 300)
 }
 
 onMounted(async () => {
