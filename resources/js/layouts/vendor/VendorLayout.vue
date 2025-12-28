@@ -91,7 +91,7 @@
 
       <!-- Mobile Bottom Navigation -->
       <div class="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50">
-        <div class="grid grid-cols-5 py-2">
+        <div class="grid grid-cols-6 py-2">
           <Link href="/vendor/dashboard" class="flex flex-col items-center py-2">
             <span class="text-sm">🏠</span>
             <span class="text-xs mt-1" :class="$page.url.startsWith('/vendor/dashboard') ? 'text-orange-600' : 'text-gray-500'">Home</span>
@@ -112,6 +112,10 @@
             <span class="text-sm">📱</span>
             <span class="text-xs mt-1" :class="$page.url.startsWith('/vendor/qr') ? 'text-orange-600' : 'text-gray-500'">QR</span>
           </Link>
+          <button @click="logout" class="flex flex-col items-center py-2 text-red-500 hover:text-red-600">
+            <span class="text-sm">🚪</span>
+            <span class="text-xs mt-1">Logout</span>
+          </button>
         </div>
       </div>
     </div>
@@ -122,23 +126,11 @@
 </template>
 
 <script setup>
-import { Link } from '@inertiajs/vue3'
+import { Link, router } from '@inertiajs/vue3'
 import ToastContainer from '@/components/ui/ToastContainer.vue'
 
-const logout = async () => {
-  try {
-    await fetch('/api/logout', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token')}`,
-        'Content-Type': 'application/json'
-      }
-    })
-    localStorage.removeItem('token')
-    window.location.href = '/login'
-  } catch (error) {
-    console.error('Logout error:', error)
-  }
+const logout = () => {
+  router.post('/logout')
 }
 </script>
 

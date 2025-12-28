@@ -37,6 +37,12 @@ Route::get('/reset-password/{token}', function ($token) {
 })->name('password.reset');
 
 // Auth POST routes are handled by Fortify
+Route::post('/logout', function () {
+    Auth::logout();
+    request()->session()->invalidate();
+    request()->session()->regenerateToken();
+    return redirect()->route('login');
+})->name('logout');
 
 // Dashboard redirect based on role
 Route::get('/dashboard', function () {
