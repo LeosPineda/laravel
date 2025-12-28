@@ -6,7 +6,6 @@ use App\Http\Controllers\Vendor\ProductController;
 use App\Http\Controllers\Vendor\AddonController;
 use App\Http\Controllers\Vendor\NotificationController as VendorNotificationController;
 use App\Http\Controllers\Vendor\QrController;
-use App\Http\Controllers\Vendor\ReceiptController;
 use App\Http\Controllers\Customer\CartController;
 use App\Http\Controllers\Customer\MenuController;
 use App\Http\Controllers\Customer\NotificationController as CustomerNotificationController;
@@ -29,19 +28,14 @@ Route::middleware(['web', 'auth', 'role:vendor', 'throttle:60,1'])->prefix('vend
     Route::get('/analytics/revenue', [AnalyticsController::class, 'revenue'])->name('analytics.revenue');
     Route::get('/analytics/profit', [AnalyticsController::class, 'profit'])->name('analytics.profit');
 
-    // Orders - FIXED: Removed complete() and undo() routes that don't exist
+    // Orders - Core order management functionality
     Route::get('/orders', [VendorOrderController::class, 'index'])->name('orders.index');
     Route::get('/orders/stats', [VendorOrderController::class, 'stats'])->name('orders.stats');
     Route::get('/orders/{order}', [VendorOrderController::class, 'show'])->name('orders.show');
     Route::patch('/orders/{order}/accept', [VendorOrderController::class, 'accept'])->name('orders.accept');
     Route::patch('/orders/{order}/decline', [VendorOrderController::class, 'decline'])->name('orders.decline');
     Route::patch('/orders/{order}/ready', [VendorOrderController::class, 'markReady'])->name('orders.ready');
-    // Removed: complete() and undo() routes - methods don't exist anymore
     Route::delete('/orders/batch', [VendorOrderController::class, 'batchDelete'])->name('orders.batch-delete');
-
-    // Receipts
-    Route::get('/orders/{order}/receipt', [ReceiptController::class, 'streamReceipt'])->name('orders.receipt');
-    Route::get('/orders/{order}/receipt/download', [ReceiptController::class, 'generateReceipt'])->name('orders.receipt.download');
 
     // Products
     Route::get('/products/categories', [ProductController::class, 'getCategories'])->name('products.categories');

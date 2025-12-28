@@ -18,14 +18,14 @@ use Illuminate\Support\Facades\File;
 class ComprehensiveVendorSeeder extends Seeder
 {
     /**
-     * Create comprehensive vendor data for UI testing.
+     * Create comprehensive vendor data for UI testing with extensive order history.
      *
      * Usage:
      *   php artisan db:seed --class=ComprehensiveVendorSeeder
      */
     public function run(): void
     {
-        $this->command->info('🎯 Creating comprehensive vendor data...');
+        $this->command->info('🎯 Creating comprehensive vendor data with extensive order history...');
 
         // Get or create vendor
         $vendor = $this->getOrCreateVendor();
@@ -37,7 +37,7 @@ class ComprehensiveVendorSeeder extends Seeder
         // Create customers
         $customers = $this->createCustomers();
 
-        // Create orders with different statuses
+        // Create orders with comprehensive scenarios for order history testing
         $this->createOrderSimulation($vendor, $products, $customers);
 
         $this->command->info('✅ Comprehensive vendor data created successfully!');
@@ -158,17 +158,30 @@ class ComprehensiveVendorSeeder extends Seeder
 
     private function createOrderSimulation(Vendor $vendor, array $products, array $customers): void
     {
-        $this->command->info('Creating comprehensive order simulation...');
+        $this->command->info('Creating comprehensive order simulation with extensive order history...');
 
         // Create mock payment proof images
         $this->createMockPaymentProofs();
 
-        // Define order scenarios
+        // Define comprehensive order scenarios for order history testing
+        // ONLY USING VALID DATABASE STATUSES: pending, accepted, ready_for_pickup, cancelled
         $orderScenarios = [
+            // Current active orders (Incoming Orders)
             ['count' => 3, 'status' => 'pending', 'payment_methods' => ['qr_code', 'cash', 'gcash'], 'special_instructions' => ['No onions please', 'Extra spicy', 'Less salt']],
-            ['count' => 2, 'status' => 'accepted', 'payment_methods' => ['qr_code', 'cash'], 'special_instructions' => ['Medium rare', 'Add extra cheese']],
+            ['count' => 2, 'status' => 'accepted', 'payment_methods' => ['qr_code', 'gcash'], 'special_instructions' => ['Medium rare', 'Add extra cheese']],
             ['count' => 4, 'status' => 'ready_for_pickup', 'payment_methods' => ['qr_code', 'gcash', 'cash', 'qr_code'], 'special_instructions' => ['Well done', 'No vegetables', null, 'Extra sauce']],
-            ['count' => 2, 'status' => 'cancelled', 'payment_methods' => ['cash', 'qr_code'], 'special_instructions' => [null, 'Customer cancelled']],
+
+            // Order History examples - Cancelled orders (representing declined/declined orders)
+            ['count' => 3, 'status' => 'cancelled', 'payment_methods' => ['cash', 'qr_code', 'gcash'], 'special_instructions' => [null, 'Customer cancelled', 'Order too large']],
+            ['count' => 2, 'status' => 'cancelled', 'payment_methods' => ['cash', 'qr_code'], 'special_instructions' => ['Item out of stock', 'Kitchen closed']],
+
+            // Order History examples - Completed Transactions (ready_for_pickup represents completed)
+            ['count' => 4, 'status' => 'ready_for_pickup', 'payment_methods' => ['qr_code', 'gcash', 'cash', 'qr_code'], 'special_instructions' => ['Standard order', 'Extra toppings', null, 'Delivery order'], 'completed' => true],
+            ['count' => 3, 'status' => 'ready_for_pickup', 'payment_methods' => ['cash', 'qr_code', 'gcash'], 'special_instructions' => ['Birthday celebration', 'Corporate order', 'Regular customer'], 'completed' => true],
+
+            // Additional variety for better testing
+            ['count' => 2, 'status' => 'cancelled', 'payment_methods' => ['gcash', 'cash'], 'special_instructions' => ['Payment failed', 'Customer no-show']],
+            ['count' => 1, 'status' => 'cancelled', 'payment_methods' => ['qr_code'], 'special_instructions' => ['Large quantity unavailable']],
         ];
 
         $totalOrders = 0;
@@ -213,7 +226,7 @@ class ComprehensiveVendorSeeder extends Seeder
             }
         }
 
-        $this->command->info("Created {$totalOrders} orders with full simulation");
+        $this->command->info("Created {$totalOrders} orders with comprehensive simulation");
         $this->command->info('📊 Order distribution:');
         $this->command->info('   Pending: ' . Order::where('status', 'pending')->count());
         $this->command->info('   Accepted: ' . Order::where('status', 'accepted')->count());
@@ -261,7 +274,7 @@ class ComprehensiveVendorSeeder extends Seeder
                 $addonCount = rand(1, min(2, $addons->count()));
                 $randomAddons = $addons->random($addonCount);
                 foreach ($randomAddons as $addon) {
-                    $selectedAddons[] = [
+                    $selectedAmount[] = [
                         'id' => $addon->id,
                         'name' => $addon->name,
                         'price' => $addon->price
@@ -299,7 +312,7 @@ class ComprehensiveVendorSeeder extends Seeder
         }
 
         // Create simple payment proof files
-        for ($i = 1; $i <= 20; $i++) {
+        for ($i = 1; $i <= 30; $i++) {
             $filename = 'ORD-' . str_pad($i, 6, '0', STR_PAD_LEFT) . '.jpg';
             $filepath = $directory . '/' . $filename;
             file_put_contents($filepath, "Mock payment proof for {$filename}");

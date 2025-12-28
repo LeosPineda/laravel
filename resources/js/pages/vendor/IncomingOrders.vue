@@ -1,12 +1,12 @@
 <template>
   <div class="bg-white">
     <!-- Tabs -->
-    <div class="border-b border-gray-200 px-6">
+    <div class="border-b border-gray-200 px-4">
       <div class="flex gap-6">
         <button
           @click="activeTab = 'pending'"
           :class="[
-            'py-4 text-sm font-medium border-b-2 transition-colors',
+            'py-3 text-sm font-medium border-b-2 transition-colors',
             activeTab === 'pending'
               ? 'border-orange-500 text-orange-600'
               : 'border-transparent text-gray-500 hover:text-gray-700'
@@ -20,7 +20,7 @@
         <button
           @click="activeTab = 'accepted'"
           :class="[
-            'py-4 text-sm font-medium border-b-2 transition-colors',
+            'py-3 text-sm font-medium border-b-2 transition-colors',
             activeTab === 'accepted'
               ? 'border-orange-500 text-orange-600'
               : 'border-transparent text-gray-500 hover:text-gray-700'
@@ -35,74 +35,56 @@
     </div>
 
     <!-- Content -->
-    <div class="p-6">
+    <div class="p-4">
       <!-- Loading -->
       <div v-if="loading" class="text-center py-12">
         <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto"></div>
         <p class="text-gray-500 mt-4">Loading orders...</p>
       </div>
 
-      <!-- Pending Orders Grid -->
+      <!-- Pending Orders -->
       <div v-else-if="activeTab === 'pending'">
-        <div v-if="pendingOrders.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div v-if="pendingOrders.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           <div
             v-for="order in pendingOrders"
             :key="order.id"
-            class="bg-white rounded-lg border-2 border-yellow-300 p-4 hover:shadow-md transition-shadow"
+            class="bg-white rounded-lg border-2 border-yellow-300 p-6"
           >
-            <!-- Header -->
-            <div class="flex items-start justify-between mb-3">
+            <div class="flex items-start justify-between mb-4">
               <div>
-                <div class="flex items-center gap-2 mb-1">
-                  <span class="text-sm font-bold text-gray-900">#{{ order.order_number?.replace('ORD-', '') }}</span>
-                  <span class="px-1.5 py-0.5 bg-yellow-100 text-yellow-700 rounded text-xs font-medium">New</span>
+                <div class="mb-2">
+                  <span class="text-base font-bold text-gray-900">#{{ order.order_number?.replace('ORD-', '') }}</span>
+                  <span class="ml-2 px-2 py-1 bg-yellow-100 text-yellow-700 rounded text-sm font-medium">New</span>
                 </div>
-                <p class="text-xs text-gray-500">Table {{ order.table_number || 'N/A' }}</p>
-                <p class="text-xs text-gray-500">{{ formatTime(order.created_at) }}</p>
+                <p class="text-sm text-gray-500">Table {{ order.table_number || 'N/A' }}</p>
+                <p class="text-sm text-gray-500">{{ formatTime(order.created_at) }}</p>
               </div>
-              <span class="text-sm font-bold text-orange-600">₱{{ parseFloat(order.total_amount).toFixed(0) }}</span>
+              <span class="text-lg font-bold text-orange-600">₱{{ parseFloat(order.total_amount).toFixed(0) }}</span>
             </div>
 
-            <!-- Items Preview -->
-            <div class="text-xs text-gray-600 mb-3 line-clamp-2">
-              <span v-for="(item, idx) in order.items?.slice(0, 2)" :key="item.id">
-                {{ item.quantity }}x {{ item.product?.name }}<span v-if="idx < Math.min(order.items.length, 2) - 1">, </span>
-              </span>
-              <span v-if="order.items?.length > 2" class="text-gray-400">+{{ order.items.length - 2 }} more</span>
-            </div>
-
-            <!-- Special Instructions Alert -->
-            <div v-if="order.special_instructions" class="mb-3 px-2 py-1 bg-yellow-50 border-l-2 border-yellow-400 text-xs text-yellow-800">
-              ⚠️ {{ order.special_instructions }}
-            </div>
-
-            <!-- Actions -->
-            <div class="flex gap-1">
+            <div class="flex gap-3">
               <button
                 @click="openOrderDetail(order)"
-                class="flex-1 px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs hover:bg-gray-200"
+                class="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm hover:bg-gray-200"
               >
-                Details
+                View Order
               </button>
               <button
                 @click="declineOrder(order)"
-                :disabled="processingOrder === order.id"
-                class="px-2 py-1 bg-red-100 text-red-600 rounded text-xs hover:bg-red-200 disabled:opacity-50"
+                class="px-4 py-2 bg-red-100 text-red-600 rounded-lg text-sm hover:bg-red-200"
               >
-                ✕
+                Decline
               </button>
               <button
                 @click="acceptOrder(order)"
-                :disabled="processingOrder === order.id"
-                class="flex-1 px-2 py-1 bg-green-500 text-white rounded text-xs hover:bg-green-600 disabled:opacity-50"
+                class="flex-1 px-4 py-2 bg-green-500 text-white rounded-lg text-sm hover:bg-green-600"
               >
-                {{ processingOrder === order.id ? '...' : '✓' }}
+                Accept
               </button>
             </div>
           </div>
         </div>
 
-        <!-- Empty Pending -->
         <div v-else class="text-center py-12">
           <div class="text-5xl mb-4">📭</div>
           <h3 class="text-lg font-medium text-gray-900 mb-2">No pending orders</h3>
@@ -110,60 +92,43 @@
         </div>
       </div>
 
-      <!-- Accepted/Preparing Orders Grid -->
+      <!-- Accepted Orders -->
       <div v-else-if="activeTab === 'accepted'">
-        <div v-if="acceptedOrders.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div v-if="acceptedOrders.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           <div
             v-for="order in acceptedOrders"
             :key="order.id"
-            class="bg-white rounded-lg border-2 border-blue-300 p-4 hover:shadow-md transition-shadow"
+            class="bg-white rounded-lg border-2 border-blue-300 p-6"
           >
-            <!-- Header -->
-            <div class="flex items-start justify-between mb-3">
+            <div class="flex items-start justify-between mb-4">
               <div>
-                <div class="flex items-center gap-2 mb-1">
-                  <span class="text-sm font-bold text-gray-900">#{{ order.order_number?.replace('ORD-', '') }}</span>
-                  <span class="px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded text-xs font-medium">Preparing</span>
+                <div class="mb-2">
+                  <span class="text-base font-bold text-gray-900">#{{ order.order_number?.replace('ORD-', '') }}</span>
+                  <span class="ml-2 px-2 py-1 bg-blue-100 text-blue-700 rounded text-sm font-medium">Preparing</span>
                 </div>
-                <p class="text-xs text-gray-500">Table {{ order.table_number || 'N/A' }}</p>
-                <p class="text-xs text-gray-500">{{ formatTime(order.created_at) }}</p>
+                <p class="text-sm text-gray-500">Table {{ order.table_number || 'N/A' }}</p>
+                <p class="text-sm text-gray-500">{{ formatTime(order.created_at) }}</p>
               </div>
-              <span class="text-sm font-bold text-orange-600">₱{{ parseFloat(order.total_amount).toFixed(0) }}</span>
+              <span class="text-lg font-bold text-orange-600">₱{{ parseFloat(order.total_amount).toFixed(0) }}</span>
             </div>
 
-            <!-- Items Preview -->
-            <div class="text-xs text-gray-600 mb-3 line-clamp-2">
-              <span v-for="(item, idx) in order.items?.slice(0, 2)" :key="item.id">
-                {{ item.quantity }}x {{ item.product?.name }}<span v-if="idx < Math.min(order.items.length, 2) - 1">, </span>
-              </span>
-              <span v-if="order.items?.length > 2" class="text-gray-400">+{{ order.items.length - 2 }} more</span>
-            </div>
-
-            <!-- Special Instructions -->
-            <div v-if="order.special_instructions" class="mb-3 px-2 py-1 bg-yellow-50 border-l-2 border-yellow-400 text-xs text-yellow-800">
-              ⚠️ {{ order.special_instructions }}
-            </div>
-
-            <!-- Actions -->
-            <div class="flex gap-1">
+            <div class="flex gap-3">
               <button
                 @click="openOrderDetail(order)"
-                class="flex-1 px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs hover:bg-gray-200"
+                class="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm hover:bg-gray-200"
               >
-                Details
+                View Order
               </button>
               <button
                 @click="markReady(order)"
-                :disabled="processingOrder === order.id"
-                class="flex-1 px-2 py-1 bg-blue-500 text-white rounded text-xs hover:bg-blue-600 disabled:opacity-50"
+                class="flex-1 px-4 py-2 bg-blue-500 text-white rounded-lg text-sm hover:bg-blue-600"
               >
-                {{ processingOrder === order.id ? '...' : '🍳' }}
+                Mark as Ready
               </button>
             </div>
           </div>
         </div>
 
-        <!-- Empty Accepted -->
         <div v-else class="text-center py-12">
           <div class="text-5xl mb-4">👨‍🍳</div>
           <h3 class="text-lg font-medium text-gray-900 mb-2">No orders being prepared</h3>
@@ -172,41 +137,11 @@
       </div>
     </div>
 
-    <!-- Order Detail Modal -->
+    <!-- Modals -->
     <OrderDetailModal
       :is-open="showOrderModal"
       :order-id="selectedOrderId"
-      :processing="processingOrder !== null"
-      @close="closeOrderModal"
-      @accept="openAcceptModal"
-      @decline="openDeclineModal"
-      @markReady="handleMarkReady"
-    />
-
-    <!-- Accept Confirmation Modal -->
-    <ConfirmModal
-      :is-open="showAcceptModal"
-      title="Accept Order"
-      :message="`Accept order #${targetOrder?.order_number}? This will start preparing the order.`"
-      confirm-text="Accept Order"
-      :loading="processingOrder !== null"
-      icon="✓"
-      variant="warning"
-      @confirm="confirmAccept"
-      @cancel="showAcceptModal = false"
-    />
-
-    <!-- Decline Confirmation Modal -->
-    <ConfirmModal
-      :is-open="showDeclineModal"
-      title="Decline Order"
-      :message="`Are you sure you want to decline order #${targetOrder?.order_number}? The customer will be notified.`"
-      confirm-text="Decline Order"
-      :loading="processingOrder !== null"
-      icon="✕"
-      variant="danger"
-      @confirm="confirmDecline"
-      @cancel="showDeclineModal = false"
+      @close="showOrderModal = false"
     />
   </div>
 </template>
@@ -215,7 +150,6 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { usePage } from '@inertiajs/vue3'
 import OrderDetailModal from '@/components/vendor/OrderDetailModal.vue'
-import ConfirmModal from '@/components/ui/ConfirmModal.vue'
 import { useToast } from '@/composables/useToast'
 
 const emit = defineEmits(['ordersUpdated'])
@@ -225,17 +159,11 @@ const page = usePage()
 const vendorId = ref(null)
 const allOrders = ref([])
 const loading = ref(false)
-const processingOrder = ref(null)
 const activeTab = ref('pending')
 
-// Order Detail Modal
+// Modal
 const showOrderModal = ref(false)
 const selectedOrderId = ref(null)
-
-// Accept/Decline Modals
-const showAcceptModal = ref(false)
-const showDeclineModal = ref(false)
-const targetOrder = ref(null)
 
 // Computed
 const pendingOrders = computed(() => allOrders.value.filter(o => o.status === 'pending'))
@@ -249,9 +177,7 @@ const formatTime = (dateString) => {
 }
 
 const loadOrders = async () => {
-  loading.value = true
   try {
-    // Load both pending and accepted
     const response = await fetch('/api/vendor/orders?per_page=50', {
       headers: {
         'Authorization': `Bearer ${localStorage.getItem('token')}`,
@@ -261,32 +187,23 @@ const loadOrders = async () => {
 
     if (response.ok) {
       const data = await response.json()
-      // Filter to only show pending and accepted
       allOrders.value = (data.orders || []).filter(o =>
         o.status === 'pending' || o.status === 'accepted'
       )
+    } else {
+      toast.error('Failed to load orders')
     }
   } catch (error) {
-    console.error('Error loading orders:', error)
-  } finally {
-    loading.value = false
+    toast.error('Failed to load orders')
   }
 }
 
-// Modal handlers
 const openOrderDetail = (order) => {
   selectedOrderId.value = order.id
   showOrderModal.value = true
 }
 
-const closeOrderModal = () => {
-  showOrderModal.value = false
-  selectedOrderId.value = null
-}
-
-// Actions
 const acceptOrder = async (order) => {
-  processingOrder.value = order.id
   try {
     const response = await fetch(`/api/vendor/orders/${order.id}/accept`, {
       method: 'PATCH',
@@ -297,27 +214,21 @@ const acceptOrder = async (order) => {
     })
 
     if (response.ok) {
-      toast.success(`Order #${order.order_number} accepted!`)
+      toast.success(`Order #${order.order_number} accepted! Customer will be notified.`)
       await loadOrders()
-      // Switch to preparing tab to show the accepted order
       activeTab.value = 'accepted'
       emit('ordersUpdated')
     } else {
-      const error = await response.json()
-      toast.error(error.error || 'Failed to accept order')
+      toast.error('Failed to accept order')
     }
   } catch (error) {
-    console.error('Error accepting order:', error)
     toast.error('Failed to accept order')
-  } finally {
-    processingOrder.value = null
   }
 }
 
 const declineOrder = async (order) => {
-  if (!confirm(`Decline order #${order.order_number}?`)) return
+  if (!confirm(`Decline order #${order.order_number}? The customer will be notified.`)) return
 
-  processingOrder.value = order.id
   try {
     const response = await fetch(`/api/vendor/orders/${order.id}/decline`, {
       method: 'PATCH',
@@ -328,23 +239,18 @@ const declineOrder = async (order) => {
     })
 
     if (response.ok) {
-      toast.warning(`Order #${order.order_number} declined`)
+      toast.warning(`Order #${order.order_number} declined. Customer will be notified.`)
       await loadOrders()
       emit('ordersUpdated')
     } else {
-      const error = await response.json()
-      toast.error(error.error || 'Failed to decline order')
+      toast.error('Failed to decline order')
     }
   } catch (error) {
-    console.error('Error declining order:', error)
     toast.error('Failed to decline order')
-  } finally {
-    processingOrder.value = null
   }
 }
 
 const markReady = async (order) => {
-  processingOrder.value = order.id
   try {
     const response = await fetch(`/api/vendor/orders/${order.id}/ready`, {
       method: 'PATCH',
@@ -355,75 +261,15 @@ const markReady = async (order) => {
     })
 
     if (response.ok) {
-      toast.success(`Order #${order.order_number} is ready for pickup! 🎉`)
+      toast.success(`Order #${order.order_number} is ready! Customer notified + receipt sent.`)
       await loadOrders()
       emit('ordersUpdated')
     } else {
-      const error = await response.json()
-      toast.error(error.error || 'Failed to mark order as ready')
+      toast.error('Failed to mark order as ready')
     }
   } catch (error) {
-    console.error('Error marking order ready:', error)
     toast.error('Failed to mark order as ready')
-  } finally {
-    processingOrder.value = null
   }
-}
-
-// Open confirmation modals
-const openAcceptModal = (order) => {
-  targetOrder.value = order
-  showAcceptModal.value = true
-  closeOrderModal()
-}
-
-const openDeclineModal = (order) => {
-  targetOrder.value = order
-  showDeclineModal.value = true
-  closeOrderModal()
-}
-
-// Confirm actions
-const confirmAccept = async () => {
-  if (!targetOrder.value) return
-  await acceptOrder(targetOrder.value)
-  showAcceptModal.value = false
-  targetOrder.value = null
-}
-
-const confirmDecline = async () => {
-  if (!targetOrder.value) return
-  processingOrder.value = targetOrder.value.id
-  try {
-    const response = await fetch(`/api/vendor/orders/${targetOrder.value.id}/decline`, {
-      method: 'PATCH',
-      headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token')}`,
-        'Content-Type': 'application/json'
-      }
-    })
-
-    if (response.ok) {
-      toast.warning(`Order #${targetOrder.value.order_number} declined`)
-      await loadOrders()
-      emit('ordersUpdated')
-    } else {
-      const error = await response.json()
-      toast.error(error.error || 'Failed to decline order')
-    }
-  } catch (error) {
-    console.error('Error declining order:', error)
-    toast.error('Failed to decline order')
-  } finally {
-    processingOrder.value = null
-    showDeclineModal.value = false
-    targetOrder.value = null
-  }
-}
-
-const handleMarkReady = async (order) => {
-  await markReady(order)
-  closeOrderModal()
 }
 
 // Real-time
@@ -431,20 +277,12 @@ const subscribeToChannel = () => {
   if (window.Echo && vendorId.value) {
     window.Echo.private(`vendor-orders.${vendorId.value}`)
       .listen('.OrderReceived', (e) => {
-        console.log('New order received:', e)
         loadOrders()
-        toast.newOrder(`New Order #${e.order?.order_number || 'N/A'}!`)
+        toast.success(`New Order #${e.order?.order_number}!`)
       })
       .listen('.OrderStatusChanged', (e) => {
-        console.log('Order status changed:', e)
         loadOrders()
       })
-  }
-}
-
-const unsubscribeFromChannel = () => {
-  if (window.Echo && vendorId.value) {
-    window.Echo.leave(`vendor-orders.${vendorId.value}`)
   }
 }
 
@@ -456,17 +294,8 @@ onMounted(async () => {
 })
 
 onUnmounted(() => {
-  unsubscribeFromChannel()
+  if (window.Echo && vendorId.value) {
+    window.Echo.leave(`vendor-orders.${vendorId.value}`)
+  }
 })
-
-defineExpose({ loadOrders })
 </script>
-
-<style scoped>
-.line-clamp-2 {
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-</style>

@@ -1,133 +1,191 @@
 <template>
   <div class="bg-white">
+    <!-- Tabs -->
+    <div class="border-b border-gray-200 px-4">
+      <div class="flex gap-6">
+        <button
+          @click="activeTab = 'completed'"
+          :class="[
+            'py-3 text-sm font-medium border-b-2 transition-colors',
+            activeTab === 'completed'
+              ? 'border-orange-500 text-orange-600'
+              : 'border-transparent text-gray-500 hover:text-gray-700'
+          ]"
+        >
+          ✅ Completed
+          <span v-if="completedCount > 0" class="ml-1 px-2 py-0.5 bg-green-100 text-green-700 rounded-full text-xs">
+            {{ completedCount }}
+          </span>
+        </button>
+        <button
+          @click="activeTab = 'cancelled'"
+          :class="[
+            'py-3 text-sm font-medium border-b-2 transition-colors',
+            activeTab === 'cancelled'
+              ? 'border-orange-500 text-orange-600'
+              : 'border-transparent text-gray-500 hover:text-gray-700'
+          ]"
+        >
+          ❌ Cancelled
+          <span v-if="cancelledCount > 0" class="ml-1 px-2 py-0.5 bg-red-100 text-red-700 rounded-full text-xs">
+            {{ cancelledCount }}
+          </span>
+        </button>
+      </div>
+    </div>
+
     <!-- Content -->
-    <div class="p-6">
-      <div class="max-w-4xl mx-auto">
-        <!-- Filters -->
-        <OrderFilters
-          v-model:selected-status="selectedStatus"
-          v-model:search-query="searchQuery"
-          :orders="orders"
-          :selected-orders="selectedOrders"
-          :all-selected="allSelected"
-          @status-change="handleStatusChange"
-          @search="debouncedSearch"
-          @toggle-select-all="toggleSelectAll"
-          @open-bulk-delete="openBulkDeleteModal"
-        />
+    <div class="p-4">
+      <!-- Loading -->
+      <div v-if="loading" class="text-center py-12">
+        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto"></div>
+        <p class="text-gray-500 mt-4">Loading orders...</p>
+      </div>
 
-        <!-- Loading State -->
-        <div v-if="loading" class="text-center py-12">
-          <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto"></div>
-          <p class="text-gray-500 mt-4">Loading orders...</p>
-        </div>
-
-        <!-- Orders List -->
-        <div v-else-if="orders.length > 0" class="space-y-3">
-          <OrderCard
-            v-for="order in orders"
+      <!-- Completed Orders -->
+      <div v-else-if="activeTab === 'completed'">
+        <div v-if="completedOrders.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div
+            v-for="order in completedOrders"
             :key="order.id"
-            :order="order"
-            :selected="selectedOrders.includes(order.id)"
-            @view="openOrderDetail"
-            @receipt="downloadReceipt"
-            @delete="openDeleteModal"
-            @toggle-selection="toggleOrderSelection"
-          />
+            class="bg-white rounded-lg border-2 border-green-300 p-6"
+          >
+            <div class="flex items-start justify-between mb-4">
+              <div>
+                <div class="mb-2">
+                  <span class="text-base font-bold text-gray-900">#{{ order.order_number?.replace('ORD-', '') }}</span>
+                  <span class="ml-2 px-2 py-1 bg-green-100 text-green-700 rounded text-sm font-medium">Completed</span>
+                </div>
+                <p>Table {{ order.table_number || 'N/A' }}</p>
+                <p>{{ formatTime(order.updated_at) }}</p>
+              </div>
+              <span class="text-lg font-bold text-orange-600">₱{{ parseFloat(order.total_amount).toFixed(0) }}</span>
+            </div>
+
+            <div class="flex gap-3">
+              <button
+                @click="openOrderDetail(order)"
+                class="flex-1 px-3 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm hover:bg-gray-200"
+              >
+                View Order
+              </button>
+              <button
+                @click="downloadReceipt(order)"
+                class="flex-1 px-3 py-2 bg-blue-100 text-blue-600 rounded-lg text-sm hover:bg-blue-200"
+              >
+                Download Receipt
+              </button>
+              <button
+                @click="deleteOrder(order)"
+                class="px-3 py-2 bg-red-100 text-red-600 rounded-lg text-sm hover:bg-red-200"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
         </div>
 
-        <!-- Empty State -->
         <div v-else class="text-center py-12">
-          <div class="text-5xl mb-4">📋</div>
-          <h3 class="text-lg font-medium text-gray-900 mb-2">No order history</h3>
-          <p class="text-gray-500">Completed and declined orders will appear here</p>
+          <div class="text-5xl mb-4">✅</div>
+          <h3 class="text-lg font-medium text-gray-900 mb-2">No completed orders</h3>
+          <p class="text-gray-500">Completed orders will appear here</p>
+        </div>
+      </div>
+
+      <!-- Cancelled Orders -->
+      <div v-else-if="activeTab === 'cancelled'">
+        <div v-if="cancelledOrders.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div
+            v-for="order in cancelledOrders"
+            :key="order.id"
+            class="bg-white rounded-lg border-2 border-red-300 p-6"
+          >
+            <div class="flex items-start justify-between mb-4">
+              <div>
+                <div class="mb-2">
+                  <span class="text-base font-bold text-gray-900">#{{ order.order_number?.replace('ORD-', '') }}</span>
+                  <span class="ml-2 px-2 py-1 bg-red-100 text-red-700 rounded text-sm font-medium">Cancelled</span>
+                </div>
+                <p>Table {{ order.table_number || 'N/A' }}</p>
+                <p>{{ formatTime(order.updated_at) }}</p>
+              </div>
+              <span class="text-lg font-bold text-orange-600">₱{{ parseFloat(order.total_amount).toFixed(0) }}</span>
+            </div>
+
+            <div class="flex gap-3">
+              <button
+                @click="openOrderDetail(order)"
+                class="flex-1 px-3 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm hover:bg-gray-200"
+              >
+                View Order
+              </button>
+              <button
+                @click="deleteOrder(order)"
+                class="flex-1 px-3 py-2 bg-red-100 text-red-600 rounded-lg text-sm hover:bg-red-200"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
         </div>
 
-        <!-- Pagination -->
-        <div v-if="pagination.total > pagination.per_page" class="mt-6 flex items-center justify-between">
-          <div class="text-sm text-gray-500">
-            {{ pagination.total }} orders
-          </div>
-          <div class="flex gap-2">
-            <button
-              @click="changePage(pagination.current_page - 1)"
-              :disabled="pagination.current_page <= 1"
-              class="px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50"
-            >
-              Previous
-            </button>
-            <button
-              @click="changePage(pagination.current_page + 1)"
-              :disabled="pagination.current_page >= pagination.last_page"
-              class="px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50"
-            >
-              Next
-            </button>
-          </div>
+        <div v-else class="text-center py-12">
+          <div class="text-5xl mb-4">❌</div>
+          <h3 class="text-lg font-medium text-gray-900 mb-2">No cancelled orders</h3>
+          <p class="text-gray-500">Cancelled orders will appear here</p>
         </div>
       </div>
     </div>
 
-    <!-- Order Detail Modal -->
+    <!-- Pagination -->
+    <div v-if="pagination.total > pagination.per_page" class="px-4 pb-4 flex justify-between">
+      <div class="text-sm text-gray-500">
+        {{ pagination.total }} orders
+      </div>
+      <div class="flex gap-2">
+        <button
+          @click="changePage(pagination.current_page - 1)"
+          :disabled="pagination.current_page <= 1"
+          class="px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50"
+        >
+          Previous
+        </button>
+        <button
+          @click="changePage(pagination.current_page + 1)"
+          :disabled="pagination.current_page >= pagination.last_page"
+          class="px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50"
+        >
+          Next
+        </button>
+      </div>
+    </div>
+
+    <!-- Modals -->
     <OrderDetailModal
       :is-open="showOrderModal"
       :order-id="selectedOrderId"
       :processing="false"
-      @close="closeOrderModal"
-    />
-
-    <!-- Delete Confirmation Modal -->
-    <ConfirmModal
-      :is-open="showDeleteModal"
-      title="Delete Order"
-      :message="`Delete order #${deleteTarget?.order_number}? This cannot be undone.`"
-      confirm-text="Delete"
-      :loading="deleting"
-      icon="🗑️"
-      variant="danger"
-      @confirm="confirmDelete"
-      @cancel="showDeleteModal = false"
-    />
-
-    <!-- Bulk Delete Confirmation Modal -->
-    <ConfirmModal
-      :is-open="showBulkDeleteModal"
-      title="Delete Selected Orders"
-      :message="`Delete ${selectedOrders.length} selected orders? This cannot be undone.`"
-      confirm-text="Delete All"
-      :loading="deleting"
-      icon="🗑️"
-      variant="danger"
-      @confirm="confirmBulkDelete"
-      @cancel="showBulkDeleteModal = false"
+      @close="showOrderModal = false"
     />
   </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import OrderFilters from '@/components/vendor/OrderFilters.vue'
-import OrderCard from '@/components/vendor/OrderCard.vue'
 import OrderDetailModal from '@/components/vendor/OrderDetailModal.vue'
-import ConfirmModal from '@/components/ui/ConfirmModal.vue'
 import { useToast } from '@/composables/useToast'
 
 const toast = useToast()
 
 const orders = ref([])
 const loading = ref(false)
-const selectedStatus = ref('')
-const searchQuery = ref('')
-const selectedOrders = ref([])
+const activeTab = ref('completed')
 
-// Modals
+// Modal
 const showOrderModal = ref(false)
 const selectedOrderId = ref(null)
-const showDeleteModal = ref(false)
-const showBulkDeleteModal = ref(false)
-const deleteTarget = ref(null)
-const deleting = ref(false)
 
+// Pagination
 const pagination = ref({
   current_page: 1,
   last_page: 1,
@@ -135,27 +193,24 @@ const pagination = ref({
   total: 0
 })
 
-let searchTimeout = null
+// Computed
+const completedOrders = computed(() => orders.value.filter(o => o.status === 'ready_for_pickup'))
+const cancelledOrders = computed(() => orders.value.filter(o => o.status === 'cancelled'))
+const completedCount = computed(() => completedOrders.value.length)
+const cancelledCount = computed(() => cancelledOrders.value.length)
 
-const allSelected = computed(() => {
-  return orders.value.length > 0 && selectedOrders.value.length === orders.value.length
-})
+const formatTime = (dateString) => {
+  if (!dateString) return ''
+  return new Date(dateString).toLocaleTimeString('en-PH', { hour: '2-digit', minute: '2-digit' })
+}
 
 const loadOrders = async () => {
   loading.value = true
-  selectedOrders.value = []
   try {
     const params = new URLSearchParams({
       page: pagination.value.current_page.toString(),
       per_page: pagination.value.per_page.toString()
     })
-
-    if (selectedStatus.value) {
-      params.append('status', selectedStatus.value)
-    }
-    if (searchQuery.value) {
-      params.append('search', searchQuery.value)
-    }
 
     const response = await fetch(`/api/vendor/orders?${params}`, {
       headers: {
@@ -166,7 +221,6 @@ const loadOrders = async () => {
 
     if (response.ok) {
       const data = await response.json()
-      // Only show completed and cancelled orders
       orders.value = (data.orders || []).filter(o =>
         o.status === 'ready_for_pickup' || o.status === 'cancelled'
       )
@@ -179,54 +233,16 @@ const loadOrders = async () => {
   }
 }
 
-const handleStatusChange = () => {
-  pagination.value.current_page = 1
-  loadOrders()
-}
-
-const debouncedSearch = () => {
-  clearTimeout(searchTimeout)
-  searchTimeout = setTimeout(() => {
-    pagination.value.current_page = 1
-    loadOrders()
-  }, 300)
-}
-
 const changePage = (page) => {
   pagination.value.current_page = page
   loadOrders()
 }
 
-// Selection
-const toggleOrderSelection = (orderId) => {
-  const index = selectedOrders.value.indexOf(orderId)
-  if (index > -1) {
-    selectedOrders.value.splice(index, 1)
-  } else {
-    selectedOrders.value.push(orderId)
-  }
-}
-
-const toggleSelectAll = () => {
-  if (allSelected.value) {
-    selectedOrders.value = []
-  } else {
-    selectedOrders.value = orders.value.map(o => o.id)
-  }
-}
-
-// Modal handlers
 const openOrderDetail = (order) => {
   selectedOrderId.value = order.id
   showOrderModal.value = true
 }
 
-const closeOrderModal = () => {
-  showOrderModal.value = false
-  selectedOrderId.value = null
-}
-
-// Direct receipt download functionality
 const downloadReceipt = async (order) => {
   try {
     toast.success('Downloading receipt...')
@@ -242,10 +258,7 @@ const downloadReceipt = async (order) => {
       throw new Error(errorData.message || 'Failed to generate receipt')
     }
 
-    // Get the PDF blob
     const blob = await response.blob()
-
-    // Create download link
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
@@ -260,69 +273,28 @@ const downloadReceipt = async (order) => {
   }
 }
 
-// Delete handlers
-const openDeleteModal = (order) => {
-  deleteTarget.value = order
-  showDeleteModal.value = true
-}
+const deleteOrder = async (order) => {
+  if (!confirm(`Delete order #${order.order_number}? This cannot be undone.`)) return
 
-const openBulkDeleteModal = () => {
-  showBulkDeleteModal.value = true
-}
-
-const confirmDelete = async () => {
-  if (!deleteTarget.value) return
-  deleting.value = true
   try {
-    const response = await fetch('/api/vendor/orders/batch', {
+    const response = await fetch(`/api/vendor/orders/${order.id}`, {
       method: 'DELETE',
       headers: {
         'Authorization': `Bearer ${localStorage.getItem('token')}`,
         'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ order_ids: [deleteTarget.value.id] })
+      }
     })
 
     if (response.ok) {
-      toast.success('Order deleted')
+      toast.success('Order deleted successfully')
       await loadOrders()
     } else {
-      toast.error('Failed to delete order')
+      const error = await response.json()
+      toast.error(error.message || 'Failed to delete order')
     }
   } catch (error) {
+    console.error('Error deleting order:', error)
     toast.error('Failed to delete order')
-  } finally {
-    deleting.value = false
-    showDeleteModal.value = false
-    deleteTarget.value = null
-  }
-}
-
-const confirmBulkDelete = async () => {
-  if (selectedOrders.value.length === 0) return
-  deleting.value = true
-  try {
-    const response = await fetch('/api/vendor/orders/batch', {
-      method: 'DELETE',
-      headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token')}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ order_ids: selectedOrders.value })
-    })
-
-    if (response.ok) {
-      toast.success(`${selectedOrders.value.length} orders deleted`)
-      selectedOrders.value = []
-      await loadOrders()
-    } else {
-      toast.error('Failed to delete orders')
-    }
-  } catch (error) {
-    toast.error('Failed to delete orders')
-  } finally {
-    deleting.value = false
-    showBulkDeleteModal.value = false
   }
 }
 

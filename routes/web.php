@@ -79,6 +79,14 @@ Route::middleware(['auth', 'role:vendor'])->prefix('vendor')->name('vendor.')->g
         return Inertia::render('vendor/Orders');
     })->name('orders');
 
+    Route::get('/incoming-orders', function () {
+        return Inertia::render('vendor/IncomingOrders');
+    })->name('incoming-orders');
+
+    Route::get('/order-history', function () {
+        return Inertia::render('vendor/OrderHistory');
+    })->name('order-history');
+
     Route::get('/products', function () {
         return Inertia::render('vendor/Products');
     })->name('products');
