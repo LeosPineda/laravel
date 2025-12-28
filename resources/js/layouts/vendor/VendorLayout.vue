@@ -75,6 +75,12 @@
 
           <!-- Right side -->
           <div class="flex items-center gap-4">
+            <!-- Notification Bell -->
+            <NotificationBell
+              v-if="user?.vendor?.id"
+              :vendor-id="user.vendor.id"
+            />
+
             <!-- Logout -->
             <button
               @click="logout"
@@ -174,7 +180,12 @@
 
 <script setup>
 import { Link, router } from '@inertiajs/vue3'
+import { usePage } from '@inertiajs/vue3'
 import ToastContainer from '@/components/ui/ToastContainer.vue'
+import NotificationBell from '@/components/NotificationBell.vue'
+
+const page = usePage()
+const user = page.props.auth?.user
 
 const logout = () => {
   router.post('/logout')

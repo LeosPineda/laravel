@@ -37,6 +37,10 @@ Route::middleware(['web', 'auth', 'role:vendor', 'throttle:60,1'])->prefix('vend
     Route::patch('/orders/{order}/ready', [VendorOrderController::class, 'markReady'])->name('orders.ready');
     Route::delete('/orders/batch', [VendorOrderController::class, 'batchDelete'])->name('orders.batch-delete');
 
+    // Receipt functionality for vendors
+    Route::get('/orders/{order}/receipt/download', [VendorOrderController::class, 'downloadReceipt'])->name('orders.receipt.download');
+    Route::get('/orders/{order}/receipt/stream', [VendorOrderController::class, 'streamReceipt'])->name('orders.receipt.stream');
+
     // Products
     Route::get('/products/categories', [ProductController::class, 'getCategories'])->name('products.categories');
     Route::apiResource('products', ProductController::class);

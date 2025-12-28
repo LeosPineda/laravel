@@ -6,6 +6,7 @@ use App\Events\OrderStatusChanged;
 use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Models\Vendor;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
@@ -320,6 +321,82 @@ class OrderController extends Controller
             ]);
 
             return response()->json(['error' => 'Failed to fetch order statistics'], 500);
+        }
+    }
+
+    /**
+     * Generate and download PDF receipt for an order
+     * Uses the same customer template for both customer and vendor
+     */
+    public function downloadReceipt(Request $request, $orderId)
+    {
+        try {
+            $vendor = $this->getCurrentVendor();
+            if (!$vendor) {
+                return response()->json(['error' => 'Vendor not found'], 404);
+            }
+
+            $order = Order::with(['vendor:id,brand_name', 'items.product:id,name,price'])
+                ->where('vendor_id', $vendor->id)
+                ->where('id', $orderId)
+                ->whereIn('status', ['ready_for_pickup', 'completed'])
+                ->firstOrFail();
+
+            // Generate PDF using dompdf - Using customer template for both
+            $pdf = Pdf::loadView('receipts.customer', compact('order'));
+
+            $fileName = "receipt-{$order->order_number}.pdf";
+            return $pdf->download($fileName);
+
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json([
+                'message' => 'Order not found or receipt not available',
+                'success' => false
+            ], 404);
+        } catch (\Exception $e) {
+            Log::error('Error generating vendor receipt: ' . $e->getMessage());
+            return response()->json([
+                'message' => 'Error generating receipt',
+                'success' => false
+            ], 500);
+        }
+    }
+
+    /**
+     * Generate and stream PDF receipt for an order
+     * Uses the same customer template for both customer and vendor
+     */
+    public function streamReceipt(Request $request, $orderId)
+    {
+        try {
+            $vendor = $this->getCurrentVendor();
+            if (!$vendor) {
+                return response()->json(['error' => 'Vendor not found'], 404);
+            }
+
+            $order = Order::with(['vendor:id,brand_name', 'items.product:id,name,price'])
+                ->where('vendor_id', $vendor->id)
+                ->where('id', $orderId)
+                ->whereIn('status', ['ready_for_pickup', 'completed'])
+                ->firstOrFail();
+
+            // Generate PDF using dompdf - Using customer template for both
+            $pdf = Pdf::loadView('receipts.customer', compact('order'));
+
+            $fileName = "receipt-{$order->order_number}.pdf";
+            return $pdf->stream($fileName);
+
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json([
+                'message' => 'Order not found or receipt not available',
+                'success' => false
+            ], 404);
+        } catch (\Exception $e) {
+            Log::error('Error streaming vendor receipt: ' . $e->getMessage());
+            return response()->json([
+                'message' => 'Error generating receipt',
+                'success' => false
+            ], 500);
         }
     }
 

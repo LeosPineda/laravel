@@ -62,8 +62,8 @@ class DashboardController extends Controller
                 'net_profit' => ($vendor->total_revenue ?? 0) - $rentPerVendor,
             ]);
 
-        // Recent orders
-        $recentOrders = Order::with(['vendor:id,brand_name', 'user:id,name'])
+        // Recent orders - FIXED: Use 'customer' relationship instead of 'user'
+        $recentOrders = Order::with(['vendor:id,brand_name', 'customer:id,name'])
             ->latest()
             ->take(10)
             ->get()
@@ -71,7 +71,7 @@ class DashboardController extends Controller
                 'id' => $order->id,
                 'order_number' => $order->order_number,
                 'vendor_name' => $order->vendor?->brand_name,
-                'customer_name' => $order->user?->name,
+                'customer_name' => $order->customer?->name,
                 'total_amount' => $order->total_amount,
                 'status' => $order->status,
                 'created_at' => $order->created_at->diffForHumans(),

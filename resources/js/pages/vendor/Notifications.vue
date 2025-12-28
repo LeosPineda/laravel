@@ -294,7 +294,7 @@ const loadNotifications = async () => {
 
     const response = await fetch(`/api/vendor/notifications?${params}`, {
       headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
         'Content-Type': 'application/json'
       }
     })
@@ -335,7 +335,7 @@ const markAsRead = async (notification) => {
     const response = await fetch(`/api/vendor/notifications/${notification.id}/read`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
         'Content-Type': 'application/json'
       }
     })
@@ -354,7 +354,7 @@ const markAllAsRead = async () => {
     const response = await fetch('/api/vendor/notifications/mark-all-read', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
         'Content-Type': 'application/json'
       }
     })
@@ -375,7 +375,7 @@ const deleteNotification = async (notification) => {
     const response = await fetch(`/api/vendor/notifications/${notification.id}`, {
       method: 'DELETE',
       headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
         'Content-Type': 'application/json'
       }
     })
@@ -396,7 +396,7 @@ const cleanupNotifications = async () => {
     const response = await fetch('/api/vendor/notifications/cleanup', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
         'Content-Type': 'application/json'
       }
     })

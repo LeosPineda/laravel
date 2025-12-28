@@ -239,7 +239,7 @@ const loadOrders = async () => {
 
     const response = await fetch(`/api/vendor/orders?${params}`, {
       headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
         'Content-Type': 'application/json'
       }
     })
@@ -269,7 +269,7 @@ const acceptOrder = async (order) => {
     const response = await fetch(`/api/vendor/orders/${order.id}/accept`, {
       method: 'PATCH',
       headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
         'Content-Type': 'application/json'
       }
     })
@@ -294,7 +294,7 @@ const declineOrder = async (order) => {
     const response = await fetch(`/api/vendor/orders/${order.id}/decline`, {
       method: 'PATCH',
       headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
         'Content-Type': 'application/json'
       }
     })
@@ -316,7 +316,7 @@ const markReady = async (order) => {
     const response = await fetch(`/api/vendor/orders/${order.id}/ready`, {
       method: 'PATCH',
       headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
         'Content-Type': 'application/json'
       }
     })

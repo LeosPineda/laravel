@@ -79,10 +79,11 @@ class OrderStatusChanged implements ShouldBroadcast
 
     /**
      * Determine if this event should broadcast.
+     * FIXED: Added 'pending' status so new orders broadcast to customers
      */
     public function broadcastWhen(): bool
     {
-        return in_array($this->newStatus, ['accepted', 'ready_for_pickup', 'completed', 'cancelled']);
+        return in_array($this->newStatus, ['pending', 'accepted', 'ready_for_pickup', 'completed', 'cancelled']);
     }
 
     /**
@@ -91,6 +92,7 @@ class OrderStatusChanged implements ShouldBroadcast
     private function getStatusMessage(): string
     {
         return match ($this->newStatus) {
+            'pending' => "Order #{$this->order->order_number} has been placed and is awaiting vendor response.",
             'accepted' => "Order #{$this->order->order_number} has been accepted and is being prepared.",
             'ready_for_pickup' => "Order #{$this->order->order_number} is ready for pickup!",
             'completed' => "Order #{$this->order->order_number} has been completed. Thank you!",

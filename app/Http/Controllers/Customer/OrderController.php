@@ -10,7 +10,7 @@ use App\Models\CartItem;
 use App\Models\Vendor;
 use App\Events\OrderReceived;
 use App\Events\OrderStatusChanged;
-use App\Services\ReceiptService;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -20,10 +20,6 @@ use Illuminate\Validation\Rule;
 
 class OrderController extends Controller
 {
-    public function __construct(
-        protected ReceiptService $receiptService
-    ) {}
-
     /**
      * Get customer's orders
      */
@@ -174,8 +170,8 @@ class OrderController extends Controller
 
                 $cart->clear();
 
+                // FIXED: Only broadcast OrderReceived to vendor, not status change to customer
                 event(new OrderReceived($order->vendor, $order));
-                event(new OrderStatusChanged($order->vendor, $order, $order->customer, 'pending', 'accepted'));
 
                 DB::commit();
 
@@ -277,11 +273,11 @@ class OrderController extends Controller
                     'timestamp' => $order->updated_at,
                     'completed' => true
                 ];
-            } elseif ($order->status === 'declined') {
+            } elseif ($order->status === 'cancelled') { // FIXED: Use 'cancelled' consistently
                 $statusHistory[] = [
-                    'status' => 'declined',
-                    'label' => 'Declined',
-                    'description' => 'Order was declined by vendor',
+                    'status' => 'cancelled',
+                    'label' => 'Cancelled',
+                    'description' => 'Order was cancelled by vendor',
                     'timestamp' => $order->updated_at,
                     'completed' => true
                 ];
@@ -359,16 +355,23 @@ class OrderController extends Controller
     public function downloadReceipt(Request $request, $orderId)
     {
         try {
-            $order = Order::whereHas('customer', function ($query) {
+            $order = Order::with(['vendor:id,brand_name', 'items.product:id,name,price'])
+                ->whereHas('customer', function ($query) {
                     $query->where('id', auth()->id());
                 })
-                ->findOrFail($orderId);
+                ->where('id', $orderId)
+                ->whereIn('status', ['ready_for_pickup', 'completed'])
+                ->firstOrFail();
 
-            return $this->receiptService->downloadReceipt($order, 'customer');
+            // Generate PDF using dompdf
+            $pdf = Pdf::loadView('receipts.customer', compact('order'));
+
+            $fileName = "receipt-{$order->order_number}.pdf";
+            return $pdf->download($fileName);
 
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
             return response()->json([
-                'message' => 'Order not found',
+                'message' => 'Order not found or receipt not available',
                 'success' => false
             ], 404);
         } catch (\Exception $e) {
@@ -386,60 +389,29 @@ class OrderController extends Controller
     public function streamReceipt(Request $request, $orderId)
     {
         try {
-            $order = Order::whereHas('customer', function ($query) {
+            $order = Order::with(['vendor:id,brand_name', 'items.product:id,name,price'])
+                ->whereHas('customer', function ($query) {
                     $query->where('id', auth()->id());
                 })
-                ->findOrFail($orderId);
+                ->where('id', $orderId)
+                ->whereIn('status', ['ready_for_pickup', 'completed'])
+                ->firstOrFail();
 
-            return $this->receiptService->streamReceipt($order, 'customer');
+            // Generate PDF using dompdf
+            $pdf = Pdf::loadView('receipts.customer', compact('order'));
+
+            $fileName = "receipt-{$order->order_number}.pdf";
+            return $pdf->stream($fileName);
 
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
             return response()->json([
-                'message' => 'Order not found',
+                'message' => 'Order not found or receipt not available',
                 'success' => false
             ], 404);
         } catch (\Exception $e) {
             Log::error('Error streaming customer receipt: ' . $e->getMessage());
             return response()->json([
                 'message' => 'Error generating receipt',
-                'success' => false
-            ], 500);
-        }
-    }
-
-    /**
-     * Get downloadable receipt (legacy JSON format) - DEPRECATED
-     */
-    public function receipt(Request $request, $orderId)
-    {
-        try {
-            $order = Order::whereHas('customer', function ($query) {
-                    $query->where('id', auth()->id());
-                })
-                ->findOrFail($orderId);
-
-            if ($order->status !== 'ready_for_pickup' && $order->status !== 'completed') {
-                return response()->json([
-                    'message' => 'Receipt not available for this order status',
-                    'success' => false
-                ], 400);
-            }
-
-            return response()->json([
-                'message' => 'Use PDF download endpoint instead',
-                'order' => $order,
-                'success' => true
-            ]);
-
-        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
-            return response()->json([
-                'message' => 'Order not found',
-                'success' => false
-            ], 404);
-        } catch (\Exception $e) {
-            Log::error('Error getting receipt: ' . $e->getMessage());
-            return response()->json([
-                'message' => 'Error retrieving receipt',
                 'success' => false
             ], 500);
         }
