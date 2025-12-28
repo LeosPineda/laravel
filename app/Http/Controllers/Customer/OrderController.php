@@ -10,6 +10,7 @@ use App\Models\CartItem;
 use App\Models\Vendor;
 use App\Events\OrderReceived;
 use App\Events\OrderStatusChanged;
+use App\Services\ReceiptService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -19,6 +20,10 @@ use Illuminate\Validation\Rule;
 
 class OrderController extends Controller
 {
+    public function __construct(
+        protected ReceiptService $receiptService
+    ) {}
+
     /**
      * Get customer's orders
      */
@@ -32,7 +37,7 @@ class OrderController extends Controller
                 'items.product:id,name,image_url',
                 'items.selectedAddons'
             ])
-            ->where('user_id', $user->id)
+            ->where('customer_id', $user->id)
             ->orderBy('created_at', 'desc')
             ->paginate(15);
 
@@ -63,7 +68,7 @@ class OrderController extends Controller
                 'items.product:id,name,image_url',
                 'items.selectedAddons'
             ])
-            ->where('user_id', $user->id)
+            ->where('customer_id', $user->id)
             ->where('id', $orderId)
             ->firstOrFail();
 
@@ -97,17 +102,15 @@ class OrderController extends Controller
                 'payment_method' => ['required', Rule::in(['cashier', 'qr_code'])],
                 'table_number' => 'required|string|max:10',
                 'special_instructions' => 'nullable|string|max:500',
-                'payment_proof' => 'nullable|file|image|mimes:jpeg,png,jpg,gif|max:5120' // 5MB max
+                'payment_proof' => 'nullable|file|image|mimes:jpeg,png,jpg,gif|max:5120'
             ]);
 
             $user = Auth::user();
 
-            // Get cart for this vendor
             $cart = Cart::where('user_id', $user->id)
                 ->where('vendor_id', $validated['vendor_id'])
                 ->firstOrFail();
 
-            // Get cart items
             $cartItems = $cart->items()->with('product')->get();
 
             if ($cartItems->isEmpty()) {
@@ -120,7 +123,6 @@ class OrderController extends Controller
             DB::beginTransaction();
 
             try {
-                // Calculate total
                 $subtotal = 0;
                 $itemsData = [];
 
@@ -138,17 +140,15 @@ class OrderController extends Controller
                     ];
                 }
 
-                // Handle payment proof upload
                 $paymentProofUrl = null;
                 if ($validated['payment_method'] === 'qr_code' && $request->hasFile('payment_proof')) {
                     $paymentProofUrl = $request->file('payment_proof')->store('payment-proofs', 'public');
                 }
 
-                // Create order
                 $orderNumber = 'ORD-' . str_pad(Order::max('id') + 1, 6, '0', STR_PAD_LEFT);
 
                 $order = Order::create([
-                    'user_id' => $user->id,
+                    'customer_id' => $user->id,
                     'vendor_id' => $validated['vendor_id'],
                     'order_number' => $orderNumber,
                     'status' => 'pending',
@@ -161,7 +161,6 @@ class OrderController extends Controller
                     'updated_at' => now()
                 ]);
 
-                // Create order items
                 foreach ($itemsData as $itemData) {
                     OrderItem::create([
                         'order_id' => $order->id,
@@ -173,10 +172,8 @@ class OrderController extends Controller
                     ]);
                 }
 
-                // Clear cart
                 $cart->clear();
 
-                // Broadcast events
                 event(new OrderReceived($order->vendor, $order));
                 event(new OrderStatusChanged($order->vendor, $order, $order->customer, 'pending', 'accepted'));
 
@@ -226,11 +223,10 @@ class OrderController extends Controller
                 'items.product:id,name,image_url',
                 'items.selectedAddons'
             ])
-            ->where('user_id', $user->id)
+            ->where('customer_id', $user->id)
             ->where('id', $orderId)
             ->firstOrFail();
 
-            // Get status timeline
             $statusHistory = [
                 [
                     'status' => 'pending',
@@ -323,9 +319,8 @@ class OrderController extends Controller
                 'vendor:id,brand_name,brand_image',
                 'items.product:id,name,image_url'
             ])
-            ->where('user_id', $user->id);
+            ->where('customer_id', $user->id);
 
-            // Apply filters
             if ($request->has('status') && $request->status !== 'all') {
                 $query->where('status', $request->status);
             }
@@ -359,21 +354,69 @@ class OrderController extends Controller
     }
 
     /**
-     * Get downloadable receipt
+     * Generate and download PDF receipt for an order
+     */
+    public function downloadReceipt(Request $request, $orderId)
+    {
+        try {
+            $order = Order::whereHas('customer', function ($query) {
+                    $query->where('id', auth()->id());
+                })
+                ->findOrFail($orderId);
+
+            return $this->receiptService->downloadReceipt($order, 'customer');
+
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json([
+                'message' => 'Order not found',
+                'success' => false
+            ], 404);
+        } catch (\Exception $e) {
+            Log::error('Error generating customer receipt: ' . $e->getMessage());
+            return response()->json([
+                'message' => 'Error generating receipt',
+                'success' => false
+            ], 500);
+        }
+    }
+
+    /**
+     * Generate and stream PDF receipt for an order
+     */
+    public function streamReceipt(Request $request, $orderId)
+    {
+        try {
+            $order = Order::whereHas('customer', function ($query) {
+                    $query->where('id', auth()->id());
+                })
+                ->findOrFail($orderId);
+
+            return $this->receiptService->streamReceipt($order, 'customer');
+
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json([
+                'message' => 'Order not found',
+                'success' => false
+            ], 404);
+        } catch (\Exception $e) {
+            Log::error('Error streaming customer receipt: ' . $e->getMessage());
+            return response()->json([
+                'message' => 'Error generating receipt',
+                'success' => false
+            ], 500);
+        }
+    }
+
+    /**
+     * Get downloadable receipt (legacy JSON format) - DEPRECATED
      */
     public function receipt(Request $request, $orderId)
     {
         try {
-            $user = Auth::user();
-
-            $order = Order::with([
-                'vendor:id,brand_name,brand_image',
-                'items.product:id,name,image_url',
-                'items.selectedAddons'
-            ])
-            ->where('user_id', $user->id)
-            ->where('id', $orderId)
-            ->firstOrFail();
+            $order = Order::whereHas('customer', function ($query) {
+                    $query->where('id', auth()->id());
+                })
+                ->findOrFail($orderId);
 
             if ($order->status !== 'ready_for_pickup' && $order->status !== 'completed') {
                 return response()->json([
@@ -382,78 +425,9 @@ class OrderController extends Controller
                 ], 400);
             }
 
-            // Calculate subtotals
-            $itemsSubtotal = 0;
-            $addonsSubtotal = 0;
-
-            $formattedItems = $order->items->map(function ($item) use (&$itemsSubtotal, &$addonsSubtotal) {
-                $basePrice = $item->unit_price * $item->quantity;
-                $itemsSubtotal += $basePrice;
-
-                $addons = $item->selected_addons ?? [];
-                $addonTotal = collect($addons)->sum('price') * $item->quantity;
-                $addonsSubtotal += $addonTotal;
-
-                return [
-                    'name' => $item->product->name,
-                    'quantity' => $item->quantity,
-                    'unit_price' => number_format($item->unit_price, 2),
-                    'base_total' => number_format($basePrice, 2),
-                    'addons' => collect($addons)->map(function ($addon) use ($item) {
-                        return [
-                            'name' => $addon['name'],
-                            'price' => number_format($addon['price'], 2),
-                            'total' => number_format($addon['price'] * $item->quantity, 2)
-                        ];
-                    }),
-                    'addon_total' => number_format($addonTotal, 2),
-                    'line_total' => number_format($item->total_price, 2)
-                ];
-            });
-
-            // Generate receipt data
-            $receipt = [
-                // Header
-                'receipt_id' => 'RCP-' . str_pad($order->id, 6, '0', STR_PAD_LEFT),
-                'order_number' => $order->order_number,
-                'order_date' => $order->created_at->format('F d, Y'),
-                'order_time' => $order->created_at->format('g:i A'),
-
-                // Vendor Info
-                'vendor_name' => $order->vendor->brand_name,
-                'vendor_logo' => $order->vendor->brand_image,
-
-                // Customer Info
-                'customer_name' => $user->name,
-                'table_number' => $order->table_number,
-
-                // Order Items
-                'items' => $formattedItems,
-                'item_count' => $order->items->sum('quantity'),
-
-                // Pricing Breakdown
-                'subtotal' => number_format($itemsSubtotal, 2),
-                'addons_total' => number_format($addonsSubtotal, 2),
-                'total_amount' => number_format($order->total_amount, 2),
-
-                // Payment Info
-                'payment_method' => $order->payment_method === 'qr_code' ? 'QR Code Payment' : 'Pay at Cashier',
-                'payment_status' => $order->status === 'completed' ? 'Paid' : 'Pending',
-
-                // Special Instructions
-                'special_instructions' => $order->special_instructions,
-
-                // Status
-                'status' => ucfirst(str_replace('_', ' ', $order->status)),
-                'completed_at' => $order->status === 'completed' ? $order->updated_at->format('F d, Y g:i A') : null,
-
-                // Footer
-                'footer_message' => 'Thank you for your order! 🍽️ Enjoy your meal!',
-                'generated_at' => now()->format('F d, Y g:i A')
-            ];
-
             return response()->json([
-                'receipt' => $receipt,
+                'message' => 'Use PDF download endpoint instead',
+                'order' => $order,
                 'success' => true
             ]);
 
@@ -463,44 +437,38 @@ class OrderController extends Controller
                 'success' => false
             ], 404);
         } catch (\Exception $e) {
-            Log::error('Error generating receipt: ' . $e->getMessage());
+            Log::error('Error getting receipt: ' . $e->getMessage());
             return response()->json([
-                'message' => 'Error generating receipt',
+                'message' => 'Error retrieving receipt',
                 'success' => false
             ], 500);
         }
     }
 
     /**
-     * Cancel order (if allowed)
+     * Cancel an order
      */
     public function cancel(Request $request, $orderId)
     {
         try {
             $user = Auth::user();
 
-            $order = Order::where('user_id', $user->id)
+            $order = Order::where('customer_id', $user->id)
                 ->where('id', $orderId)
                 ->firstOrFail();
 
-            // Only allow cancellation if order is still pending
             if ($order->status !== 'pending') {
                 return response()->json([
-                    'message' => 'Order cannot be cancelled at this stage',
+                    'message' => 'Only pending orders can be cancelled',
                     'success' => false
                 ], 400);
             }
 
-            $order->update([
-                'status' => 'cancelled',
-                'updated_at' => now()
-            ]);
-
-            // Broadcast status change
-            event(new OrderStatusChanged($order->vendor, $order, $order->customer, 'pending', 'cancelled'));
+            $order->update(['status' => 'cancelled']);
 
             return response()->json([
                 'message' => 'Order cancelled successfully',
+                'order' => $order,
                 'success' => true
             ]);
 

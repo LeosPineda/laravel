@@ -6,6 +6,7 @@ use App\Http\Controllers\Vendor\ProductController;
 use App\Http\Controllers\Vendor\AddonController;
 use App\Http\Controllers\Vendor\NotificationController as VendorNotificationController;
 use App\Http\Controllers\Vendor\QrController;
+use App\Http\Controllers\Vendor\ReceiptController;
 use App\Http\Controllers\Customer\CartController;
 use App\Http\Controllers\Customer\MenuController;
 use App\Http\Controllers\Customer\NotificationController as CustomerNotificationController;
@@ -37,6 +38,10 @@ Route::middleware(['web', 'auth', 'role:vendor', 'throttle:60,1'])->prefix('vend
     Route::patch('/orders/{order}/ready', [VendorOrderController::class, 'markReady'])->name('orders.ready');
     // Removed: complete() and undo() routes - methods don't exist anymore
     Route::delete('/orders/batch', [VendorOrderController::class, 'batchDelete'])->name('orders.batch-delete');
+
+    // Receipts
+    Route::get('/orders/{order}/receipt', [ReceiptController::class, 'streamReceipt'])->name('orders.receipt');
+    Route::get('/orders/{order}/receipt/download', [ReceiptController::class, 'generateReceipt'])->name('orders.receipt.download');
 
     // Products
     Route::get('/products/categories', [ProductController::class, 'getCategories'])->name('products.categories');
@@ -107,6 +112,8 @@ Route::middleware(['web', 'auth', 'role:customer', 'throttle:60,1'])->prefix('cu
     Route::get('/orders/{order}', [CustomerOrderController::class, 'show'])->name('orders.show');
     Route::get('/orders/{order}/track', [CustomerOrderController::class, 'track'])->name('orders.track');
     Route::get('/orders/{order}/receipt', [CustomerOrderController::class, 'receipt'])->name('orders.receipt');
+    Route::get('/orders/{order}/receipt/download', [CustomerOrderController::class, 'downloadReceipt'])->name('orders.receipt.download');
+    Route::get('/orders/{order}/receipt/stream', [CustomerOrderController::class, 'streamReceipt'])->name('orders.receipt.stream');
     Route::post('/orders/{order}/cancel', [CustomerOrderController::class, 'cancel'])->name('orders.cancel');
 
     // Notifications
