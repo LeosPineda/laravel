@@ -22,16 +22,11 @@ const emit = defineEmits<{
 
 const toast = useToast();
 
-const getCsrfToken = () => {
-  return document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
-};
-
 const acceptOrder = async (order: any) => {
   try {
     const response = await fetch(`/api/vendor/orders/${order.id}/accept`, {
       method: 'PATCH',
       headers: {
-        'X-CSRF-TOKEN': getCsrfToken(),
         'Content-Type': 'application/json',
         'Accept': 'application/json'
       },
@@ -58,7 +53,6 @@ const declineOrder = async (order: any) => {
     const response = await fetch(`/api/vendor/orders/${order.id}/decline`, {
       method: 'PATCH',
       headers: {
-        'X-CSRF-TOKEN': getCsrfToken(),
         'Content-Type': 'application/json',
         'Accept': 'application/json'
       },
@@ -83,7 +77,6 @@ const markReady = async (order: any) => {
     const response = await fetch(`/api/vendor/orders/${order.id}/ready`, {
       method: 'PATCH',
       headers: {
-        'X-CSRF-TOKEN': getCsrfToken(),
         'Content-Type': 'application/json',
         'Accept': 'application/json'
       },

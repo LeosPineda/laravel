@@ -23,10 +23,6 @@ const emit = defineEmits<{
 
 const toast = useToast();
 
-const getCsrfToken = () => {
-  return document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
-};
-
 const downloadReceipt = async (order: any) => {
   try {
     toast.success('Downloading receipt...');
@@ -34,7 +30,6 @@ const downloadReceipt = async (order: any) => {
     const response = await fetch(`/api/vendor/orders/${order.id}/receipt/download`, {
       method: 'GET',
       headers: {
-        'X-CSRF-TOKEN': getCsrfToken(),
         'Accept': 'application/pdf'
       },
       credentials: 'include'
@@ -67,7 +62,6 @@ const deleteOrder = async (order: any) => {
     const response = await fetch(`/api/vendor/orders/${order.id}`, {
       method: 'DELETE',
       headers: {
-        'X-CSRF-TOKEN': getCsrfToken(),
         'Content-Type': 'application/json',
         'Accept': 'application/json'
       },

@@ -246,6 +246,48 @@ class OrderController extends Controller
     }
 
     /**
+     * Delete a single order.
+     */
+    public function destroy(Order $order): JsonResponse
+    {
+        try {
+            $vendor = $this->getCurrentVendor();
+            if (!$vendor || $order->vendor_id !== $vendor->id) {
+                return response()->json(['error' => 'Order not found'], 404);
+            }
+
+            // Only allow deletion of non-pending orders
+            if ($order->isPending()) {
+                return response()->json(['error' => 'Cannot delete pending orders'], 400);
+            }
+
+            DB::beginTransaction();
+
+            try {
+                $order->delete();
+
+                DB::commit();
+
+                return response()->json([
+                    'message' => 'Order deleted successfully'
+                ]);
+
+            } catch (\Exception $e) {
+                DB::rollBack();
+                throw $e;
+            }
+
+        } catch (\Exception $e) {
+            Log::error('Error deleting order', [
+                'order_id' => $order->id,
+                'error' => $e->getMessage()
+            ]);
+
+            return response()->json(['error' => 'Failed to delete order'], 500);
+        }
+    }
+
+    /**
      * Batch delete orders.
      */
     public function batchDelete(Request $request): JsonResponse

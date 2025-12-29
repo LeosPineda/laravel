@@ -18,9 +18,9 @@ Route::post('/test', function () {
     return response()->json(['message' => 'API is working']);
 });
 
-// Vendor API Routes (60 requests per minute)
-// Using 'web' auth since this is an Inertia app with session-based authentication
-Route::middleware(['web', 'auth', 'role:vendor', 'throttle:60,1'])->prefix('vendor')->name('vendor.')->group(function () {
+// Vendor API Routes - NO CSRF PROTECTION
+// Using ONLY session-based authentication without any web middleware
+Route::middleware(['auth', 'role:vendor', 'throttle:60,1'])->prefix('vendor')->name('vendor.')->group(function () {
     // Analytics
     Route::get('/analytics/sales', [AnalyticsController::class, 'sales'])->name('analytics.sales');
     Route::get('/analytics/best-sellers', [AnalyticsController::class, 'bestSellers'])->name('analytics.best-sellers');
@@ -28,13 +28,14 @@ Route::middleware(['web', 'auth', 'role:vendor', 'throttle:60,1'])->prefix('vend
     Route::get('/analytics/revenue', [AnalyticsController::class, 'revenue'])->name('analytics.revenue');
     Route::get('/analytics/profit', [AnalyticsController::class, 'profit'])->name('analytics.profit');
 
-    // Orders - Core order management functionality
+    // Orders - All order management operations
     Route::get('/orders', [VendorOrderController::class, 'index'])->name('orders.index');
     Route::get('/orders/stats', [VendorOrderController::class, 'stats'])->name('orders.stats');
     Route::get('/orders/{order}', [VendorOrderController::class, 'show'])->name('orders.show');
     Route::patch('/orders/{order}/accept', [VendorOrderController::class, 'accept'])->name('orders.accept');
     Route::patch('/orders/{order}/decline', [VendorOrderController::class, 'decline'])->name('orders.decline');
     Route::patch('/orders/{order}/ready', [VendorOrderController::class, 'markReady'])->name('orders.ready');
+    Route::delete('/orders/{order}', [VendorOrderController::class, 'destroy'])->name('orders.destroy');
     Route::delete('/orders/batch', [VendorOrderController::class, 'batchDelete'])->name('orders.batch-delete');
 
     // Receipt functionality for vendors
@@ -82,9 +83,9 @@ Route::middleware(['web', 'auth', 'role:vendor', 'throttle:60,1'])->prefix('vend
     Route::delete('/notifications/{notification}', [VendorNotificationController::class, 'destroy'])->name('notifications.destroy');
 });
 
-// Customer API Routes (60 requests per minute)
-// Using 'web' auth since this is an Inertia app with session-based authentication
-Route::middleware(['web', 'auth', 'role:customer', 'throttle:60,1'])->prefix('customer')->name('customer.')->group(function () {
+// Customer API Routes - NO CSRF PROTECTION
+// Using ONLY session-based authentication without any web middleware
+Route::middleware(['auth', 'role:customer', 'throttle:60,1'])->prefix('customer')->name('customer.')->group(function () {
     // Menu & Vendors
     Route::get('/vendors', [MenuController::class, 'vendors'])->name('vendors');
     Route::get('/vendors/{vendor}', [MenuController::class, 'vendorMenu'])->name('vendor.menu');

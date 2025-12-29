@@ -112,16 +112,11 @@ const stats = ref({
   today_orders: 0
 })
 
-const getCsrfToken = () => {
-  return document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
-};
-
 const loadStats = async () => {
   try {
     const response = await fetch('/api/vendor/orders/stats', {
       method: 'GET',
       headers: {
-        'X-CSRF-TOKEN': getCsrfToken(),
         'Content-Type': 'application/json',
         'Accept': 'application/json'
       },

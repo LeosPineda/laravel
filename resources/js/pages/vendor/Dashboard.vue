@@ -236,17 +236,12 @@ const formatTime = (dateString) => {
   })
 }
 
-const getCsrfToken = () => {
-  return document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
-};
-
 const loadStats = async () => {
   loadingStats.value = true
   try {
     const response = await fetch('/api/vendor/orders/stats', {
       method: 'GET',
       headers: {
-        'X-CSRF-TOKEN': getCsrfToken(),
         'Content-Type': 'application/json',
         'Accept': 'application/json'
       },
@@ -269,7 +264,6 @@ const loadPendingOrders = async () => {
     const response = await fetch('/api/vendor/orders?status=pending&per_page=5', {
       method: 'GET',
       headers: {
-        'X-CSRF-TOKEN': getCsrfToken(),
         'Content-Type': 'application/json',
         'Accept': 'application/json'
       },

@@ -192,16 +192,11 @@ const profit = ref({
 
 const bestSellers = ref([])
 
-const getCsrfToken = () => {
-  return document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
-};
-
 const loadSales = async () => {
   try {
     const response = await fetch(`/api/vendor/analytics/sales?period=${selectedPeriod.value}`, {
       method: 'GET',
       headers: {
-        'X-CSRF-TOKEN': getCsrfToken(),
         'Content-Type': 'application/json',
         'Accept': 'application/json'
       },
@@ -222,7 +217,6 @@ const loadOrderMetrics = async () => {
     const response = await fetch('/api/vendor/analytics/order-metrics', {
       method: 'GET',
       headers: {
-        'X-CSRF-TOKEN': getCsrfToken(),
         'Content-Type': 'application/json',
         'Accept': 'application/json'
       },
@@ -243,7 +237,6 @@ const loadRevenue = async () => {
     const response = await fetch(`/api/vendor/analytics/revenue?period=${selectedPeriod.value}`, {
       method: 'GET',
       headers: {
-        'X-CSRF-TOKEN': getCsrfToken(),
         'Content-Type': 'application/json',
         'Accept': 'application/json'
       },
@@ -264,7 +257,6 @@ const loadProfit = async () => {
     const response = await fetch('/api/vendor/analytics/profit', {
       method: 'GET',
       headers: {
-        'X-CSRF-TOKEN': getCsrfToken(),
         'Content-Type': 'application/json',
         'Accept': 'application/json'
       },
@@ -285,7 +277,6 @@ const loadBestSellers = async () => {
     const response = await fetch('/api/vendor/analytics/best-sellers?limit=10', {
       method: 'GET',
       headers: {
-        'X-CSRF-TOKEN': getCsrfToken(),
         'Content-Type': 'application/json',
         'Accept': 'application/json'
       },

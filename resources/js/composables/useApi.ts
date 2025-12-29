@@ -3,21 +3,6 @@
  * Uses cookie-based auth (Sanctum sessions) instead of Bearer tokens
  */
 
-// Get CSRF token from meta tag
-function getCsrfToken(): string {
-    const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
-    return token || '';
-}
-
-// Get XSRF token from cookies
-function getXsrfToken(): string {
-    const match = document.cookie.match(/XSRF-TOKEN=([^;]+)/);
-    if (match) {
-        return decodeURIComponent(match[1]);
-    }
-    return '';
-}
-
 interface ApiOptions extends RequestInit {
     params?: Record<string, string | number | boolean | undefined | null>;
 }
@@ -47,17 +32,8 @@ export async function api(endpoint: string, options: ApiOptions = {}): Promise<R
     const headers: Record<string, string> = {
         'Accept': 'application/json',
         'X-Requested-With': 'XMLHttpRequest',
-        'X-CSRF-TOKEN': getCsrfToken(),
         ...(fetchOptions.headers as Record<string, string> || {}),
     };
-
-    // Add XSRF token for non-GET requests
-    if (options.method && options.method !== 'GET') {
-        const xsrfToken = getXsrfToken();
-        if (xsrfToken) {
-            headers['X-XSRF-TOKEN'] = xsrfToken;
-        }
-    }
 
     // Don't set Content-Type for FormData (browser sets it with boundary)
     if (!(fetchOptions.body instanceof FormData)) {

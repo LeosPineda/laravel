@@ -45,7 +45,6 @@ const loadOrders = async () => {
     const response = await fetch(`/api/vendor/orders?page=${pagination.value.current_page}&per_page=${pagination.value.per_page}`, {
       method: 'GET',
       headers: {
-        'X-CSRF-TOKEN': getCsrfToken(),
         'Content-Type': 'application/json',
         'Accept': 'application/json'
       },
@@ -109,7 +108,6 @@ const deleteSelected = async () => {
       fetch(`/api/vendor/orders/${orderId}`, {
         method: 'DELETE',
         headers: {
-          'X-CSRF-TOKEN': getCsrfToken(),
           'Content-Type': 'application/json',
           'Accept': 'application/json'
         },
@@ -144,7 +142,6 @@ const clearAll = async () => {
       fetch(`/api/vendor/orders/${order.id}`, {
         method: 'DELETE',
         headers: {
-          'X-CSRF-TOKEN': getCsrfToken(),
           'Content-Type': 'application/json',
           'Accept': 'application/json'
         },
@@ -172,10 +169,6 @@ const clearAll = async () => {
 const unselectAll = () => {
   selectedOrders.value = [];
   toast.info('All selections cleared');
-};
-
-const getCsrfToken = () => {
-  return document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
 };
 
 onMounted(() => {
