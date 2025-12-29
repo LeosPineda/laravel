@@ -119,7 +119,6 @@
 
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
-import { apiGet, apiPost } from '@/composables/useApi'
 import { Link, usePage } from '@inertiajs/vue3'
 
 const showDropdown = ref(false)
@@ -157,14 +156,15 @@ const toggleDropdown = () => {
   }
 }
 
+// ✅ FIXED: Use session-based API calls instead of token-based
 const loadUnreadCount = async () => {
   try {
     const response = await fetch('/api/vendor/notifications/count', {
       headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token')}`,
-        'Content-Type': 'application/json',
+        'Accept': 'application/json',
         'X-Requested-With': 'XMLHttpRequest'
-      }
+      },
+      credentials: 'include' // ✅ Include session cookies
     })
 
     if (response.ok) {
@@ -181,10 +181,10 @@ const loadRecentNotifications = async () => {
   try {
     const response = await fetch('/api/vendor/notifications/recent?limit=5', {
       headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token')}`,
-        'Content-Type': 'application/json',
+        'Accept': 'application/json',
         'X-Requested-With': 'XMLHttpRequest'
-      }
+      },
+      credentials: 'include' // ✅ Include session cookies
     })
 
     if (response.ok) {
@@ -206,10 +206,10 @@ const handleNotificationClick = async (notification) => {
       await fetch(`/api/vendor/notifications/${notification.id}/read`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-          'Content-Type': 'application/json',
+          'Accept': 'application/json',
           'X-Requested-With': 'XMLHttpRequest'
-        }
+        },
+        credentials: 'include' // ✅ Include session cookies
       })
       notification.is_read = true
       unreadCount.value = Math.max(0, unreadCount.value - 1)
@@ -230,10 +230,10 @@ const markAllRead = async () => {
     const response = await fetch('/api/vendor/notifications/mark-all-read', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token')}`,
-        'Content-Type': 'application/json',
+        'Accept': 'application/json',
         'X-Requested-With': 'XMLHttpRequest'
-      }
+      },
+      credentials: 'include' // ✅ Include session cookies
     })
 
     if (response.ok) {

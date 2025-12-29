@@ -95,6 +95,11 @@ Route::middleware(['auth', 'role:vendor'])->prefix('vendor')->name('vendor.')->g
         return Inertia::render('vendor/Analytics');
     })->name('analytics');
 
+    // ✅ ADDED: Missing notifications route that was causing 404
+    Route::get('/notifications', function () {
+        return Inertia::render('vendor/Notifications');
+    })->name('notifications');
+
     Route::get('/qr', function () {
         return Inertia::render('vendor/QrCode');
     })->name('qr');
