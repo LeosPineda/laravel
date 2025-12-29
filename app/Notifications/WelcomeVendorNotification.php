@@ -2,14 +2,19 @@
 
 namespace App\Notifications;
 
+use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
-class WelcomeVendorNotification extends Notification
+class WelcomeVendorNotification extends Notification implements ShouldQueue
 {
+    use Queueable;
+
     public function __construct()
     {
-        //
+        // Use default queue for now to ensure processing
+        // $this->onQueue('emails'); // Removed to fix processing issue
     }
 
     public function via(object $notifiable): array

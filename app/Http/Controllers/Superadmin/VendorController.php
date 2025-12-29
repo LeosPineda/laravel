@@ -14,6 +14,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 
 class VendorController extends Controller
@@ -71,11 +72,28 @@ class VendorController extends Controller
             return $user;
         });
 
-        // Send welcome notification after database work (fast)
-        $user->notify(new WelcomeVendorNotification());
+        // ✅ PERFORMANCE FIX: Queue email notification for background processing
+        try {
+            // Use existing WelcomeVendorNotification with queue
+            $user->notify(new WelcomeVendorNotification());
 
+            // Log successful notification
+            Log::info('Welcome notification queued for vendor creation', [
+                'vendor_email' => $user->email,
+                'user_id' => $user->id
+            ]);
+
+        } catch (\Exception $e) {
+            // Log error but don't fail the vendor creation
+            Log::error('Failed to queue welcome notification', [
+                'vendor_email' => $user->email,
+                'error' => $e->getMessage()
+            ]);
+        }
+
+        // ✅ IMMEDIATE RESPONSE - no blocking email operations
         return redirect()->route('superadmin.vendors.index')
-            ->with('success', 'Vendor created successfully. Welcome notification sent.');
+            ->with('success', 'Vendor created successfully. Welcome notification is being sent.');
     }
 
     public function edit(Vendor $vendor)
@@ -156,9 +174,16 @@ class VendorController extends Controller
             $vendor->update($vendorData);
         });
 
-        // Send notification after database work (fast)
+        // Queue notification for background processing
         if (! empty($updatedFields)) {
-            $vendor->user->notify(new VendorCredentialUpdatedNotification($updatedFields, $validated['password'] ?? null));
+            try {
+                $vendor->user->notify(new VendorCredentialUpdatedNotification($updatedFields, $validated['password'] ?? null));
+            } catch (\Exception $e) {
+                Log::error('Failed to queue vendor update notification', [
+                    'vendor_email' => $vendor->user->email,
+                    'error' => $e->getMessage()
+                ]);
+            }
         }
 
         return redirect()->route('superadmin.vendors.index')
@@ -175,11 +200,18 @@ class VendorController extends Controller
 
         $status = $newStatus ? 'activated' : 'deactivated';
 
-        // Send email notification after database update (fast)
-        if ($newStatus) {
-            $vendor->user->notify(new VendorActivatedNotification);
-        } else {
-            $vendor->user->notify(new VendorDeactivatedNotification);
+        // Queue notification for background processing
+        try {
+            if ($newStatus) {
+                $vendor->user->notify(new VendorActivatedNotification);
+            } else {
+                $vendor->user->notify(new VendorDeactivatedNotification);
+            }
+        } catch (\Exception $e) {
+            Log::error('Failed to queue vendor activation notification', [
+                'vendor_email' => $vendor->user->email,
+                'error' => $e->getMessage()
+            ]);
         }
 
         return redirect()->route('superadmin.vendors.index')
@@ -190,29 +222,30 @@ class VendorController extends Controller
     {
         $user = $vendor->user;
         $vendorName = $vendor->brand_name;
-        $userId = $user->id;
+        $userEmail = $user->email; // Capture email BEFORE deletion
 
         try {
-            // Send deletion notification BEFORE user deletion (critical fix)
-            $user->notify(new VendorDeletedNotification($vendorName));
+            // ✅ FIX: Send deletion notification BEFORE user deletion
+            // Pass vendor name and email to avoid database dependency after deletion
+            $user->notify(new VendorDeletedNotification($vendorName, $userEmail));
 
-            DB::transaction(function () use ($vendor, $user, $userId) {
+            DB::transaction(function () use ($vendor, $user) {
                 // Delete vendor first (due to foreign key constraints)
                 $vendor->delete();
 
                 // Delete user
                 $user->delete();
-
-                // Invalidate sessions
-                DB::table('sessions')
-                    ->where('user_id', $userId)
-                    ->delete();
             });
 
             return redirect()->route('superadmin.vendors.index')
                 ->with('success', 'Vendor deleted successfully. Deletion notification sent.');
 
         } catch (\Exception $e) {
+            Log::error('Failed to delete vendor', [
+                'vendor_email' => $userEmail,
+                'error' => $e->getMessage()
+            ]);
+
             return redirect()->route('superadmin.vendors.index')
                 ->with('error', 'Failed to delete vendor. Please try again.');
         }
