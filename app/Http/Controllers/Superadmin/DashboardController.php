@@ -43,6 +43,7 @@ class DashboardController extends Controller
 
         // Top vendors by revenue
         $topVendors = Vendor::with('user:id,name,email')
+            ->where('is_active', true)
             ->withCount('orders')
             ->withSum(['orders as total_revenue' => function ($query) {
                 $query->byStatus('ready_for_pickup');

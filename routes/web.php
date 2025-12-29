@@ -108,9 +108,25 @@ Route::middleware(['auth', 'role:vendor'])->prefix('vendor')->name('vendor.')->g
 // Customer routes (frontend for customer ordering)
 Route::middleware(['auth', 'role:customer'])->prefix('customer')->name('customer.')->group(function () {
     Route::get('/menu', function () {
-        // Placeholder for customer menu interface
         return Inertia::render('customer/Menu');
     })->name('menu');
+
+    Route::get('/orders', function () {
+        return Inertia::render('customer/Orders');
+    })->name('orders');
+
+    // ✅ NEW: Added notification and profile routes for proper navigation
+    Route::get('/notifications', function () {
+        return Inertia::render('customer/Notifications');
+    })->name('notifications');
+
+    Route::get('/profile', function () {
+        return Inertia::render('customer/Profile');
+    })->name('profile');
+
+    Route::get('/cart', function () {
+        return Inertia::render('customer/Cart');
+    })->name('cart');
 });
 
 // Note: Vendor and Customer API routes should be defined in routes/api.php

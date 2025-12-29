@@ -17,7 +17,13 @@ class VendorFactory extends Factory
     public function definition(): array
     {
         return [
-            //
+            'user_id' => \App\Models\User::factory(),
+            'brand_name' => fake()->company(),
+            'brand_logo' => null,
+            'brand_image' => null,
+            'qr_code_image' => null,
+            'qr_mobile_number' => fake()->phoneNumber(),
+            'is_active' => true,
         ];
     }
 }
