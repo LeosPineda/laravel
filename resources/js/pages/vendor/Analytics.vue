@@ -192,13 +192,20 @@ const profit = ref({
 
 const bestSellers = ref([])
 
+const getCsrfToken = () => {
+  return document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+};
+
 const loadSales = async () => {
   try {
     const response = await fetch(`/api/vendor/analytics/sales?period=${selectedPeriod.value}`, {
+      method: 'GET',
       headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token')}`,
-        'Content-Type': 'application/json'
-      }
+        'X-CSRF-TOKEN': getCsrfToken(),
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      },
+      credentials: 'include'
     })
 
     if (response.ok) {
@@ -213,10 +220,13 @@ const loadSales = async () => {
 const loadOrderMetrics = async () => {
   try {
     const response = await fetch('/api/vendor/analytics/order-metrics', {
+      method: 'GET',
       headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token')}`,
-        'Content-Type': 'application/json'
-      }
+        'X-CSRF-TOKEN': getCsrfToken(),
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      },
+      credentials: 'include'
     })
 
     if (response.ok) {
@@ -231,10 +241,13 @@ const loadOrderMetrics = async () => {
 const loadRevenue = async () => {
   try {
     const response = await fetch(`/api/vendor/analytics/revenue?period=${selectedPeriod.value}`, {
+      method: 'GET',
       headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token')}`,
-        'Content-Type': 'application/json'
-      }
+        'X-CSRF-TOKEN': getCsrfToken(),
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      },
+      credentials: 'include'
     })
 
     if (response.ok) {
@@ -249,10 +262,13 @@ const loadRevenue = async () => {
 const loadProfit = async () => {
   try {
     const response = await fetch('/api/vendor/analytics/profit', {
+      method: 'GET',
       headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token')}`,
-        'Content-Type': 'application/json'
-      }
+        'X-CSRF-TOKEN': getCsrfToken(),
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      },
+      credentials: 'include'
     })
 
     if (response.ok) {
@@ -267,10 +283,13 @@ const loadProfit = async () => {
 const loadBestSellers = async () => {
   try {
     const response = await fetch('/api/vendor/analytics/best-sellers?limit=10', {
+      method: 'GET',
       headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token')}`,
-        'Content-Type': 'application/json'
-      }
+        'X-CSRF-TOKEN': getCsrfToken(),
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      },
+      credentials: 'include'
     })
 
     if (response.ok) {
