@@ -62,7 +62,7 @@ class VendorController extends Controller
 
             // Handle logo upload
             if ($request->hasFile('brand_logo')) {
-                $path = $request->file('brand_logo')->store('vendor-logos', 'public');
+                $path = $request->file('brand_logo')->store('vendor', 'public');
                 $vendorData['brand_logo'] = $path;
             }
 
@@ -148,7 +148,7 @@ class VendorController extends Controller
                 if ($vendor->brand_logo) {
                     Storage::disk('public')->delete($vendor->brand_logo);
                 }
-                $path = $request->file('brand_logo')->store('vendor-logos', 'public');
+                $path = $request->file('brand_logo')->store('vendor', 'public');
                 $vendorData['brand_logo'] = $path;
                 $updatedFields[] = 'brand_logo';
             }

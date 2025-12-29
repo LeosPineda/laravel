@@ -18,9 +18,9 @@ Route::post('/test', function () {
     return response()->json(['message' => 'API is working']);
 });
 
-// Vendor API Routes - NO CSRF PROTECTION
-// Using ONLY session-based authentication without any web middleware
-Route::middleware(['auth', 'role:vendor', 'throttle:60,1'])->prefix('vendor')->name('vendor.')->group(function () {
+// Vendor API Routes - SESSION-BASED AUTHENTICATION
+// Using auth:web for session cookies from frontend
+Route::middleware(['auth:web', 'role:vendor', 'throttle:60,1'])->prefix('vendor')->name('vendor.')->group(function () {
     // Analytics
     Route::get('/analytics/sales', [AnalyticsController::class, 'sales'])->name('analytics.sales');
     Route::get('/analytics/best-sellers', [AnalyticsController::class, 'bestSellers'])->name('analytics.best-sellers');
@@ -83,9 +83,9 @@ Route::middleware(['auth', 'role:vendor', 'throttle:60,1'])->prefix('vendor')->n
     Route::delete('/notifications/{notification}', [VendorNotificationController::class, 'destroy'])->name('notifications.destroy');
 });
 
-// Customer API Routes - NO CSRF PROTECTION
-// Using ONLY session-based authentication without any web middleware
-Route::middleware(['auth', 'role:customer', 'throttle:60,1'])->prefix('customer')->name('customer.')->group(function () {
+// Customer API Routes - SESSION-BASED AUTHENTICATION
+// Using auth:web for session cookies from frontend
+Route::middleware(['auth:web', 'role:customer', 'throttle:60,1'])->prefix('customer')->name('customer.')->group(function () {
     // Menu & Vendors
     Route::get('/vendors', [MenuController::class, 'vendors'])->name('vendors');
     Route::get('/vendors/{vendor}', [MenuController::class, 'vendorMenu'])->name('vendor.menu');

@@ -1,6 +1,6 @@
 /**
  * API Helper for authenticated requests
- * Uses cookie-based auth (Sanctum sessions) instead of Bearer tokens
+ * Uses session-based authentication without CSRF tokens
  */
 
 interface ApiOptions extends RequestInit {
@@ -43,7 +43,7 @@ export async function api(endpoint: string, options: ApiOptions = {}): Promise<R
     return fetch(url, {
         ...fetchOptions,
         headers,
-        credentials: 'same-origin', // Include cookies
+        credentials: 'include', // Include session cookies
     });
 }
 

@@ -119,6 +119,7 @@
 
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
+import { apiGet, apiPost } from '@/composables/useApi'
 import { Link, usePage } from '@inertiajs/vue3'
 
 const showDropdown = ref(false)
@@ -161,7 +162,8 @@ const loadUnreadCount = async () => {
     const response = await fetch('/api/vendor/notifications/count', {
       headers: {
         'Authorization': `Bearer ${localStorage.getItem('token')}`,
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'X-Requested-With': 'XMLHttpRequest'
       }
     })
 
@@ -180,7 +182,8 @@ const loadRecentNotifications = async () => {
     const response = await fetch('/api/vendor/notifications/recent?limit=5', {
       headers: {
         'Authorization': `Bearer ${localStorage.getItem('token')}`,
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'X-Requested-With': 'XMLHttpRequest'
       }
     })
 
@@ -204,7 +207,8 @@ const handleNotificationClick = async (notification) => {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`,
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest'
         }
       })
       notification.is_read = true
@@ -227,7 +231,8 @@ const markAllRead = async () => {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${localStorage.getItem('token')}`,
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'X-Requested-With': 'XMLHttpRequest'
       }
     })
 

@@ -96,6 +96,7 @@ import { usePage } from '@inertiajs/vue3'
 import VendorLayout from '@/layouts/vendor/VendorLayout.vue'
 import IncomingOrders from './IncomingOrders.vue'
 import OrderHistory from './OrderHistory.vue'
+import { apiGet } from '@/composables/useApi'
 
 const page = usePage()
 const vendorId = ref(null)
@@ -114,14 +115,7 @@ const stats = ref({
 
 const loadStats = async () => {
   try {
-    const response = await fetch('/api/vendor/orders/stats', {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json'
-      },
-      credentials: 'include'
-    })
+    const response = await apiGet('/api/vendor/orders/stats')
 
     if (response.ok) {
       const data = await response.json()

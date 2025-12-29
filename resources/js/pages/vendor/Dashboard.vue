@@ -206,6 +206,7 @@
 import { Link, usePage } from '@inertiajs/vue3'
 import VendorLayout from '@/layouts/vendor/VendorLayout.vue'
 import { ref, onMounted, onUnmounted } from 'vue'
+import { apiGet } from '@/composables/useApi'
 
 const page = usePage()
 const vendorId = ref(null)
@@ -239,14 +240,7 @@ const formatTime = (dateString) => {
 const loadStats = async () => {
   loadingStats.value = true
   try {
-    const response = await fetch('/api/vendor/orders/stats', {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json'
-      },
-      credentials: 'include'
-    })
+    const response = await apiGet('/api/vendor/orders/stats')
 
     if (response.ok) {
       const data = await response.json()
@@ -261,14 +255,7 @@ const loadStats = async () => {
 
 const loadPendingOrders = async () => {
   try {
-    const response = await fetch('/api/vendor/orders?status=pending&per_page=5', {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json'
-      },
-      credentials: 'include'
-    })
+    const response = await apiGet('/api/vendor/orders?status=pending&per_page=5')
 
     if (response.ok) {
       const data = await response.json()

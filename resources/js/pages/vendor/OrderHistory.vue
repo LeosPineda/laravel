@@ -1,13 +1,12 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue';
-import { Link, router, usePage } from '@inertiajs/vue3';
 import OrderDetailModal from '@/components/vendor/OrderDetailModal.vue';
 import OrderHistoryCard from '@/components/vendor/OrderHistoryCard.vue';
 import { useToast } from '@/composables/useToast';
+import { apiGet, apiDelete } from '@/composables/useApi';
 
 const emit = defineEmits(['ordersUpdated']);
 const toast = useToast();
-const page = usePage();
 
 const orders = ref<any[]>([]);
 const loading = ref(false);
@@ -42,14 +41,7 @@ const allSelected = computed(() =>
 const loadOrders = async () => {
   loading.value = true;
   try {
-    const response = await fetch(`/api/vendor/orders?page=${pagination.value.current_page}&per_page=${pagination.value.per_page}`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json'
-      },
-      credentials: 'include'
-    });
+    const response = await apiGet(`/api/vendor/orders?page=${pagination.value.current_page}&per_page=${pagination.value.per_page}`);
 
     if (response.ok) {
       const data = await response.json();
@@ -105,14 +97,7 @@ const deleteSelected = async () => {
 
   try {
     const deletePromises = selectedOrders.value.map(orderId =>
-      fetch(`/api/vendor/orders/${orderId}`, {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
-        credentials: 'include'
-      })
+      apiDelete(`/api/vendor/orders/${orderId}`)
     );
 
     const responses = await Promise.all(deletePromises);
@@ -139,14 +124,7 @@ const clearAll = async () => {
 
   try {
     const deletePromises = orders.value.map(order =>
-      fetch(`/api/vendor/orders/${order.id}`, {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
-        credentials: 'include'
-      })
+      apiDelete(`/api/vendor/orders/${order.id}`)
     );
 
     const responses = await Promise.all(deletePromises);
@@ -171,199 +149,172 @@ const unselectAll = () => {
   toast.info('All selections cleared');
 };
 
+// Expose loadOrders for parent component
+defineExpose({
+  loadOrders
+});
+
 onMounted(() => {
   loadOrders();
 });
 </script>
 
 <template>
-  <VendorLayout>
-    <div class="bg-white">
-      <!-- Header with navigation back to dashboard -->
-      <div class="bg-white border-b border-gray-200 px-6 py-4">
-        <div class="flex items-center justify-between">
-          <div class="flex items-center gap-4">
-            <Link
-              href="/vendor/dashboard"
-              class="text-sm text-gray-500 hover:text-gray-700 flex items-center gap-2"
-            >
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
-              </svg>
-              Back to Dashboard
-            </Link>
-            <div class="w-px h-6 bg-gray-300"></div>
-            <h1 class="text-xl font-bold text-gray-900">Order History</h1>
-          </div>
-          <div class="flex items-center gap-2">
-            <button
-              @click="loadOrders"
-              :disabled="loading"
-              class="px-3 py-2 text-sm text-gray-600 hover:text-gray-900 flex items-center gap-2"
-            >
-              <svg class="w-4 h-4" :class="{ 'animate-spin': loading }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-              </svg>
-              Refresh
-            </button>
-          </div>
-        </div>
+  <!-- No header - parent Orders.vue handles navigation -->
+  <div>
+    <!-- Tabs -->
+    <div class="border-b border-gray-200 px-6">
+      <div class="flex gap-6">
+        <button
+          @click="activeTab = 'completed'"
+          :class="[
+            'py-3 text-sm font-medium border-b-2 transition-colors',
+            activeTab === 'completed'
+              ? 'border-orange-500 text-orange-600'
+              : 'border-transparent text-gray-500 hover:text-gray-700'
+          ]"
+        >
+          ✅ Completed
+          <span v-if="completedCount > 0" class="ml-1 px-2 py-0.5 bg-green-100 text-green-700 rounded-full text-xs">
+            {{ completedCount }}
+          </span>
+        </button>
+        <button
+          @click="activeTab = 'cancelled'"
+          :class="[
+            'py-3 text-sm font-medium border-b-2 transition-colors',
+            activeTab === 'cancelled'
+              ? 'border-orange-500 text-orange-600'
+              : 'border-transparent text-gray-500 hover:text-gray-700'
+          ]"
+        >
+          ❌ Cancelled
+          <span v-if="cancelledCount > 0" class="ml-1 px-2 py-0.5 bg-red-100 text-red-700 rounded-full text-xs">
+            {{ cancelledCount }}
+          </span>
+        </button>
       </div>
-
-      <!-- Tabs -->
-      <div class="border-b border-gray-200 px-6">
-        <div class="flex gap-6">
-          <button
-            @click="activeTab = 'completed'"
-            :class="[
-              'py-3 text-sm font-medium border-b-2 transition-colors',
-              activeTab === 'completed'
-                ? 'border-orange-500 text-orange-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700'
-            ]"
-          >
-            ✅ Completed
-            <span v-if="completedCount > 0" class="ml-1 px-2 py-0.5 bg-green-100 text-green-700 rounded-full text-xs">
-              {{ completedCount }}
-            </span>
-          </button>
-          <button
-            @click="activeTab = 'cancelled'"
-            :class="[
-              'py-3 text-sm font-medium border-b-2 transition-colors',
-              activeTab === 'cancelled'
-                ? 'border-orange-500 text-orange-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700'
-            ]"
-          >
-            ❌ Cancelled
-            <span v-if="cancelledCount > 0" class="ml-1 px-2 py-0.5 bg-red-100 text-red-700 rounded-full text-xs">
-              {{ cancelledCount }}
-            </span>
-          </button>
-        </div>
-      </div>
-
-      <!-- Content -->
-      <div class="p-6">
-        <!-- Loading -->
-        <div v-if="loading" class="text-center py-12">
-          <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto"></div>
-          <p class="text-gray-500 mt-4">Loading orders...</p>
-        </div>
-
-        <!-- Controls -->
-        <div v-if="!loading && orders.length > 0" class="mb-6 p-4 bg-gray-50 rounded-lg border">
-          <div class="flex items-center justify-between">
-            <div class="flex items-center gap-3">
-              <button
-                @click="toggleSelectAll"
-                class="px-4 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-100 transition-colors"
-              >
-                {{ allSelected ? 'Deselect All' : 'Select All' }}
-              </button>
-              <button
-                v-if="selectedOrders.length > 0"
-                @click="deleteSelected"
-                class="px-4 py-2 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
-              >
-                Delete Selected ({{ selectedOrders.length }})
-              </button>
-              <button
-                @click="unselectAll"
-                class="px-4 py-2 text-sm bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors"
-              >
-                Clear Selection
-              </button>
-              <button
-                @click="clearAll"
-                class="px-4 py-2 text-sm bg-red-800 text-white rounded-lg hover:bg-red-900 transition-colors"
-              >
-                Clear All
-              </button>
-            </div>
-            <div class="text-sm text-gray-600">
-              {{ orders.length }} orders • {{ selectedOrders.length }} selected
-            </div>
-          </div>
-        </div>
-
-        <!-- Completed Orders -->
-        <div v-if="activeTab === 'completed'">
-          <div v-if="completedOrders.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <OrderHistoryCard
-              v-for="order in completedOrders"
-              :key="order.id"
-              :order="order"
-              :is-selected="selectedOrders.includes(order.id)"
-              @toggle-selection="toggleOrderSelection"
-              @view-order="openOrderDetail"
-              @delete-order="loadOrders"
-            />
-          </div>
-
-          <div v-else class="text-center py-16">
-            <div class="text-6xl mb-4">✅</div>
-            <h3 class="text-lg font-medium text-gray-900 mb-2">No completed orders</h3>
-            <p class="text-gray-500">Completed orders will appear here</p>
-          </div>
-        </div>
-
-        <!-- Cancelled Orders -->
-        <div v-if="activeTab === 'cancelled'">
-          <div v-if="cancelledOrders.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <OrderHistoryCard
-              v-for="order in cancelledOrders"
-              :key="order.id"
-              :order="order"
-              :is-selected="selectedOrders.includes(order.id)"
-              @toggle-selection="toggleOrderSelection"
-              @view-order="openOrderDetail"
-              @delete-order="loadOrders"
-            />
-          </div>
-
-          <div v-else class="text-center py-16">
-            <div class="text-6xl mb-4">❌</div>
-            <h3 class="text-lg font-medium text-gray-900 mb-2">No cancelled orders</h3>
-            <p class="text-gray-500">Cancelled orders will appear here</p>
-          </div>
-        </div>
-
-        <!-- Pagination -->
-        <div v-if="pagination.total > pagination.per_page" class="px-6 pb-6 flex justify-between items-center">
-          <div class="text-sm text-gray-500">
-            {{ pagination.total }} orders total
-          </div>
-          <div class="flex gap-2">
-            <button
-              @click="changePage(pagination.current_page - 1)"
-              :disabled="pagination.current_page <= 1"
-              class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-              Previous
-            </button>
-            <span class="px-4 py-2 text-sm text-gray-600">
-              Page {{ pagination.current_page }} of {{ pagination.last_page }}
-            </span>
-            <button
-              @click="changePage(pagination.current_page + 1)"
-              :disabled="pagination.current_page >= pagination.last_page"
-              class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-              Next
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <!-- Order Detail Modal -->
-      <OrderDetailModal
-        :is-open="showOrderModal"
-        :order-id="selectedOrderId"
-        :processing="false"
-        @close="showOrderModal = false"
-      />
     </div>
-  </VendorLayout>
+
+    <!-- Content -->
+    <div class="p-6">
+      <!-- Loading -->
+      <div v-if="loading" class="text-center py-12">
+        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto"></div>
+        <p class="text-gray-500 mt-4">Loading orders...</p>
+      </div>
+
+      <!-- Controls -->
+      <div v-if="!loading && orders.length > 0" class="mb-6 p-4 bg-gray-50 rounded-lg border">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <button
+              @click="toggleSelectAll"
+              class="px-4 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-100 transition-colors"
+            >
+              {{ allSelected ? 'Deselect All' : 'Select All' }}
+            </button>
+            <button
+              v-if="selectedOrders.length > 0"
+              @click="deleteSelected"
+              class="px-4 py-2 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+            >
+              Delete Selected ({{ selectedOrders.length }})
+            </button>
+            <button
+              @click="unselectAll"
+              class="px-4 py-2 text-sm bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors"
+            >
+              Clear Selection
+            </button>
+            <button
+              @click="clearAll"
+              class="px-4 py-2 text-sm bg-red-800 text-white rounded-lg hover:bg-red-900 transition-colors"
+            >
+              Clear All
+            </button>
+          </div>
+          <div class="text-sm text-gray-600">
+            {{ orders.length }} orders • {{ selectedOrders.length }} selected
+          </div>
+        </div>
+      </div>
+
+      <!-- Completed Orders -->
+      <div v-if="activeTab === 'completed'">
+        <div v-if="completedOrders.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <OrderHistoryCard
+            v-for="order in completedOrders"
+            :key="order.id"
+            :order="order"
+            :is-selected="selectedOrders.includes(order.id)"
+            @toggle-selection="toggleOrderSelection"
+            @view-order="openOrderDetail"
+            @delete-order="loadOrders"
+          />
+        </div>
+
+        <div v-else class="text-center py-16">
+          <div class="text-6xl mb-4">✅</div>
+          <h3 class="text-lg font-medium text-gray-900 mb-2">No completed orders</h3>
+          <p class="text-gray-500">Completed orders will appear here</p>
+        </div>
+      </div>
+
+      <!-- Cancelled Orders -->
+      <div v-if="activeTab === 'cancelled'">
+        <div v-if="cancelledOrders.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <OrderHistoryCard
+            v-for="order in cancelledOrders"
+            :key="order.id"
+            :order="order"
+            :is-selected="selectedOrders.includes(order.id)"
+            @toggle-selection="toggleOrderSelection"
+            @view-order="openOrderDetail"
+            @delete-order="loadOrders"
+          />
+        </div>
+
+        <div v-else class="text-center py-16">
+          <div class="text-6xl mb-4">❌</div>
+          <h3 class="text-lg font-medium text-gray-900 mb-2">No cancelled orders</h3>
+          <p class="text-gray-500">Cancelled orders will appear here</p>
+        </div>
+      </div>
+
+      <!-- Pagination -->
+      <div v-if="pagination.total > pagination.per_page" class="px-6 pb-6 flex justify-between items-center">
+        <div class="text-sm text-gray-500">
+          {{ pagination.total }} orders total
+        </div>
+        <div class="flex gap-2">
+          <button
+            @click="changePage(pagination.current_page - 1)"
+            :disabled="pagination.current_page <= 1"
+            class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            Previous
+          </button>
+          <span class="px-4 py-2 text-sm text-gray-600">
+            Page {{ pagination.current_page }} of {{ pagination.last_page }}
+          </span>
+          <button
+            @click="changePage(pagination.current_page + 1)"
+            :disabled="pagination.current_page >= pagination.last_page"
+            class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            Next
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Order Detail Modal -->
+    <OrderDetailModal
+      :is-open="showOrderModal"
+      :order-id="selectedOrderId"
+      :processing="false"
+      @close="showOrderModal = false"
+    />
+  </div>
 </template>

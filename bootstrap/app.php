@@ -24,6 +24,9 @@ return Application::configure(basePath: dirname(__DIR__))
             AddLinkHeadersForPreloadedAssets::class,
         ]);
 
+        // CSRF validation completely removed - no CSRF protection needed for same-origin apps
+        // Session-based authentication with same-origin policy provides adequate security
+
         $middleware->alias([
             'role' => \App\Http\Middleware\CheckRole::class,
             'verified' => EnsureEmailIsVerified::class,

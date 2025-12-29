@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import { useToast } from '@/composables/useToast';
+import { apiPatch } from '@/composables/useApi';
 
 const props = defineProps<{
   order: {
@@ -24,14 +25,7 @@ const toast = useToast();
 
 const acceptOrder = async (order: any) => {
   try {
-    const response = await fetch(`/api/vendor/orders/${order.id}/accept`, {
-      method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json'
-      },
-      credentials: 'include'
-    });
+    const response = await apiPatch(`/api/vendor/orders/${order.id}/accept`);
 
     if (response.ok) {
       toast.success(`Order #${order.order_number} accepted! Customer will be notified.`);
@@ -50,14 +44,7 @@ const declineOrder = async (order: any) => {
   if (!confirm(`Decline order #${order.order_number}? The customer will be notified.`)) return;
 
   try {
-    const response = await fetch(`/api/vendor/orders/${order.id}/decline`, {
-      method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json'
-      },
-      credentials: 'include'
-    });
+    const response = await apiPatch(`/api/vendor/orders/${order.id}/decline`);
 
     if (response.ok) {
       toast.warning(`Order #${order.order_number} declined. Customer will be notified.`);
@@ -74,14 +61,7 @@ const declineOrder = async (order: any) => {
 
 const markReady = async (order: any) => {
   try {
-    const response = await fetch(`/api/vendor/orders/${order.id}/ready`, {
-      method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json'
-      },
-      credentials: 'include'
-    });
+    const response = await apiPatch(`/api/vendor/orders/${order.id}/ready`);
 
     if (response.ok) {
       toast.success(`Order #${order.order_number} is ready! Customer notified + receipt sent.`);

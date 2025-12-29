@@ -123,7 +123,7 @@ class ProductController extends Controller
 
                 // Handle image upload
                 if ($request->hasFile('image')) {
-                    $imagePath = $request->file('image')->store('product-images', 'public');
+                    $imagePath = $request->file('image')->store('products', 'public');
                     $productData['image_url'] = $imagePath;
                 }
 
@@ -234,7 +234,7 @@ class ProductController extends Controller
                         Storage::disk('public')->delete($product->image_url);
                     }
 
-                    $imagePath = $request->file('image')->store('product-images', 'public');
+                    $imagePath = $request->file('image')->store('products', 'public');
                     $updateData['image_url'] = $imagePath;
                 }
 

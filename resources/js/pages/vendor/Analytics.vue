@@ -162,6 +162,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import VendorLayout from '@/layouts/vendor/VendorLayout.vue'
+import { apiGet } from '@/composables/useApi'
 
 const selectedPeriod = ref('week')
 const loading = ref(false)
@@ -194,14 +195,7 @@ const bestSellers = ref([])
 
 const loadSales = async () => {
   try {
-    const response = await fetch(`/api/vendor/analytics/sales?period=${selectedPeriod.value}`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json'
-      },
-      credentials: 'include'
-    })
+    const response = await apiGet(`/api/vendor/analytics/sales?period=${selectedPeriod.value}`)
 
     if (response.ok) {
       const data = await response.json()
@@ -214,14 +208,7 @@ const loadSales = async () => {
 
 const loadOrderMetrics = async () => {
   try {
-    const response = await fetch('/api/vendor/analytics/order-metrics', {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json'
-      },
-      credentials: 'include'
-    })
+    const response = await apiGet('/api/vendor/analytics/order-metrics')
 
     if (response.ok) {
       const data = await response.json()
@@ -234,14 +221,7 @@ const loadOrderMetrics = async () => {
 
 const loadRevenue = async () => {
   try {
-    const response = await fetch(`/api/vendor/analytics/revenue?period=${selectedPeriod.value}`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json'
-      },
-      credentials: 'include'
-    })
+    const response = await apiGet(`/api/vendor/analytics/revenue?period=${selectedPeriod.value}`)
 
     if (response.ok) {
       const data = await response.json()
@@ -254,14 +234,7 @@ const loadRevenue = async () => {
 
 const loadProfit = async () => {
   try {
-    const response = await fetch('/api/vendor/analytics/profit', {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json'
-      },
-      credentials: 'include'
-    })
+    const response = await apiGet('/api/vendor/analytics/profit')
 
     if (response.ok) {
       const data = await response.json()
@@ -274,14 +247,7 @@ const loadProfit = async () => {
 
 const loadBestSellers = async () => {
   try {
-    const response = await fetch('/api/vendor/analytics/best-sellers?limit=10', {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json'
-      },
-      credentials: 'include'
-    })
+    const response = await apiGet('/api/vendor/analytics/best-sellers?limit=10')
 
     if (response.ok) {
       const data = await response.json()

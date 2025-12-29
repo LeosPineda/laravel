@@ -220,6 +220,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { Link } from '@inertiajs/vue3'
 import VendorLayout from '@/layouts/vendor/VendorLayout.vue'
+import { apiGet, apiPost, apiDelete } from '@/composables/useApi'
 
 const notifications = ref([])
 const loading = ref(false)
@@ -292,11 +293,7 @@ const loadNotifications = async () => {
     if (filters.value.status !== 'all') params.append('status', filters.value.status)
     if (filters.value.search) params.append('search', filters.value.search)
 
-    const response = await fetch(`/api/vendor/notifications?${params}`, {
-      headers: {
-        'Content-Type': 'application/json'
-      }
-    })
+    const response = await apiGet(`/api/vendor/notifications?${params}`)
 
     if (response.ok) {
       const data = await response.json()
@@ -331,12 +328,7 @@ const changePage = (page) => {
 
 const markAsRead = async (notification) => {
   try {
-    const response = await fetch(`/api/vendor/notifications/${notification.id}/read`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      }
-    })
+    const response = await apiPost(`/api/vendor/notifications/${notification.id}/read`)
 
     if (response.ok) {
       notification.is_read = true
@@ -349,12 +341,7 @@ const markAsRead = async (notification) => {
 
 const markAllAsRead = async () => {
   try {
-    const response = await fetch('/api/vendor/notifications/mark-all-read', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      }
-    })
+    const response = await apiPost('/api/vendor/notifications/mark-all-read')
 
     if (response.ok) {
       notifications.value.forEach(n => n.is_read = true)
@@ -369,12 +356,7 @@ const deleteNotification = async (notification) => {
   if (!confirm('Are you sure you want to delete this notification?')) return
 
   try {
-    const response = await fetch(`/api/vendor/notifications/${notification.id}`, {
-      method: 'DELETE',
-      headers: {
-        'Content-Type': 'application/json'
-      }
-    })
+    const response = await apiDelete(`/api/vendor/notifications/${notification.id}`)
 
     if (response.ok) {
       await loadNotifications()
@@ -389,12 +371,7 @@ const cleanupNotifications = async () => {
 
   cleaningUp.value = true
   try {
-    const response = await fetch('/api/vendor/notifications/cleanup', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      }
-    })
+    const response = await apiPost('/api/vendor/notifications/cleanup')
 
     if (response.ok) {
       const data = await response.json()
