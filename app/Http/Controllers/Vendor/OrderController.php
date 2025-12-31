@@ -6,13 +6,13 @@ use App\Events\OrderStatusChanged;
 use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Models\Vendor;
+use App\Models\User;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Validation\Rule;
 
 class OrderController extends Controller
 {
@@ -35,7 +35,7 @@ class OrderController extends Controller
                 ->with(['items.product', 'customer'])
                 ->orderBy('created_at', 'desc');
 
-            // Apply status filter - removed 'completed' status
+            // Apply status filter
             if ($status && in_array($status, ['pending', 'accepted', 'ready_for_pickup', 'cancelled'])) {
                 $query->byStatus($status);
             }
@@ -72,7 +72,7 @@ class OrderController extends Controller
     }
 
     /**
-     * Display a specific order.
+     * Display a specific order with special instructions.
      */
     public function show(Order $order): JsonResponse
     {
@@ -82,9 +82,18 @@ class OrderController extends Controller
                 return response()->json(['error' => 'Order not found'], 404);
             }
 
-            $order->load(['items.product.addons', 'customer']);
+            // Load order items with product details and customer info
+            // special_instructions is available directly from the Order model
+            $order->load([
+                'items.product.addons',
+                'customer:id,name,email'
+            ]);
 
-            return response()->json(['order' => $order]);
+            // Add special_instructions to the response
+            $orderData = $order->toArray();
+            $orderData['special_instructions'] = $order->special_instructions;
+
+            return response()->json(['order' => $orderData]);
 
         } catch (\Exception $e) {
             Log::error('Error fetching order details', [
@@ -217,7 +226,7 @@ class OrderController extends Controller
             try {
                 $order->update([
                     'status' => 'ready_for_pickup',
-                    'completed_at' => now() // Mark as completed immediately
+                    'completed_at' => now()
                 ]);
 
                 // Broadcast status change event
@@ -367,8 +376,7 @@ class OrderController extends Controller
     }
 
     /**
-     * Generate and download PDF receipt for an order
-     * Uses the same customer template for both customer and vendor
+     * Generate and download PDF receipt for an order.
      */
     public function downloadReceipt(Request $request, $orderId)
     {
@@ -384,7 +392,6 @@ class OrderController extends Controller
                 ->whereIn('status', ['ready_for_pickup', 'completed'])
                 ->firstOrFail();
 
-            // Generate PDF using dompdf - Using customer template for both
             $pdf = Pdf::loadView('receipts.customer', compact('order'));
 
             $fileName = "receipt-{$order->order_number}.pdf";
@@ -405,8 +412,7 @@ class OrderController extends Controller
     }
 
     /**
-     * Generate and stream PDF receipt for an order
-     * Uses the same customer template for both customer and vendor
+     * Generate and stream PDF receipt for an order.
      */
     public function streamReceipt(Request $request, $orderId)
     {
@@ -422,7 +428,6 @@ class OrderController extends Controller
                 ->whereIn('status', ['ready_for_pickup', 'completed'])
                 ->firstOrFail();
 
-            // Generate PDF using dompdf - Using customer template for both
             $pdf = Pdf::loadView('receipts.customer', compact('order'));
 
             $fileName = "receipt-{$order->order_number}.pdf";
@@ -448,12 +453,21 @@ class OrderController extends Controller
     private function getCurrentVendor(): ?Vendor
     {
         $user = Auth::user();
-        return $user?->vendor ?? null;
+
+        if (!$user) {
+            return null;
+        }
+
+        // Check if user is a vendor and has a vendor relationship
+        if ($user->role === 'vendor' && $user->vendor) {
+            return $user->vendor;
+        }
+
+        return null;
     }
 
     /**
      * Calculate order statistics for a vendor.
-     * Updated: completed orders = ready_for_pickup orders
      */
     private function getOrderStats(int $vendorId): array
     {

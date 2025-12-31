@@ -8,10 +8,6 @@ use App\Http\Controllers\Vendor\ProductController;
 use App\Http\Controllers\Vendor\AddonController;
 use App\Http\Controllers\Vendor\NotificationController as VendorNotificationController;
 use App\Http\Controllers\Vendor\QrController;
-use App\Http\Controllers\Customer\CartController;
-use App\Http\Controllers\Customer\MenuController;
-use App\Http\Controllers\Customer\NotificationController as CustomerNotificationController;
-use App\Http\Controllers\Customer\OrderController as CustomerOrderController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -54,14 +50,14 @@ Route::post('/logout', function () {
     return redirect()->route('login');
 })->name('logout');
 
-// Dashboard redirect based on role
+// Dashboard redirect based on role (Customer routes removed - focusing on vendors)
 Route::get('/dashboard', function () {
     $user = Auth::user();
 
     return match ($user->role) {
         'superadmin' => redirect()->route('superadmin.dashboard'),
         'vendor' => redirect()->route('vendor.dashboard'),
-        'customer' => redirect()->route('customer.menu'),
+        'customer' => redirect()->route('login'), // Redirect customers to login for now
         default => redirect()->route('login'),
     };
 })->middleware('auth')->name('dashboard');
@@ -153,49 +149,6 @@ Route::middleware(['auth', 'role:vendor', 'throttle:60,1'])->prefix('api/vendor'
     Route::delete('/notifications/{notification}', [VendorNotificationController::class, 'destroy'])->name('notifications.destroy');
 });
 
-// Customer API Routes - SESSION-BASED AUTHENTICATION
-// Using 'auth' middleware (not auth:web) since we're in web.php
-Route::middleware(['auth', 'role:customer', 'throttle:60,1'])->prefix('api/customer')->name('customer.')->group(function () {
-    // Menu & Vendors
-    Route::get('/vendors', [MenuController::class, 'vendors'])->name('vendors');
-    Route::get('/vendors/{vendor}', [MenuController::class, 'vendorMenu'])->name('vendor.menu');
-    Route::get('/vendors/{vendor}/qr-download', [MenuController::class, 'downloadQr'])->name('vendor.qr-download');
-    Route::get('/vendors/{vendor}/qr-payment', [MenuController::class, 'getQrPayment'])->name('vendor.qr-payment');
-    Route::get('/products/search', [MenuController::class, 'searchProducts'])->name('products.search');
-    Route::get('/products/{product}', [MenuController::class, 'productDetails'])->name('products.show');
-    Route::post('/products/{product}/quick-add', [MenuController::class, 'quickAddToCart'])->name('products.quick-add');
-    Route::get('/categories', [MenuController::class, 'categories'])->name('categories');
-
-    // Cart
-    Route::get('/cart', [CartController::class, 'index'])->name('cart.index');
-    Route::get('/cart/count', [CartController::class, 'count'])->name('cart.count');
-    Route::post('/cart', [CartController::class, 'store'])->name('cart.store');
-    Route::put('/cart/{cartItem}', [CartController::class, 'update'])->name('cart.update');
-    Route::delete('/cart/{cartItem}', [CartController::class, 'destroy'])->name('cart.destroy');
-    Route::delete('/cart/clear/{vendor?}', [CartController::class, 'clear'])->name('cart.clear');
-
-    // Orders
-    Route::get('/orders', [CustomerOrderController::class, 'index'])->name('orders.index');
-    Route::get('/orders/history', [CustomerOrderController::class, 'history'])->name('orders.history');
-    Route::post('/orders', [CustomerOrderController::class, 'store'])->name('orders.store');
-    Route::get('/orders/{order}', [CustomerOrderController::class, 'show'])->name('orders.show');
-    Route::get('/orders/{order}/track', [CustomerOrderController::class, 'track'])->name('orders.track');
-    Route::get('/orders/{order}/receipt', [CustomerOrderController::class, 'receipt'])->name('orders.receipt');
-    Route::get('/orders/{order}/receipt/download', [CustomerOrderController::class, 'downloadReceipt'])->name('orders.receipt.download');
-    Route::get('/orders/{order}/receipt/stream', [CustomerOrderController::class, 'streamReceipt'])->name('orders.receipt.stream');
-    Route::post('/orders/{order}/cancel', [CustomerOrderController::class, 'cancel'])->name('orders.cancel');
-
-    // Notifications
-    Route::get('/notifications', [CustomerNotificationController::class, 'index'])->name('notifications.index');
-    Route::get('/notifications/count', [CustomerNotificationController::class, 'count'])->name('notifications.count');
-    Route::get('/notifications/recent', [CustomerNotificationController::class, 'recent'])->name('notifications.recent');
-    Route::post('/notifications/mark-all-read', [CustomerNotificationController::class, 'markAllAsRead'])->name('notifications.mark-all');
-    Route::delete('/notifications/clear-all', [CustomerNotificationController::class, 'clearAll'])->name('notifications.clear-all');
-    Route::post('/notifications/cleanup', [CustomerNotificationController::class, 'cleanup'])->name('notifications.cleanup');
-    Route::post('/notifications/{notification}/read', [CustomerNotificationController::class, 'markAsRead'])->name('notifications.read');
-    Route::delete('/notifications/{notification}', [CustomerNotificationController::class, 'destroy'])->name('notifications.destroy');
-});
-
 // Vendor routes (frontend for vendor management)
 Route::middleware(['auth', 'role:vendor'])->prefix('vendor')->name('vendor.')->group(function () {
     Route::get('/dashboard', function () {
@@ -230,30 +183,6 @@ Route::middleware(['auth', 'role:vendor'])->prefix('vendor')->name('vendor.')->g
     Route::get('/qr', function () {
         return Inertia::render('vendor/QrCode');
     })->name('qr');
-});
-
-// Customer routes (frontend for customer ordering)
-Route::middleware(['auth', 'role:customer'])->prefix('customer')->name('customer.')->group(function () {
-    Route::get('/menu', function () {
-        return Inertia::render('customer/Menu');
-    })->name('menu');
-
-    Route::get('/orders', function () {
-        return Inertia::render('customer/Orders');
-    })->name('orders');
-
-    // ✅ NEW: Added notification and profile routes for proper navigation
-    Route::get('/notifications', function () {
-        return Inertia::render('customer/Notifications');
-    })->name('notifications');
-
-    Route::get('/profile', function () {
-        return Inertia::render('customer/Profile');
-    })->name('profile');
-
-    Route::get('/cart', function () {
-        return Inertia::render('customer/Cart');
-    })->name('cart');
 });
 
 require __DIR__.'/settings.php';

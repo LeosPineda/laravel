@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Vendor;
 use App\Http\Controllers\Controller;
 use App\Models\Product;
 use App\Models\Addon;
+use App\Models\User;
+use App\Models\Vendor;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
@@ -23,7 +25,7 @@ class ProductController extends Controller
         try {
             $vendor = $this->getCurrentVendor();
             if (!$vendor) {
-                return response()->json(['error' => 'Vendor not found'], 404);
+                return response()->json(['error' => 'Vendor record not found. Please contact administrator.'], 404);
             }
 
             $status = $request->query('status');
@@ -88,7 +90,7 @@ class ProductController extends Controller
         try {
             $vendor = $this->getCurrentVendor();
             if (!$vendor) {
-                return response()->json(['error' => 'Vendor not found'], 404);
+                return response()->json(['error' => 'Vendor record not found. Please contact administrator.'], 404);
             }
 
             $request->validate([
@@ -345,7 +347,7 @@ class ProductController extends Controller
         try {
             $vendor = $this->getCurrentVendor();
             if (!$vendor) {
-                return response()->json(['error' => 'Vendor not found'], 404);
+                return response()->json(['error' => 'Vendor record not found. Please contact administrator.'], 404);
             }
 
             $categories = $this->getVendorCategories($vendor->id);
@@ -376,7 +378,7 @@ class ProductController extends Controller
 
             $vendor = $this->getCurrentVendor();
             if (!$vendor) {
-                return response()->json(['error' => 'Vendor not found'], 404);
+                return response()->json(['error' => 'Vendor record not found. Please contact administrator.'], 404);
             }
 
             $productIds = $request->product_ids;
@@ -447,7 +449,24 @@ class ProductController extends Controller
     private function getCurrentVendor(): ?\App\Models\Vendor
     {
         $user = Auth::user();
-        return $user?->vendor ?? null;
+
+        if (!$user) {
+            Log::error('No authenticated user found');
+            return null;
+        }
+
+        $vendor = $user?->vendor ?? null;
+
+        if (!$vendor) {
+            Log::error('Vendor record missing for user', [
+                'user_id' => $user->id,
+                'user_role' => $user->role,
+                'user_email' => $user->email
+            ]);
+            return null;
+        }
+
+        return $vendor;
     }
 
     /**

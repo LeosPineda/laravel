@@ -35,7 +35,6 @@ class WelcomeCustomerNotification extends Notification implements ShouldQueue
             ->line('⚡ **Real-time Updates:** Track your order status with instant notifications')
             ->line('💳 **Multiple Payment Options:** Pay at cashier or via QR code')
             ->line('📱 **Mobile Friendly:** Order on any device, anywhere')
-            ->action('🛒 Start Browsing Vendors', url('/customer/home'))
             ->line('Ready to satisfy your cravings? Explore our vendors and place your first order! 🚀')
             ->salutation('Bon appétit! The 4Rodz Food Court Team');
     }

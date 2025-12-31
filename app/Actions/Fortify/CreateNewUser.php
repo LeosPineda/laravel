@@ -3,6 +3,7 @@
 namespace App\Actions\Fortify;
 
 use App\Models\User;
+use App\Models\Vendor;
 use App\Notifications\WelcomeCustomerNotification;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;

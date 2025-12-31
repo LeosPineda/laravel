@@ -16,6 +16,7 @@ class CartItem extends Model
         'quantity',
         'unit_price',
         'selected_addons',
+        'special_instructions',
         'created_at',
         'updated_at',
     ];
@@ -24,6 +25,7 @@ class CartItem extends Model
         'quantity' => 'integer',
         'unit_price' => 'decimal:2',
         'selected_addons' => 'array',
+        'special_instructions' => 'string',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];
@@ -78,7 +80,7 @@ class CartItem extends Model
      */
     public function scopeForCart($query, int $cartId)
     {
-        return $query->where('cart_id', $cartId);
+        $query->where('cart_id', $cartId);
     }
 
     /**
@@ -86,7 +88,7 @@ class CartItem extends Model
      */
     public function scopeForProduct($query, int $productId)
     {
-        return $query->where('product_id', $productId);
+        $query->where('product_id', $productId);
     }
 
     /**
@@ -107,6 +109,14 @@ class CartItem extends Model
     public function hasAddons(): bool
     {
         return !empty($this->selected_addons);
+    }
+
+    /**
+     * Check if item has special instructions.
+     */
+    public function hasSpecialInstructions(): bool
+    {
+        return !empty($this->special_instructions);
     }
 
     /**
@@ -186,6 +196,8 @@ class CartItem extends Model
             'addons_total' => $this->addons_total,
             'addon_names' => $this->addon_names,
             'has_addons' => $this->hasAddons(),
+            'special_instructions' => $this->special_instructions,
+            'has_special_instructions' => $this->hasSpecialInstructions(),
             'selected_addons' => $this->selected_addons,
         ];
     }
