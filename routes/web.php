@@ -10,7 +10,13 @@ use App\Http\Controllers\Vendor\NotificationController as VendorNotificationCont
 use App\Http\Controllers\Vendor\QrController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Broadcast;
 use Inertia\Inertia;
+
+// ✅ CRITICAL: Broadcasting authentication route (required for real-time notifications)
+Route::post('/broadcasting/auth', function () {
+    return Broadcast::auth(request());
+});
 
 // Public route - redirect to login
 Route::get('/', function () {
@@ -85,7 +91,6 @@ Route::post('/api/test', function () {
 });
 
 // Vendor API Routes - SESSION-BASED AUTHENTICATION
-// Using 'auth' middleware (not auth:web) since we're in web.php
 Route::middleware(['auth', 'role:vendor', 'throttle:60,1'])->prefix('api/vendor')->name('vendor.')->group(function () {
     // Analytics
     Route::get('/analytics/sales', [AnalyticsController::class, 'sales'])->name('analytics.sales');
@@ -149,6 +154,46 @@ Route::middleware(['auth', 'role:vendor', 'throttle:60,1'])->prefix('api/vendor'
     Route::delete('/notifications/{notification}', [VendorNotificationController::class, 'destroy'])->name('notifications.destroy');
 });
 
+// ============================================
+// CUSTOMER API ROUTES - SESSION-BASED AUTHENTICATION
+// ============================================
+Route::middleware(['auth', 'role:customer', 'throttle:60,1'])->prefix('api/customer')->name('customer.')->group(function () {
+    // Orders - Customer order management
+    Route::get('/orders', [\App\Http\Controllers\Customer\OrderController::class, 'index'])->name('orders.index');
+    Route::get('/orders/{order}', [\App\Http\Controllers\Customer\OrderController::class, 'show'])->name('orders.show');
+    Route::post('/orders', [\App\Http\Controllers\Customer\OrderController::class, 'store'])->name('orders.store');
+    Route::get('/orders/{order}/track', [\App\Http\Controllers\Customer\OrderController::class, 'track'])->name('orders.track');
+    Route::get('/orders/history', [\App\Http\Controllers\Customer\OrderController::class, 'history'])->name('orders.history');
+    Route::get('/orders/{order}/receipt/download', [\App\Http\Controllers\Customer\OrderController::class, 'downloadReceipt'])->name('orders.receipt.download');
+    Route::get('/orders/{order}/receipt/stream', [\App\Http\Controllers\Customer\OrderController::class, 'streamReceipt'])->name('orders.receipt.stream');
+    Route::post('/orders/{order}/cancel', [\App\Http\Controllers\Customer\OrderController::class, 'cancel'])->name('orders.cancel');
+
+    // Menu - Vendor products and menu browsing
+    Route::get('/menu/vendors', [\App\Http\Controllers\Customer\MenuController::class, 'vendors'])->name('menu.vendors');
+    Route::get('/menu/vendors/{vendor}', [\App\Http\Controllers\Customer\MenuController::class, 'showVendor'])->name('menu.vendors.show');
+    Route::get('/menu/vendors/{vendor}/products', [\App\Http\Controllers\Customer\MenuController::class, 'vendorProducts'])->name('menu.vendors.products');
+    Route::get('/menu/products', [\App\Http\Controllers\Customer\MenuController::class, 'allProducts'])->name('menu.products');
+    Route::get('/menu/products/{product}', [\App\Http\Controllers\Customer\MenuController::class, 'showProduct'])->name('menu.products.show');
+
+    // Cart - Shopping cart management
+    Route::get('/cart', [\App\Http\Controllers\Customer\CartController::class, 'index'])->name('cart.index');
+    Route::post('/cart/items', [\App\Http\Controllers\Customer\CartController::class, 'addItem'])->name('cart.items.store');
+    Route::put('/cart/items/{item}', [\App\Http\Controllers\Customer\CartController::class, 'updateItem'])->name('cart.items.update');
+    Route::delete('/cart/items/{item}', [\App\Http\Controllers\Customer\CartController::class, 'removeItem'])->name('cart.items.destroy');
+    Route::delete('/cart/items', [\App\Http\Controllers\Customer\CartController::class, 'clearCart'])->name('cart.clear');
+    Route::post('/cart/merge', [\App\Http\Controllers\Customer\CartController::class, 'mergeCart'])->name('cart.merge');
+
+    // Notifications - Customer notification management
+    Route::get('/notifications', [\App\Http\Controllers\Customer\NotificationController::class, 'index'])->name('notifications.index');
+    Route::get('/notifications/count', [\App\Http\Controllers\Customer\NotificationController::class, 'count'])->name('notifications.count');
+    Route::get('/notifications/recent', [\App\Http\Controllers\Customer\NotificationController::class, 'recent'])->name('notifications.recent');
+    Route::post('/notifications/mark-all-read', [\App\Http\Controllers\Customer\NotificationController::class, 'markAllAsRead'])->name('notifications.mark-all');
+    Route::post('/notifications/{notification}/read', [\App\Http\Controllers\Customer\NotificationController::class, 'markAsRead'])->name('notifications.read');
+    Route::delete('/notifications/{notification}', [\App\Http\Controllers\Customer\NotificationController::class, 'destroy'])->name('notifications.destroy');
+    Route::delete('/notifications', [\App\Http\Controllers\Customer\NotificationController::class, 'clearAll'])->name('notifications.clear-all');
+    Route::post('/notifications/cleanup', [\App\Http\Controllers\Customer\NotificationController::class, 'cleanup'])->name('notifications.cleanup');
+});
+
 // Vendor routes (frontend for vendor management)
 Route::middleware(['auth', 'role:vendor'])->prefix('vendor')->name('vendor.')->group(function () {
     Route::get('/dashboard', function () {
@@ -183,6 +228,23 @@ Route::middleware(['auth', 'role:vendor'])->prefix('vendor')->name('vendor.')->g
     Route::get('/qr', function () {
         return Inertia::render('vendor/QrCode');
     })->name('qr');
+});
+
+// ============================================
+// CUSTOMER FRONTEND ROUTES
+// ============================================
+Route::middleware(['auth', 'role:customer'])->prefix('customer')->name('customer.')->group(function () {
+    Route::get('/browse', function () {
+        return Inertia::render('customer/Browse');
+    })->name('browse');
+
+    Route::get('/cart', function () {
+        return Inertia::render('customer/Cart');
+    })->name('cart');
+
+    Route::get('/profile', function () {
+        return Inertia::render('customer/Profile');
+    })->name('profile');
 });
 
 require __DIR__.'/settings.php';

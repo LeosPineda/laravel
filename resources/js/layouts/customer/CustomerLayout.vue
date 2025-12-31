@@ -1,0 +1,294 @@
+<template>
+  <div class="min-h-screen bg-[#F8F9FA]">
+    <!-- Header -->
+    <header class="bg-white border-b border-gray-200 sticky top-0 z-50 shadow-sm">
+      <div class="px-4 sm:px-6">
+        <div class="flex justify-between items-center h-14 lg:h-16">
+          <!-- Logo & Brand -->
+          <div class="flex items-center gap-3 lg:gap-4">
+            <div class="flex items-center gap-2">
+              <div class="w-8 h-8 lg:w-9 lg:h-9 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl flex items-center justify-center">
+                <span class="text-white text-sm lg:text-lg">🍴</span>
+              </div>
+              <span class="text-sm lg:text-lg font-bold text-gray-800 hidden sm:block">Food Court Customer</span>
+            </div>
+
+            <!-- Desktop Navigation -->
+            <nav class="hidden lg:flex items-center gap-2">
+              <Link
+                href="/customer/browse"
+                :class="[
+                  $page.url.startsWith('/customer/browse')
+                    ? 'text-white bg-gradient-to-r from-blue-500 to-purple-600'
+                    : 'text-gray-600 hover:text-gray-800 hover:bg-gray-100',
+                  'px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200'
+                ]"
+              >
+                <span class="flex items-center gap-2">
+                  <span>🔍</span>
+                  Browse
+                </span>
+              </Link>
+              <Link
+                href="/customer/cart"
+                :class="[
+                  $page.url.startsWith('/customer/cart')
+                    ? 'text-white bg-gradient-to-r from-blue-500 to-purple-600'
+                    : 'text-gray-600 hover:text-gray-800 hover:bg-gray-100',
+                  'px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 relative'
+                ]"
+              >
+                <span class="flex items-center gap-2">
+                  <span>🛒</span>
+                  Cart
+                  <!-- Cart Badge -->
+                  <span
+                    v-if="cartItemCount > 0"
+                    class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center animate-pulse"
+                  >
+                    {{ cartItemCount > 99 ? '99+' : cartItemCount }}
+                  </span>
+                </span>
+              </Link>
+              <Link
+                href="/customer/profile"
+                :class="[
+                  $page.url.startsWith('/customer/profile')
+                    ? 'text-white bg-gradient-to-r from-blue-500 to-purple-600'
+                    : 'text-gray-600 hover:text-gray-800 hover:bg-gray-100',
+                  'px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200'
+                ]"
+              >
+                <span class="flex items-center gap-2">
+                  <span>👤</span>
+                  Profile
+                </span>
+              </Link>
+            </nav>
+          </div>
+
+          <!-- Right side - Notifications + Logout -->
+          <div class="flex items-center gap-2 lg:gap-3">
+            <!-- 🔔 Customer Notification Bell -->
+            <CustomerNotificationBell v-if="user?.id" :user-id="user.id" />
+
+            <!-- Logout Button -->
+            <button
+              @click="logout"
+              class="flex items-center gap-2 px-3 lg:px-4 py-2 text-sm font-medium text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all duration-200"
+            >
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+              </svg>
+              <span class="hidden sm:inline">Logout</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Tablet Navigation (768px - 1024px) -->
+    <div class="lg:hidden border-b border-gray-200 bg-white">
+      <div class="px-4 sm:px-6">
+        <nav class="flex justify-between py-3">
+          <Link
+            href="/customer/browse"
+            class="flex flex-col items-center py-2 px-3 hover:bg-gray-100 rounded-lg transition-colors"
+          >
+            <span class="text-xl">🔍</span>
+            <span
+              class="text-xs mt-1 font-medium"
+              :class="$page.url.startsWith('/customer/browse') ? 'text-blue-600' : 'text-gray-600'"
+            >
+              Browse
+            </span>
+          </Link>
+
+          <Link
+            href="/customer/cart"
+            class="flex flex-col items-center py-2 px-3 hover:bg-gray-100 rounded-lg transition-colors relative"
+          >
+            <span class="text-xl">🛒</span>
+            <span
+              class="text-xs mt-1 font-medium"
+              :class="$page.url.startsWith('/customer/cart') ? 'text-blue-600' : 'text-gray-600'"
+            >
+              Cart
+            </span>
+            <!-- Cart Badge for Tablet -->
+            <span
+              v-if="cartItemCount > 0"
+              class="absolute top-0 right-0 -mt-1 -mr-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center"
+            >
+              {{ cartItemCount > 9 ? '9+' : cartItemCount }}
+            </span>
+          </Link>
+
+          <Link
+            href="/customer/profile"
+            class="flex flex-col items-center py-2 px-3 hover:bg-gray-100 rounded-lg transition-colors"
+          >
+            <span class="text-xl">👤</span>
+            <span
+              class="text-xs mt-1 font-medium"
+              :class="$page.url.startsWith('/customer/profile') ? 'text-blue-600' : 'text-gray-600'"
+            >
+              Profile
+            </span>
+          </Link>
+
+          <button
+            @click="logout"
+            class="flex flex-col items-center py-2 px-3 hover:bg-red-50 rounded-lg transition-colors"
+          >
+            <span class="text-xl">🚪</span>
+            <span class="text-xs mt-1 font-medium text-red-600">Logout</span>
+          </button>
+        </nav>
+      </div>
+    </div>
+
+    <!-- Mobile Navigation -->
+    <div class="lg:hidden border-t border-gray-200 bg-white">
+      <div class="px-4 sm:px-6">
+        <nav class="flex justify-between py-2">
+          <Link
+            href="/customer/browse"
+            class="flex flex-col items-center py-3 px-2 hover:bg-gray-100 rounded-lg transition-colors"
+          >
+            <span class="text-2xl">🔍</span>
+            <span
+              class="text-xs mt-1 font-medium"
+              :class="$page.url.startsWith('/customer/browse') ? 'text-blue-600' : 'text-gray-500'"
+            >
+              Browse
+            </span>
+          </Link>
+
+          <Link
+            href="/customer/cart"
+            class="flex flex-col items-center py-3 px-2 hover:bg-gray-100 rounded-lg transition-colors relative"
+          >
+            <span class="text-2xl">🛒</span>
+            <span
+              class="text-xs mt-1 font-medium"
+              :class="$page.url.startsWith('/customer/cart') ? 'text-blue-600' : 'text-gray-500'"
+            >
+              Cart
+            </span>
+            <!-- Cart Badge for Mobile -->
+            <span
+              v-if="cartItemCount > 0"
+              class="absolute top-1 right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center"
+            >
+              {{ cartItemCount > 9 ? '9+' : cartItemCount }}
+            </span>
+          </Link>
+
+          <Link
+            href="/customer/profile"
+            class="flex flex-col items-center py-3 px-2 hover:bg-gray-100 rounded-lg transition-colors"
+          >
+            <span class="text-2xl">👤</span>
+            <span
+              class="text-xs mt-1 font-medium"
+              :class="$page.url.startsWith('/customer/profile') ? 'text-blue-600' : 'text-gray-500'"
+            >
+              Profile
+            </span>
+          </Link>
+
+          <button
+            @click="logout"
+            class="flex flex-col items-center py-3 px-2 hover:bg-red-50 rounded-lg transition-colors"
+          >
+            <span class="text-2xl">🚪</span>
+            <span class="text-xs mt-1 font-medium text-red-500">Logout</span>
+          </button>
+        </nav>
+      </div>
+    </div>
+
+    <!-- Main Content -->
+    <main class="flex-1 px-4 sm:px-6 py-4 lg:py-6">
+      <slot />
+    </main>
+
+    <!-- Toast Notifications -->
+    <ToastContainer />
+  </div>
+</template>
+
+<script setup>
+import { Link, router } from '@inertiajs/vue3'
+import { usePage } from '@inertiajs/vue3'
+import { ref, onMounted } from 'vue'
+import ToastContainer from '@/components/ui/ToastContainer.vue'
+// 🔔 Import Customer NotificationBell component
+import CustomerNotificationBell from '@/components/CustomerNotificationBell.vue'
+// 🛒 Import cart composable
+import { useCart } from '@/composables/useCart'
+
+const page = usePage()
+const user = page.props.auth?.user
+const { cartItemCount } = useCart()
+
+const logout = () => {
+  router.post('/logout')
+}
+
+// Request notification permission on mount
+onMounted(() => {
+  if ('Notification' in window && Notification.permission === 'default') {
+    Notification.requestPermission()
+  }
+})
+</script>
+
+<style scoped>
+/* Smooth transitions for all interactive elements */
+* {
+  transition-property: color, background-color, border-color, text-decoration-color, fill, stroke, opacity, box-shadow, transform, filter, backdrop-filter;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 150ms;
+}
+
+/* Custom animations */
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.animate-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Badge animations */
+.badge-pulse {
+  animation: badge-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes badge-pulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* Gradient text effect */
+.gradient-text {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+</style>

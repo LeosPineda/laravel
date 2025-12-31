@@ -7,19 +7,16 @@
       role="dialog"
       aria-modal="true"
     >
-      <!-- Backdrop -->
       <div
         class="fixed inset-0 bg-black/50 transition-opacity"
         @click="close"
       ></div>
 
-      <!-- Modal Panel -->
       <div class="flex min-h-full items-center justify-center p-4">
         <div
           class="relative w-full max-w-2xl transform overflow-hidden rounded-2xl bg-white shadow-xl transition-all"
           @click.stop
         >
-          <!-- Header -->
           <div class="bg-gray-50 px-6 py-4 border-b border-gray-200">
             <div class="flex items-center justify-between">
               <h3 class="text-xl font-bold text-gray-900">
@@ -36,19 +33,15 @@
             </div>
           </div>
 
-          <!-- Loading State -->
           <div v-if="loadingProduct" class="p-8 text-center">
             <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto"></div>
             <p class="text-gray-500 mt-4">Loading product...</p>
           </div>
 
-          <!-- Form -->
           <form v-else @submit.prevent="submitForm" class="p-6 max-h-[80vh] overflow-y-auto">
-            <!-- Product Image -->
             <div class="mb-6">
               <label class="block text-sm font-medium text-gray-700 mb-2">Product Image</label>
               <div class="flex items-start gap-4">
-                <!-- Image Preview -->
                 <div class="w-24 h-24 bg-gray-100 rounded-lg flex items-center justify-center overflow-hidden border-2 border-dashed border-gray-300">
                   <img
                     v-if="imagePreview"
@@ -59,7 +52,6 @@
                   <span v-else class="text-3xl">🍔</span>
                 </div>
 
-                <!-- Upload Button -->
                 <div class="flex-1">
                   <input
                     ref="imageInput"
@@ -84,7 +76,6 @@
               <p v-if="errors.image" class="text-red-600 text-sm mt-1">{{ errors.image }}</p>
             </div>
 
-            <!-- Product Name -->
             <div class="mb-4">
               <label class="block text-sm font-medium text-gray-700 mb-1">
                 Product Name <span class="text-red-500">*</span>
@@ -99,24 +90,39 @@
               <p v-if="errors.name" class="text-red-600 text-sm mt-1">{{ errors.name }}</p>
             </div>
 
-            <!-- Price Only (Stock removed - it's managed by system) -->
-            <div class="mb-4">
-              <label class="block text-sm font-medium text-gray-700 mb-1">
-                Price (₱) <span class="text-red-500">*</span>
-              </label>
-              <input
-                v-model.number="form.price"
-                type="number"
-                step="0.01"
-                min="0.01"
-                placeholder="0.00"
-                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
-                :class="{ 'border-red-500': errors.price }"
-              />
-              <p v-if="errors.price" class="text-red-600 text-sm mt-1">{{ errors.price }}</p>
+            <div class="grid grid-cols-2 gap-4 mb-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">
+                  Price (₱) <span class="text-red-500">*</span>
+                </label>
+                <input
+                  v-model.number="form.price"
+                  type="number"
+                  step="0.01"
+                  min="0.01"
+                  placeholder="0.00"
+                  class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  :class="{ 'border-red-500': errors.price }"
+                />
+                <p v-if="errors.price" class="text-red-600 text-sm mt-1">{{ errors.price }}</p>
+              </div>
+
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">
+                  Stock Quantity <span class="text-red-500">*</span>
+                </label>
+                <input
+                  v-model.number="form.stock_quantity"
+                  type="number"
+                  min="0"
+                  placeholder="0"
+                  class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  :class="{ 'border-red-500': errors.stock_quantity }"
+                />
+                <p v-if="errors.stock_quantity" class="text-red-600 text-sm mt-1">{{ errors.stock_quantity }}</p>
+              </div>
             </div>
 
-            <!-- Category -->
             <div class="mb-6">
               <label class="block text-sm font-medium text-gray-700 mb-1">Category</label>
               <div class="relative">
@@ -134,7 +140,6 @@
               <p class="text-xs text-gray-500 mt-1">Select existing or type new category</p>
             </div>
 
-            <!-- Add-ons Section - Available for both create and edit -->
             <div class="mb-6 border-t border-gray-200 pt-6">
               <div class="flex items-center justify-between mb-3">
                 <div>
@@ -199,12 +204,10 @@
               </div>
             </div>
 
-            <!-- Error Message -->
             <div v-if="submitError" class="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
               <p class="text-red-600 text-sm">{{ submitError }}</p>
             </div>
 
-            <!-- Actions -->
             <div class="flex justify-end gap-3 pt-4 border-t border-gray-200">
               <button
                 type="button"
@@ -233,28 +236,19 @@ import { ref, watch, computed } from 'vue'
 import { apiGet, apiPost, apiUpload, apiDelete } from '@/composables/useApi'
 
 const props = defineProps({
-  isOpen: {
-    type: Boolean,
-    default: false
-  },
-  productId: {
-    type: [Number, String],
-    default: null
-  },
-  categories: {
-    type: Array,
-    default: () => []
-  }
+  isOpen: { type: Boolean, default: false },
+  productId: { type: [Number, String], default: null },
+  categories: { type: Array, default: () => [] }
 })
 
 const emit = defineEmits(['close', 'saved'])
 
 const isEditMode = computed(() => !!props.productId)
 
-// ✅ CHANGED: Removed stock_quantity from form (it's required but not fillable)
 const form = ref({
   name: '',
   price: null,
+  stock_quantity: 0,
   category: '',
   image: null,
   addons: []
@@ -266,12 +260,13 @@ const submitting = ref(false)
 const loadingProduct = ref(false)
 const imagePreview = ref(null)
 const existingImageUrl = ref(null)
-const originalAddons = ref([]) // Track original addons for comparison
+const originalAddons = ref([])
 
 const resetForm = () => {
   form.value = {
     name: '',
     price: null,
+    stock_quantity: 0,
     category: '',
     image: null,
     addons: []
@@ -283,7 +278,6 @@ const resetForm = () => {
   originalAddons.value = []
 }
 
-// Addon management
 const addAddon = () => {
   form.value.addons.push({ id: null, name: '', price: null, isNew: true })
 }
@@ -296,13 +290,11 @@ const handleImageSelect = (event) => {
   const file = event.target.files[0]
   if (!file) return
 
-  // Validate file size (2MB max)
   if (file.size > 2 * 1024 * 1024) {
     errors.value.image = 'Image must be less than 2MB'
     return
   }
 
-  // Validate file type
   const allowedTypes = ['image/jpeg', 'image/png', 'image/gif']
   if (!allowedTypes.includes(file.type)) {
     errors.value.image = 'Only JPG, PNG, and GIF files are allowed'
@@ -312,7 +304,6 @@ const handleImageSelect = (event) => {
   errors.value.image = null
   form.value.image = file
 
-  // Create preview
   const reader = new FileReader()
   reader.onload = (e) => {
     imagePreview.value = e.target.result
@@ -331,9 +322,10 @@ const validateForm = () => {
     errors.value.price = 'Price must be greater than 0'
   }
 
-  // ✅ CHANGED: Removed stock validation (stock is managed by system)
+  if (form.value.stock_quantity === null || form.value.stock_quantity < 0) {
+    errors.value.stock_quantity = 'Stock quantity must be 0 or greater'
+  }
 
-  // Validate addons
   form.value.addons.forEach((addon, index) => {
     if (addon.name?.trim() && (addon.price === null || addon.price < 0)) {
       errors.value[`addons.${index}.price`] = 'Price required'
@@ -354,7 +346,6 @@ const loadProduct = async () => {
       const data = await response.json()
       const product = data.product
 
-      // Map addons with their IDs
       const addons = (product.addons || []).map(a => ({
         id: a.id,
         name: a.name,
@@ -365,12 +356,12 @@ const loadProduct = async () => {
       form.value = {
         name: product.name,
         price: parseFloat(product.price),
+        stock_quantity: product.stock_quantity,
         category: product.category || '',
         image: null,
         addons: addons
       }
 
-      // Keep original addons for comparison
       originalAddons.value = JSON.parse(JSON.stringify(addons))
 
       if (product.image_url) {
@@ -398,11 +389,10 @@ const submitForm = async () => {
   submitError.value = ''
 
   try {
-    // First save the product
     const formData = new FormData()
     formData.append('name', form.value.name)
     formData.append('price', form.value.price.toString())
-    // ✅ CHANGED: Removed stock_quantity from form data (managed by system)
+    formData.append('stock_quantity', form.value.stock_quantity.toString())
     if (form.value.category) {
       formData.append('category', form.value.category)
     }
@@ -410,7 +400,6 @@ const submitForm = async () => {
       formData.append('image', form.value.image)
     }
 
-    // For new products, include addons in form data
     if (!isEditMode.value) {
       form.value.addons.forEach((addon, index) => {
         if (addon.name?.trim()) {
@@ -443,7 +432,6 @@ const submitForm = async () => {
     const data = await response.json()
     const productId = data.product?.id || props.productId
 
-    // For edit mode, handle addon changes separately
     if (isEditMode.value && productId) {
       await syncAddons(productId)
     }
@@ -458,16 +446,13 @@ const submitForm = async () => {
   }
 }
 
-// Sync addons - create new ones, update existing, delete removed
 const syncAddons = async (productId) => {
   const currentAddons = form.value.addons.filter(a => a.name?.trim())
   const originalIds = originalAddons.value.map(a => a.id)
   const currentIds = currentAddons.filter(a => a.id).map(a => a.id)
 
-  // Find deleted addons
   const deletedIds = originalIds.filter(id => !currentIds.includes(id))
 
- // Delete removed addons
   for (const addonId of deletedIds) {
     try {
       await apiDelete(`/api/vendor/addons/${addonId}`)
@@ -476,20 +461,16 @@ const syncAddons = async (productId) => {
     }
   }
 
-  // Create or update addons
   for (const addon of currentAddons) {
     try {
       if (addon.isNew || !addon.id) {
-        // Create new addon
         await apiPost(`/api/vendor/products/${productId}/addons`, {
           name: addon.name,
           price: addon.price || 0
         })
       } else {
-        // Check if addon was modified
         const original = originalAddons.value.find(a => a.id === addon.id)
         if (original && (original.name !== addon.name || original.price !== addon.price)) {
-          // Update existing addon
           await apiPost(`/api/vendor/addons/${addon.id}`, {
             _method: 'PUT',
             name: addon.name,
@@ -508,7 +489,6 @@ const close = () => {
   emit('close')
 }
 
-// Watch for modal open
 watch(
   () => props.isOpen,
   (isOpen) => {
@@ -522,7 +502,6 @@ watch(
   }
 )
 
-// Watch for productId changes
 watch(
   () => props.productId,
   (newId) => {
@@ -532,4 +511,3 @@ watch(
   }
 )
 </script>
-
