@@ -8,6 +8,7 @@ use App\Models\OrderItem;
 use App\Models\Cart;
 use App\Models\CartItem;
 use App\Models\Vendor;
+use App\Models\Notification;
 use App\Events\OrderReceived;
 use App\Events\OrderStatusChanged;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -170,8 +171,18 @@ class OrderController extends Controller
 
                 $cart->clear();
 
-                // FIXED: Only broadcast OrderReceived to vendor, not status change to customer
+                // FIXED: Broadcast OrderReceived event to vendor
                 event(new OrderReceived($order->vendor, $order));
+
+                // ✅ FIXED: Create vendor notification in database
+                $vendorNotification = Notification::create([
+                    'vendor_id' => $order->vendor->id,
+                    'type' => 'order',
+                    'title' => 'New Order Received! 🛒',
+                    'message' => "Order #{$order->order_number} from table {$order->table_number} - ₱{$order->total_amount}",
+                    'is_read' => false,
+                    'created_at' => now(),
+                ]);
 
                 DB::commit();
 

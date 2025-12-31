@@ -56,14 +56,14 @@ Route::post('/logout', function () {
     return redirect()->route('login');
 })->name('logout');
 
-// Dashboard redirect based on role (Customer routes removed - focusing on vendors)
+// Dashboard redirect based on role - FIXED customer redirection
 Route::get('/dashboard', function () {
     $user = Auth::user();
 
     return match ($user->role) {
         'superadmin' => redirect()->route('superadmin.dashboard'),
         'vendor' => redirect()->route('vendor.dashboard'),
-        'customer' => redirect()->route('login'), // Redirect customers to login for now
+        'customer' => redirect()->route('customer.dashboard'), // ✅ FIXED: Redirect to customer dashboard
         default => redirect()->route('login'),
     };
 })->middleware('auth')->name('dashboard');
@@ -231,9 +231,14 @@ Route::middleware(['auth', 'role:vendor'])->prefix('vendor')->name('vendor.')->g
 });
 
 // ============================================
-// CUSTOMER FRONTEND ROUTES
+// CUSTOMER FRONTEND ROUTES - FIXED DASHBOARD ROUTE
 // ============================================
 Route::middleware(['auth', 'role:customer'])->prefix('customer')->name('customer.')->group(function () {
+    // ✅ FIXED: Added customer dashboard route
+    Route::get('/dashboard', function () {
+        return Inertia::render('customer/Dashboard');
+    })->name('dashboard');
+
     Route::get('/browse', function () {
         return Inertia::render('customer/Browse');
     })->name('browse');

@@ -157,8 +157,8 @@ const formatTime = (dateString) => {
 
 const loadNotifications = async () => {
   try {
-    // ✅ FIXED: Use session-based route with axios (sends cookies automatically)
-    const response = await axios.get('/vendor/api/notifications?per_page=20')
+    // ✅ FIXED: Use CORRECT vendor API route with axios (sends cookies automatically)
+    const response = await axios.get('/api/vendor/notifications?per_page=20')
 
     if (response.status === 200) {
       notifications.value = response.data.notifications || []
@@ -173,8 +173,8 @@ const markAsRead = async (notification) => {
   if (notification.is_read) return
 
   try {
-    // ✅ FIXED: Use session-based route with axios
-    const response = await axios.post(`/vendor/api/notifications/${notification.id}/read`)
+    // ✅ FIXED: Use CORRECT vendor API route with axios
+    const response = await axios.post(`/api/vendor/notifications/${notification.id}/read`)
 
     if (response.status === 200) {
       notification.is_read = true
@@ -187,8 +187,8 @@ const markAsRead = async (notification) => {
 
 const deleteNotification = async (notificationId) => {
   try {
-    // ✅ FIXED: Use session-based route with axios
-    const response = await axios.delete(`/vendor/api/notifications/${notificationId}`)
+    // ✅ FIXED: Use CORRECT vendor API route with axios
+    const response = await axios.delete(`/api/vendor/notifications/${notificationId}`)
 
     if (response.status === 200) {
       const notification = notifications.value.find(n => n.id === notificationId)
@@ -206,8 +206,8 @@ const deleteAll = async () => {
   if (!confirm('Clear all order alerts?')) return
 
   try {
-    // ✅ FIXED: Use session-based route with axios
-    const response = await axios.delete('/vendor/api/notifications')
+    // ✅ FIXED: Use CORRECT vendor API route with axios
+    const response = await axios.delete('/api/vendor/notifications')
 
     if (response.status === 200) {
       notifications.value = []

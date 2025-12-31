@@ -26,6 +26,12 @@ Broadcast::channel('vendor-orders.{vendorId}', function (User $user, int $vendor
     return $user->vendor && $user->vendor->id === $vendorId && $user->role === 'vendor';
 });
 
+// ✅ CUSTOMER ORDERS: Private channel for customer order status updates
+Broadcast::channel('customer-orders.{userId}', function (User $user, int $userId) {
+    // Only allow customers to listen to their own order updates
+    return $user->id === $userId && $user->role === 'customer';
+});
+
 // Public channel for general notifications (if needed)
 Broadcast::channel('public', function (User $user) {
     return true; // Public access for general notifications

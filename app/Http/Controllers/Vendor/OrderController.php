@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Models\Vendor;
 use App\Models\User;
+use App\Models\Notification;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
@@ -132,6 +133,18 @@ class OrderController extends Controller
                 // Broadcast status change event
                 event(new OrderStatusChanged($vendor, $order, $order->customer, $oldStatus, 'accepted'));
 
+                // ✅ FIXED: Create customer notification in database
+                $customerNotification = Notification::create([
+                    'user_id' => $order->customer_id,
+                    'vendor_id' => $vendor->id,
+                    'order_id' => $order->id,
+                    'type' => 'order_status',
+                    'title' => 'Order Accepted ✅',
+                    'message' => "Your order #{$order->order_number} is now accepted",
+                    'is_read' => false,
+                    'created_at' => now(),
+                ]);
+
                 DB::commit();
 
                 return response()->json([
@@ -180,6 +193,18 @@ class OrderController extends Controller
 
                 // Broadcast status change event
                 event(new OrderStatusChanged($vendor, $order, $order->customer, $oldStatus, 'cancelled'));
+
+                // ✅ FIXED: Create customer notification in database
+                $customerNotification = Notification::create([
+                    'user_id' => $order->customer_id,
+                    'vendor_id' => $vendor->id,
+                    'order_id' => $order->id,
+                    'type' => 'order_status',
+                    'title' => 'Order Cancelled ❌',
+                    'message' => "Your order #{$order->order_number} was cancelled by the vendor",
+                    'is_read' => false,
+                    'created_at' => now(),
+                ]);
 
                 DB::commit();
 
@@ -232,6 +257,18 @@ class OrderController extends Controller
                 // Broadcast status change event
                 event(new OrderStatusChanged($vendor, $order, $order->customer, $oldStatus, 'ready_for_pickup'));
 
+                // ✅ FIXED: Create customer notification in database
+                $customerNotification = Notification::create([
+                    'user_id' => $order->customer_id,
+                    'vendor_id' => $vendor->id,
+                    'order_id' => $order->id,
+                    'type' => 'order_status',
+                    'title' => 'Ready for Pickup 🔔',
+                    'message' => "Your order #{$order->order_number} is ready for pickup",
+                    'is_read' => false,
+                    'created_at' => now(),
+                ]);
+
                 DB::commit();
 
                 return response()->json([
@@ -247,7 +284,7 @@ class OrderController extends Controller
         } catch (\Exception $e) {
             Log::error('Error marking order as ready', [
                 'order_id' => $order->id,
-                'error' => $e->getMessage()
+                'error' => $e->e->getMessage()
             ]);
 
             return response()->json(['error' => 'Failed to mark order as ready'], 500);
