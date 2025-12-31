@@ -99,38 +99,21 @@
               <p v-if="errors.name" class="text-red-600 text-sm mt-1">{{ errors.name }}</p>
             </div>
 
-            <!-- Price and Stock -->
-            <div class="grid grid-cols-2 gap-4 mb-4">
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">
-                  Price (₱) <span class="text-red-500">*</span>
-                </label>
-                <input
-                  v-model.number="form.price"
-                  type="number"
-                  step="0.01"
-                  min="0.01"
-                  placeholder="0.00"
-                  class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
-                  :class="{ 'border-red-500': errors.price }"
-                />
-                <p v-if="errors.price" class="text-red-600 text-sm mt-1">{{ errors.price }}</p>
-              </div>
-
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">
-                  Stock Quantity <span class="text-red-500">*</span>
-                </label>
-                <input
-                  v-model.number="form.stock_quantity"
-                  type="number"
-                  min="0"
-                  placeholder="0"
-                  class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
-                  :class="{ 'border-red-500': errors.stock_quantity }"
-                />
-                <p v-if="errors.stock_quantity" class="text-red-600 text-sm mt-1">{{ errors.stock_quantity }}</p>
-              </div>
+            <!-- Price Only (Stock removed - it's managed by system) -->
+            <div class="mb-4">
+              <label class="block text-sm font-medium text-gray-700 mb-1">
+                Price (₱) <span class="text-red-500">*</span>
+              </label>
+              <input
+                v-model.number="form.price"
+                type="number"
+                step="0.01"
+                min="0.01"
+                placeholder="0.00"
+                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                :class="{ 'border-red-500': errors.price }"
+              />
+              <p v-if="errors.price" class="text-red-600 text-sm mt-1">{{ errors.price }}</p>
             </div>
 
             <!-- Category -->
@@ -268,10 +251,10 @@ const emit = defineEmits(['close', 'saved'])
 
 const isEditMode = computed(() => !!props.productId)
 
+// ✅ CHANGED: Removed stock_quantity from form (it's required but not fillable)
 const form = ref({
   name: '',
   price: null,
-  stock_quantity: 0,
   category: '',
   image: null,
   addons: []
@@ -289,7 +272,6 @@ const resetForm = () => {
   form.value = {
     name: '',
     price: null,
-    stock_quantity: 0,
     category: '',
     image: null,
     addons: []
@@ -349,9 +331,7 @@ const validateForm = () => {
     errors.value.price = 'Price must be greater than 0'
   }
 
-  if (form.value.stock_quantity === null || form.value.stock_quantity < 0) {
-    errors.value.stock_quantity = 'Stock quantity must be 0 or greater'
-  }
+  // ✅ CHANGED: Removed stock validation (stock is managed by system)
 
   // Validate addons
   form.value.addons.forEach((addon, index) => {
@@ -385,7 +365,6 @@ const loadProduct = async () => {
       form.value = {
         name: product.name,
         price: parseFloat(product.price),
-        stock_quantity: product.stock_quantity,
         category: product.category || '',
         image: null,
         addons: addons
@@ -423,7 +402,7 @@ const submitForm = async () => {
     const formData = new FormData()
     formData.append('name', form.value.name)
     formData.append('price', form.value.price.toString())
-    formData.append('stock_quantity', form.value.stock_quantity.toString())
+    // ✅ CHANGED: Removed stock_quantity from form data (managed by system)
     if (form.value.category) {
       formData.append('category', form.value.category)
     }
@@ -488,7 +467,7 @@ const syncAddons = async (productId) => {
   // Find deleted addons
   const deletedIds = originalIds.filter(id => !currentIds.includes(id))
 
-  // Delete removed addons
+ // Delete removed addons
   for (const addonId of deletedIds) {
     try {
       await apiDelete(`/api/vendor/addons/${addonId}`)
@@ -553,3 +532,4 @@ watch(
   }
 )
 </script>
+

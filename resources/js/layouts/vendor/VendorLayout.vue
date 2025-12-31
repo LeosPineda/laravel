@@ -75,9 +75,10 @@
 
           <!-- Right side -->
           <div class="flex items-center gap-4">
-            <!-- ✅ FINAL: Working Notification Bell -->
+            <!-- 🔔 FIXED: Now vendor relationship is loaded properly -->
             <NotificationBell
               v-if="user?.vendor?.id"
+              :vendor-id="user.vendor.id"
             />
 
             <!-- Logout -->
@@ -181,8 +182,8 @@
 import { Link, router } from '@inertiajs/vue3'
 import { usePage } from '@inertiajs/vue3'
 import ToastContainer from '@/components/ui/ToastContainer.vue'
-// ✅ FINAL: Import vendor-specific NotificationBell component
-import NotificationBell from '@/components/vendor/NotificationBell.vue'
+// 🔔 Import NotificationBell component
+import NotificationBell from '@/components/NotificationBell.vue'
 
 const page = usePage()
 const user = page.props.auth?.user

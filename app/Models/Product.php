@@ -14,8 +14,8 @@ class Product extends Model
         'price',
         'category',
         'image_url',
-        'stock_quantity',
         'is_active',
+        // ✅ CHANGED: stock_quantity removed from fillable (required but not user-set)
     ];
 
     protected $casts = [
@@ -64,6 +64,26 @@ class Product extends Model
     }
 
     /**
+     * Decrement stock quantity.
+     */
+    public function decrementStock(int $quantity): bool
+    {
+        if ($this->stock_quantity >= $quantity) {
+            $this->decrement('stock_quantity', $quantity);
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * Increment stock quantity.
+     */
+    public function incrementStock(int $quantity): void
+    {
+        $this->increment('stock_quantity', $quantity);
+    }
+
+    /**
      * Get price formatted for display.
      */
     public function getFormattedPriceAttribute(): string
@@ -100,7 +120,7 @@ class Product extends Model
      */
     public function scopeByCategory($query, string $category)
     {
-        return $query->where('category', $category);
+        return $query->where('category', 'like', '%' . $category . '%');
     }
 
     /**
