@@ -445,12 +445,34 @@ class NotificationController extends Controller
     }
 
     /**
-     * Get the current authenticated vendor.
+     * Get the current authenticated vendor with safety checks.
      */
     private function getCurrentVendor(): ?\App\Models\Vendor
     {
         $user = Auth::user();
-        return $user?->vendor ?? null;
+
+        if (!$user) {
+            return null;
+        }
+
+        // Ensure vendor relationship is loaded
+        if (!$user->relationLoaded('vendor')) {
+            $user->load('vendor');
+        }
+
+        $vendor = $user->vendor;
+
+        // Additional safety checks
+        if (!$vendor) {
+            return null;
+        }
+
+        // Verify vendor is active and belongs to the user
+        if (!$vendor->exists || $vendor->user_id !== $user->id) {
+            return null;
+        }
+
+        return $vendor;
     }
 
     /**

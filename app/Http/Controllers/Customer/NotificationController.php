@@ -102,7 +102,11 @@ class NotificationController extends Controller
 
             $notification = Notification::where('id', $notificationId)
                 ->where('user_id', $user->id)
-                ->firstOrFail();
+                ->first();
+
+            if (!$notification) {
+                return response()->json(['error' => 'Notification not found'], 404);
+            }
 
             $notification->update(['read_at' => now()]);
 
@@ -150,7 +154,11 @@ class NotificationController extends Controller
 
             $notification = Notification::where('id', $notificationId)
                 ->where('user_id', $user->id)
-                ->firstOrFail();
+                ->first();
+
+            if (!$notification) {
+                return response()->json(['error' => 'Notification not found'], 404);
+            }
 
             $notification->delete();
 
