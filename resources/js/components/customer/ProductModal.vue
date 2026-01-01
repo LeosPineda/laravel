@@ -13,9 +13,10 @@
             <div class="flex items-center">
               <img
                 v-if="vendor.brand_logo"
-                :src="vendor.brand_logo"
+                :src="getImageUrl(vendor.brand_logo)"
                 :alt="vendor.brand_name"
                 class="w-12 h-12 rounded-lg object-cover mr-4"
+                @error="handleImageError"
               />
               <div>
                 <h3 class="text-lg font-medium text-gray-900">{{ vendor.brand_name }}</h3>
@@ -113,6 +114,30 @@ const emit = defineEmits(['close', 'add-to-cart'])
 const products = ref([])
 const loading = ref(false)
 const error = ref(null)
+
+// ✅ FIXED: Convert storage path to proper URL
+const getImageUrl = (brandLogo) => {
+  if (!brandLogo) return ''
+
+  // If it's already a full URL, return as is
+  if (brandLogo.startsWith('http://') || brandLogo.startsWith('https://')) {
+    return brandLogo
+  }
+
+  // If it's a storage path, prepend storage URL
+  if (brandLogo.startsWith('storage/')) {
+    return `/${brandLogo}`
+  }
+
+  // For storage paths without 'storage/', prepend /storage/
+  return `/storage/${brandLogo}`
+}
+
+// Handle image loading errors
+const handleImageError = (event) => {
+  console.warn('Image failed to load:', event.target.src)
+  event.target.style.display = 'none'
+}
 
 // Methods
 const loadVendorProducts = async () => {
