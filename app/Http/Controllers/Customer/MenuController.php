@@ -17,7 +17,7 @@ use Illuminate\Support\Facades\Storage;
 class MenuController extends Controller
 {
     /**
-     * Get list of active vendors
+     * Get list of active vendors - FIXED: Removed non-existent description field
      */
     public function vendors(Request $request)
     {
@@ -28,12 +28,12 @@ class MenuController extends Controller
             if ($request->has('search') && $request->search) {
                 $searchTerm = $request->search;
                 $query->where(function ($q) use ($searchTerm) {
-                    $q->where('brand_name', 'like', "%{$searchTerm}%")
-                      ->orWhere('description', 'like', "%{$searchTerm}%");
+                    $q->where('brand_name', 'like', "%{$searchTerm}%");
                 });
             }
 
-            $vendors = $query->select('id', 'brand_name', 'brand_image', 'description', 'is_active')
+            // FIXED: Only select fields that actually exist in database
+            $vendors = $query->select('id', 'brand_name', 'brand_logo', 'is_active')
                 ->withCount(['products' => function ($q) {
                     $q->where('is_active', true);
                 }])
@@ -62,7 +62,7 @@ class MenuController extends Controller
         try {
             $vendor = Vendor::where('id', $vendorId)
                 ->where('is_active', true)
-                ->select('id', 'brand_name', 'brand_image', 'description', 'qr_code_image')
+                ->select('id', 'brand_name', 'brand_logo', 'qr_code_image')
                 ->firstOrFail();
 
             // Build product query
@@ -241,7 +241,7 @@ class MenuController extends Controller
             }
 
             $products = $query->with([
-                'vendor:id,brand_name,brand_image',
+                'vendor:id,brand_name,brand_logo',
                 'addons' => function ($query) {
                     $query->where('is_active', true)
                           ->select('id', 'name', 'price', 'is_active');
@@ -308,7 +308,7 @@ class MenuController extends Controller
                     $q->where('is_active', true);
                 })
                 ->with([
-                    'vendor:id,brand_name,brand_image',
+                    'vendor:id,brand_name,brand_logo',
                     'addons' => function ($query) {
                         $query->where('is_active', true)
                               ->select('id', 'name', 'price', 'is_active');

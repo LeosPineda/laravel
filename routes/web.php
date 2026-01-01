@@ -56,14 +56,14 @@ Route::post('/logout', function () {
     return redirect()->route('login');
 })->name('logout');
 
-// Dashboard redirect based on role - FIXED customer redirection
+// Dashboard redirect based on role - CUSTOMERS GO DIRECTLY TO BROWSE
 Route::get('/dashboard', function () {
     $user = Auth::user();
 
     return match ($user->role) {
         'superadmin' => redirect()->route('superadmin.dashboard'),
         'vendor' => redirect()->route('vendor.dashboard'),
-        'customer' => redirect()->route('customer.dashboard'), // ✅ FIXED: Redirect to customer dashboard
+        'customer' => redirect()->route('customer.browse'), // ✅ CUSTOMERS GO TO BROWSE, NOT DASHBOARD
         default => redirect()->route('login'),
     };
 })->middleware('auth')->name('dashboard');
@@ -231,22 +231,25 @@ Route::middleware(['auth', 'role:vendor'])->prefix('vendor')->name('vendor.')->g
 });
 
 // ============================================
-// CUSTOMER FRONTEND ROUTES - FIXED DASHBOARD ROUTE
+// CUSTOMER FRONTEND ROUTES - SIMPLIFIED FLOW
 // ============================================
 Route::middleware(['auth', 'role:customer'])->prefix('customer')->name('customer.')->group(function () {
-    // ✅ FIXED: Added customer dashboard route
-    Route::get('/dashboard', function () {
-        return Inertia::render('customer/Dashboard');
-    })->name('dashboard');
-
+    // Browse - Main vendor selection page (customers land here)
     Route::get('/browse', function () {
         return Inertia::render('customer/Browse');
     })->name('browse');
 
+    // Cart - Shopping cart management
     Route::get('/cart', function () {
         return Inertia::render('customer/Cart');
     })->name('cart');
 
+    // Notifications - Customer notification center
+    Route::get('/notifications', function () {
+        return Inertia::render('customer/Notifications');
+    })->name('notifications');
+
+    // Profile - Customer account settings
     Route::get('/profile', function () {
         return Inertia::render('customer/Profile');
     })->name('profile');

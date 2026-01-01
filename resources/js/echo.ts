@@ -11,6 +11,7 @@ declare global {
 
 window.Pusher = Pusher;
 
+// ✅ FIXED: Include CSRF token in broadcasting auth headers
 window.Echo = new Echo({
     broadcaster: 'pusher',
     key: import.meta.env.VITE_PUSHER_APP_KEY || 'd7844fc467464fad6f63',
@@ -18,7 +19,9 @@ window.Echo = new Echo({
     forceTLS: true,
     authEndpoint: '/broadcasting/auth',
     auth: {
-        headers: {},
+        headers: {
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+        },
     },
 });
 
