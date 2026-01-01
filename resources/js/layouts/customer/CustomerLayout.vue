@@ -52,20 +52,7 @@
                   </span>
                 </span>
               </Link>
-              <Link
-                href="/customer/notifications"
-                :class="[
-                  $page.url.startsWith('/customer/notifications')
-                    ? 'text-white bg-[#FF6B35]' // Orange like vendor
-                    : 'text-[#1A1A1A]/70 hover:text-[#1A1A1A] hover:bg-[#F5F5F5]', // Dark text like vendor
-                  'px-4 py-2 text-sm font-medium rounded-lg transition-colors'
-                ]"
-              >
-                <span class="flex items-center gap-2">
-                  <span>🔔</span>
-                  Notifications
-                </span>
-              </Link>
+
               <Link
                 href="/customer/profile"
                 :class="[
@@ -140,18 +127,7 @@
             </span>
           </Link>
 
-          <Link
-            href="/customer/notifications"
-            class="flex flex-col items-center py-2 px-3 hover:bg-[#F5F5F5] rounded-lg transition-colors"
-          >
-            <span class="text-xl">🔔</span>
-            <span
-              class="text-xs mt-1 font-medium"
-              :class="$page.url.startsWith('/customer/notifications') ? 'text-[#FF6B35]' : 'text-[#1A1A1A]/60'"
-            >
-              Notifications
-            </span>
-          </Link>
+
 
           <Link
             href="/customer/profile"
@@ -206,18 +182,7 @@
             </span>
           </Link>
 
-          <Link
-            href="/customer/notifications"
-            class="flex flex-col items-center py-3 px-2 hover:bg-[#F5F5F5] rounded-lg transition-colors"
-          >
-            <span class="text-2xl">🔔</span>
-            <span
-              class="text-xs mt-1 font-medium"
-              :class="$page.url.startsWith('/customer/notifications') ? 'text-[#FF6B35]' : 'text-[#1A1A1A]/60'"
-            >
-              Notifications
-            </span>
-          </Link>
+
 
           <Link
             href="/customer/profile"
@@ -251,7 +216,7 @@ import { usePage } from '@inertiajs/vue3'
 import { ref, onMounted } from 'vue'
 import ToastContainer from '@/components/ui/ToastContainer.vue'
 // 🔔 Import Customer NotificationBell component
-import CustomerNotificationBell from '@/components/CustomerNotificationBell.vue'
+import CustomerNotificationBell from '@/components/customer/CustomerNotificationBell.vue'
 // 🛒 Import cart composable
 import { useCart } from '@/composables/useCart'
 

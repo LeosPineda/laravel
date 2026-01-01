@@ -13,10 +13,10 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Broadcast;
 use Inertia\Inertia;
 
-// ✅ CRITICAL: Broadcasting authentication route (required for real-time notifications)
+// Broadcasting authentication for Pusher
 Route::post('/broadcasting/auth', function () {
     return Broadcast::auth(request());
-});
+})->middleware(['auth']);
 
 // Public route - redirect to login
 Route::get('/', function () {
@@ -56,14 +56,14 @@ Route::post('/logout', function () {
     return redirect()->route('login');
 })->name('logout');
 
-// Dashboard redirect based on role - CUSTOMERS GO DIRECTLY TO BROWSE
+// Dashboard redirect based on role
 Route::get('/dashboard', function () {
     $user = Auth::user();
 
     return match ($user->role) {
         'superadmin' => redirect()->route('superadmin.dashboard'),
         'vendor' => redirect()->route('vendor.dashboard'),
-        'customer' => redirect()->route('customer.browse'), // ✅ CUSTOMERS GO TO BROWSE, NOT DASHBOARD
+        'customer' => redirect()->route('customer.browse'),
         default => redirect()->route('login'),
     };
 })->middleware('auth')->name('dashboard');
@@ -81,16 +81,12 @@ Route::middleware(['auth', 'role:superadmin'])->prefix('superadmin')->name('supe
     Route::delete('/vendors/{vendor}', [SuperadminVendorController::class, 'destroy'])->name('vendors.destroy');
 });
 
-// ============================================
-// API ROUTES - MOVED FROM api.php TO web.php
-// ============================================
-
-// Public API routes (no authentication required)
+// API ROUTES
 Route::post('/api/test', function () {
     return response()->json(['message' => 'API is working']);
 });
 
-// Vendor API Routes - SESSION-BASED AUTHENTICATION
+// Vendor API Routes
 Route::middleware(['auth', 'role:vendor', 'throttle:60,1'])->prefix('api/vendor')->name('vendor.')->group(function () {
     // Analytics
     Route::get('/analytics/sales', [AnalyticsController::class, 'sales'])->name('analytics.sales');
@@ -99,7 +95,7 @@ Route::middleware(['auth', 'role:vendor', 'throttle:60,1'])->prefix('api/vendor'
     Route::get('/analytics/revenue', [AnalyticsController::class, 'revenue'])->name('analytics.revenue');
     Route::get('/analytics/profit', [AnalyticsController::class, 'profit'])->name('analytics.profit');
 
-    // Orders - All order management operations
+    // Orders
     Route::get('/orders', [VendorOrderController::class, 'index'])->name('orders.index');
     Route::get('/orders/stats', [VendorOrderController::class, 'stats'])->name('orders.stats');
     Route::get('/orders/{order}', [VendorOrderController::class, 'show'])->name('orders.show');
@@ -109,7 +105,7 @@ Route::middleware(['auth', 'role:vendor', 'throttle:60,1'])->prefix('api/vendor'
     Route::delete('/orders/{order}', [VendorOrderController::class, 'destroy'])->name('orders.destroy');
     Route::delete('/orders/batch', [VendorOrderController::class, 'batchDelete'])->name('orders.batch-delete');
 
-    // Receipt functionality for vendors
+    // Receipt functionality
     Route::get('/orders/{order}/receipt/download', [VendorOrderController::class, 'downloadReceipt'])->name('orders.receipt.download');
     Route::get('/orders/{order}/receipt/stream', [VendorOrderController::class, 'streamReceipt'])->name('orders.receipt.stream');
 
@@ -154,11 +150,9 @@ Route::middleware(['auth', 'role:vendor', 'throttle:60,1'])->prefix('api/vendor'
     Route::delete('/notifications/{notification}', [VendorNotificationController::class, 'destroy'])->name('notifications.destroy');
 });
 
-// ============================================
-// CUSTOMER API ROUTES - SESSION-BASED AUTHENTICATION
-// ============================================
+// Customer API Routes
 Route::middleware(['auth', 'role:customer', 'throttle:60,1'])->prefix('api/customer')->name('customer.')->group(function () {
-    // Orders - Customer order management
+    // Orders
     Route::get('/orders', [\App\Http\Controllers\Customer\OrderController::class, 'index'])->name('orders.index');
     Route::get('/orders/{order}', [\App\Http\Controllers\Customer\OrderController::class, 'show'])->name('orders.show');
     Route::post('/orders', [\App\Http\Controllers\Customer\OrderController::class, 'store'])->name('orders.store');
@@ -168,14 +162,14 @@ Route::middleware(['auth', 'role:customer', 'throttle:60,1'])->prefix('api/custo
     Route::get('/orders/{order}/receipt/stream', [\App\Http\Controllers\Customer\OrderController::class, 'streamReceipt'])->name('orders.receipt.stream');
     Route::post('/orders/{order}/cancel', [\App\Http\Controllers\Customer\OrderController::class, 'cancel'])->name('orders.cancel');
 
-    // Menu - Vendor products and menu browsing
+    // Menu
     Route::get('/menu/vendors', [\App\Http\Controllers\Customer\MenuController::class, 'vendors'])->name('menu.vendors');
     Route::get('/menu/vendors/{vendor}', [\App\Http\Controllers\Customer\MenuController::class, 'showVendor'])->name('menu.vendors.show');
     Route::get('/menu/vendors/{vendor}/products', [\App\Http\Controllers\Customer\MenuController::class, 'vendorProducts'])->name('menu.vendors.products');
     Route::get('/menu/products', [\App\Http\Controllers\Customer\MenuController::class, 'allProducts'])->name('menu.products');
     Route::get('/menu/products/{product}', [\App\Http\Controllers\Customer\MenuController::class, 'showProduct'])->name('menu.products.show');
 
-    // Cart - Shopping cart management
+    // Cart
     Route::get('/cart', [\App\Http\Controllers\Customer\CartController::class, 'index'])->name('cart.index');
     Route::post('/cart/items', [\App\Http\Controllers\Customer\CartController::class, 'addItem'])->name('cart.items.store');
     Route::put('/cart/items/{item}', [\App\Http\Controllers\Customer\CartController::class, 'updateItem'])->name('cart.items.update');
@@ -183,7 +177,7 @@ Route::middleware(['auth', 'role:customer', 'throttle:60,1'])->prefix('api/custo
     Route::delete('/cart/items', [\App\Http\Controllers\Customer\CartController::class, 'clearCart'])->name('cart.clear');
     Route::post('/cart/merge', [\App\Http\Controllers\Customer\CartController::class, 'mergeCart'])->name('cart.merge');
 
-    // Notifications - Customer notification management
+    // Notifications
     Route::get('/notifications', [\App\Http\Controllers\Customer\NotificationController::class, 'index'])->name('notifications.index');
     Route::get('/notifications/count', [\App\Http\Controllers\Customer\NotificationController::class, 'count'])->name('notifications.count');
     Route::get('/notifications/recent', [\App\Http\Controllers\Customer\NotificationController::class, 'recent'])->name('notifications.recent');
@@ -194,7 +188,7 @@ Route::middleware(['auth', 'role:customer', 'throttle:60,1'])->prefix('api/custo
     Route::post('/notifications/cleanup', [\App\Http\Controllers\Customer\NotificationController::class, 'cleanup'])->name('notifications.cleanup');
 });
 
-// Vendor routes (frontend for vendor management)
+// Vendor frontend routes
 Route::middleware(['auth', 'role:vendor'])->prefix('vendor')->name('vendor.')->group(function () {
     Route::get('/dashboard', function () {
         return Inertia::render('vendor/Dashboard');
@@ -220,7 +214,6 @@ Route::middleware(['auth', 'role:vendor'])->prefix('vendor')->name('vendor.')->g
         return Inertia::render('vendor/Analytics');
     })->name('analytics');
 
-    // ✅ ADDED: Missing notifications route that was causing 404
     Route::get('/notifications', function () {
         return Inertia::render('vendor/Notifications');
     })->name('notifications');
@@ -230,26 +223,20 @@ Route::middleware(['auth', 'role:vendor'])->prefix('vendor')->name('vendor.')->g
     })->name('qr');
 });
 
-// ============================================
-// CUSTOMER FRONTEND ROUTES - SIMPLIFIED FLOW
-// ============================================
+// Customer frontend routes
 Route::middleware(['auth', 'role:customer'])->prefix('customer')->name('customer.')->group(function () {
-    // Browse - Main vendor selection page (customers land here)
     Route::get('/browse', function () {
         return Inertia::render('customer/Browse');
     })->name('browse');
 
-    // Cart - Shopping cart management
     Route::get('/cart', function () {
         return Inertia::render('customer/Cart');
     })->name('cart');
 
-    // Notifications - Customer notification center
     Route::get('/notifications', function () {
         return Inertia::render('customer/Notifications');
     })->name('notifications');
 
-    // Profile - Customer account settings
     Route::get('/profile', function () {
         return Inertia::render('customer/Profile');
     })->name('profile');

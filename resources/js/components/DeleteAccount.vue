@@ -36,50 +36,55 @@
           </div>
         </div>
 
-        <p class="text-gray-700 mb-6">
-          Are you sure you want to delete your account? All of your data will be permanently removed and cannot be recovered.
-        </p>
+        <form @submit.prevent="deleteAccount">
+          <p class="text-gray-700 mb-6">
+            Are you sure you want to delete your account? All of your data will be permanently removed and cannot be recovered.
+          </p>
 
-        <!-- Password confirmation for delete -->
-        <div class="mb-6">
-          <label for="delete_password" class="block text-sm font-medium text-gray-700 mb-2">Enter your password to confirm</label>
-          <input
-            id="delete_password"
-            v-model="deleteForm.password"
-            type="password"
-            :disabled="deleteProcessing"
-            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent disabled:bg-gray-50"
-            :class="{ 'border-red-300': deleteErrors.password }"
-            placeholder="Enter your password"
-          />
-          <div v-if="deleteErrors.password" class="mt-1 text-sm text-red-600">
-            {{ deleteErrors.password[0] }}
+          <!-- Password confirmation for delete -->
+          <div class="mb-6">
+            <label for="delete_password" class="block text-sm font-medium text-gray-700 mb-2">Enter your password to confirm</label>
+            <input
+              id="delete_password"
+              v-model="deleteForm.password"
+              type="password"
+              :disabled="deleteProcessing"
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent disabled:bg-gray-50"
+              :class="{ 'border-red-300': deleteErrors.password }"
+              placeholder="Enter your password"
+              autocomplete="current-password"
+              required
+            />
+            <div v-if="deleteErrors.password" class="mt-1 text-sm text-red-600">
+              {{ deleteErrors.password[0] }}
+            </div>
           </div>
-        </div>
 
-        <div class="flex justify-end space-x-3">
-          <button
-            @click="showDeleteModal = false"
-            :disabled="deleteProcessing"
-            class="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          >
-            Cancel
-          </button>
-          <button
-            @click="deleteAccount"
-            :disabled="deleteProcessing || !deleteForm.password"
-            class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          >
-            <span v-if="deleteProcessing" class="flex items-center">
-              <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
-                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-              </svg>
-              Deleting...
-            </span>
-            <span v-else>Delete Account</span>
-          </button>
-        </div>
+          <div class="flex justify-end space-x-3">
+            <button
+              type="button"
+              @click="showDeleteModal = false"
+              :disabled="deleteProcessing"
+              class="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              :disabled="deleteProcessing || !deleteForm.password"
+              class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              <span v-if="deleteProcessing" class="flex items-center">
+                <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Deleting...
+              </span>
+              <span v-else>Delete Account</span>
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   </div>

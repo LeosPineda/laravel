@@ -258,6 +258,7 @@ const logout = () => {
                                         v-model="form.password"
                                         required
                                         placeholder="Minimum 8 characters"
+                                        autocomplete="new-password"
                                         class="w-full pl-12 pr-12 py-3.5 border border-[#E0E0E0] rounded-xl bg-[#F5F5F5]/50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#FF6B35]/20 focus:border-[#FF6B35] transition-all text-[#1A1A1A]"
                                         :class="{ 'border-red-500': form.errors.password }"
                                     />

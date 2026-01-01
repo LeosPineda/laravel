@@ -192,6 +192,7 @@ const logout = () => {
                                 <label for="password" class="block text-sm font-semibold text-[#1A1A1A] mb-2">New Password <span class="font-normal text-[#1A1A1A]/50">(optional)</span></label>
                                 <div class="relative">
                                     <input id="password" :type="showPassword ? 'text' : 'password'" v-model="form.password" placeholder="Leave empty to keep current"
+                                        autocomplete="new-password"
                                         class="w-full px-4 py-3.5 pr-12 border border-[#E0E0E0] rounded-xl bg-[#F5F5F5]/50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#FF6B35]/20 focus:border-[#FF6B35] transition-all text-[#1A1A1A]"
                                         :class="{ 'border-red-500': form.errors.password }"
                                     />

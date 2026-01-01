@@ -110,7 +110,7 @@ import axios from 'axios'
 
 // Filter to show ONLY customer order status notifications
 const orderNotifications = computed(() => {
-  return notifications.value.filter(n =>
+  return (notifications.value || []).filter(n =>
     ['order_status', 'receipt_ready'].includes(n.type)
   )
 })
@@ -173,7 +173,7 @@ const loadNotifications = async () => {
     const response = await axios.get('/api/customer/notifications?per_page=20')
 
     if (response.status === 200) {
-      notifications.value = response.data.notifications || []
+      notifications.value = Array.isArray(response.data.notifications) ? response.data.notifications : []
       unreadCount.value = response.data.statistics?.unread_notifications || 0
     }
   } catch (error) {
@@ -211,7 +211,7 @@ const deleteNotification = async (notificationId) => {
       if (notification && !notification.is_read) {
         unreadCount.value = Math.max(0, unreadCount.value - 1)
       }
-      notifications.value = notifications.value.filter(n => n.id !== notificationId)
+      notifications.value = (notifications.value || []).filter(n => n.id !== notificationId)
     }
   } catch (error) {
     console.error('Failed to delete notification:', error)
@@ -243,15 +243,27 @@ const subscribeToNotifications = () => {
           // ✅ FIXED: Only handle vendor status changes for customers (NO 'completed')
           const status = e.order?.status
           if (status && ['accepted', 'preparing', 'ready_for_pickup', 'cancelled'].includes(status)) {
-            notifications.value.unshift({
-              id: Date.now(),
-              type: 'order_status',
-              title: getStatusTitle(status),
-              message: `Order #${e.order.order_number} ${getStatusMessage(status)}`,
-              data: e.order,
-              is_read: false,
-              created_at: new Date().toISOString()
-            })
+            if (Array.isArray(notifications.value)) {
+              notifications.value.unshift({
+                id: Date.now(),
+                type: 'order_status',
+                title: getStatusTitle(status),
+                message: `Order #${e.order.order_number} ${getStatusMessage(status)}`,
+                data: e.order,
+                is_read: false,
+                created_at: new Date().toISOString()
+              })
+            } else {
+              notifications.value = [{
+                id: Date.now(),
+                type: 'order_status',
+                title: getStatusTitle(status),
+                message: `Order #${e.order.order_number} ${getStatusMessage(status)}`,
+                data: e.order,
+                is_read: false,
+                created_at: new Date().toISOString()
+              }]
+            }
             unreadCount.value++
 
             // Show browser notification

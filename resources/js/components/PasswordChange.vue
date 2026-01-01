@@ -18,6 +18,7 @@
             class="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500"
             :class="{ 'border-red-300': passwordErrors.current_password }"
             placeholder="Enter current password"
+            autocomplete="current-password"
           />
           <button
             type="button"
@@ -50,6 +51,7 @@
             class="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500"
             :class="{ 'border-red-300': passwordErrors.password }"
             placeholder="Enter new password"
+            autocomplete="new-password"
           />
           <button
             type="button"
@@ -81,6 +83,7 @@
           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500"
           :class="{ 'border-red-300': passwordErrors.password_confirmation }"
           placeholder="Confirm new password"
+          autocomplete="new-password"
         />
         <div v-if="passwordErrors.password_confirmation" class="mt-1 text-sm text-red-600">
           {{ passwordErrors.password_confirmation[0] }}
