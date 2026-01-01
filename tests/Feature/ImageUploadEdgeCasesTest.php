@@ -262,3 +262,4 @@ class ImageUploadEdgeCasesTest extends TestCase
         // This should pass with current validation but might fail with dimension validation
         $response->assertStatus(201);
     }
+}
