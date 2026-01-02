@@ -35,9 +35,19 @@
           v-for="vendor in activeVendors"
           :key="vendor.id"
           :vendor="vendor"
+          @browse-products="openProductModal"
         />
       </div>
     </div>
+
+    <!-- Product Modal Container -->
+    <ProductModalContainer
+      :vendor-id="selectedVendorId"
+      :is-open="isProductModalOpen"
+      @close="closeProductModal"
+      @product-select="handleProductSelect"
+      @order-now="handleOrderNow"
+    />
   </CustomerLayout>
 </template>
 
@@ -46,7 +56,9 @@ import { ref, onMounted, computed } from 'vue'
 import { Link } from '@inertiajs/vue3'
 import CustomerLayout from '@/layouts/customer/CustomerLayout.vue'
 import VendorBox from '@/components/customer/VendorBox.vue'
+import ProductModalContainer from '@/components/customer/ProductModalContainer.vue'
 import { useCart } from '@/composables/useCart'
+import { useToast } from '@/composables/useToast'
 import axios from 'axios'
 
 // Reactive data
@@ -54,8 +66,13 @@ const vendors = ref([])
 const loading = ref(true)
 const error = ref(null)
 
-// Cart composable
+// Modal state
+const isProductModalOpen = ref(false)
+const selectedVendorId = ref(null)
+
+// Cart and toast composables
 const { cartCount, fetchCart } = useCart()
+const { showToast } = useToast()
 
 // Computed properties
 const activeVendors = computed(() => {
@@ -85,6 +102,29 @@ const loadVendors = async () => {
   } finally {
     loading.value = false
   }
+}
+
+const openProductModal = (vendorId) => {
+  selectedVendorId.value = vendorId
+  isProductModalOpen.value = true
+}
+
+const closeProductModal = () => {
+  isProductModalOpen.value = false
+  selectedVendorId.value = null
+}
+
+const handleProductSelect = (product) => {
+  // TODO: Open product detail modal for ordering
+  console.log('Product selected for viewing:', product)
+  // This will be implemented in Phase 3
+}
+
+const handleOrderNow = (product) => {
+  // TODO: Open product detail modal for ordering
+  console.log('Order now clicked for:', product)
+  // This will be implemented in Phase 3 - ProductDetailModal
+  showToast('info', 'Product detail modal coming in Phase 3!')
 }
 
 // Lifecycle

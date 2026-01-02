@@ -1,6 +1,6 @@
 <template>
   <div
-    @click="$emit('click')"
+    @click="$emit('browse-products', vendor.id)"
     class="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300 cursor-pointer border border-gray-200 overflow-hidden group"
   >
     <!-- Vendor Image/Logo -->
@@ -39,7 +39,7 @@
     <div class="p-4">
       <div class="flex items-start justify-between">
         <div class="flex-1 min-w-0">
-          <h3 class="text-lg font-semibold text-gray-900 truncate group-hover:text-blue-600 transition-colors">
+          <h3 class="text-lg font-semibold text-gray-900 truncate group-hover:text-orange-600 transition-colors">
             {{ vendor.brand_name }}
           </h3>
           <div class="mt-2 text-sm text-gray-500">
@@ -48,20 +48,20 @@
         </div>
       </div>
 
-      <!-- Action Button -->
+      <!-- Browse Products Button (Primary Action) -->
       <div class="mt-4">
         <button
-          @click.stop="$emit('click')"
           :disabled="!vendor.is_active"
           class="w-full inline-flex justify-center items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md transition-colors"
           :class="vendor.is_active
-            ? 'text-white bg-blue-600 hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2'
+            ? 'text-white bg-orange-500 hover:bg-orange-600 focus:ring-2 focus:ring-orange-500 focus:ring-offset-2'
             : 'text-gray-400 bg-gray-100 cursor-not-allowed'"
+          @click.stop="$emit('browse-products', vendor.id)"
         >
           <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
           </svg>
-          {{ vendor.is_active ? 'View Menu' : 'Closed' }}
+          {{ vendor.is_active ? 'Browse Products' : 'Closed' }}
         </button>
       </div>
     </div>
@@ -76,7 +76,7 @@ const props = defineProps({
   }
 })
 
-defineEmits(['click'])
+defineEmits(['browse-products'])
 
 // Helper function to get initials from vendor name
 const getInitials = (name) => {
@@ -122,8 +122,8 @@ const handleImageError = (event) => {
 }
 
 /* Hover effects */
-.group:hover .group-hover\:text-blue-600 {
-  color: #2563eb;
+.group:hover .group-hover\:text-orange-600 {
+  color: #ea580c;
 }
 
 /* Responsive design adjustments */
@@ -135,7 +135,7 @@ const handleImageError = (event) => {
 
 /* Smooth transitions */
 * {
-  transition-property: color, background-color, border-color, text-decoration-color, fill, stroke;
+  transition-property: color, background-color, border-color, text-decoration-color, fill, stroke, opacity, box-shadow, transform, filter, backdrop-filter;
   transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
   transition-duration: 150ms;
 }
