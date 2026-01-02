@@ -159,7 +159,7 @@ class OrderController extends Controller
                 ]);
 
                 foreach ($itemsData as $itemData) {
-                    OrderItem::create([
+                    $orderItem = OrderItem::create([
                         'order_id' => $order->id,
                         'product_id' => $itemData['product_id'],
                         'quantity' => $itemData['quantity'],
@@ -167,6 +167,10 @@ class OrderController extends Controller
                         'selected_addons' => $itemData['selected_addons'],
                         'total_price' => $itemData['total_price']
                     ]);
+
+                    // Deduct stock for this order item
+                    $product = $orderItem->product;
+                    $product->decrementStockOrFail($itemData['quantity']);
                 }
 
                 $cart->clear();

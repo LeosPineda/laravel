@@ -113,13 +113,13 @@ class ProductController extends Controller
             DB::beginTransaction();
 
             try {
-                // Create product (stock handled separately since it's not fillable)
+                // Create product data
                 $productData = [
                     'vendor_id' => $vendor->id,
                     'name' => $request->name,
                     'price' => $request->price,
                     'category' => $request->category,
-                    // ✅ stock_quantity NOT in fillable array
+                    'stock_quantity' => $request->stock_quantity,
                     'is_active' => true,
                 ];
 
@@ -130,9 +130,6 @@ class ProductController extends Controller
                 }
 
                 $product = Product::create($productData);
-
-                // Set stock separately (since it's not fillable)
-                $product->update(['stock_quantity' => $request->stock_quantity]);
 
                 // Create addons if provided
                 if ($request->has('addons')) {
@@ -229,7 +226,7 @@ class ProductController extends Controller
                     'name' => $request->name,
                     'price' => $request->price,
                     'category' => $request->category,
-                    // ✅ stock_quantity NOT in fillable array
+                    'stock_quantity' => $request->stock_quantity,
                 ];
 
                 // Handle new image upload
@@ -244,9 +241,6 @@ class ProductController extends Controller
                 }
 
                 $product->update($updateData);
-
-                // Update stock separately (since it's not fillable)
-                $product->update(['stock_quantity' => $request->stock_quantity]);
 
                 $product->load('addons');
 

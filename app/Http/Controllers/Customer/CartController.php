@@ -110,6 +110,15 @@ class CartController extends Controller
             // Get product and its vendor
             $product = Product::with('vendor')->findOrFail($validated['product_id']);
 
+            // Check stock availability
+            if ($product->stock_quantity < $validated['quantity']) {
+                return response()->json([
+                    'message' => 'Insufficient stock',
+                    'available_stock' => $product->stock_quantity,
+                    'success' => false
+                ], 400);
+            }
+
             // Get or create cart for this vendor
             $cart = Cart::firstOrCreate(
                 ['user_id' => $user->id, 'vendor_id' => $product->vendor->id],
@@ -136,9 +145,18 @@ class CartController extends Controller
                 ->first();
 
             if ($existingItem) {
-                // Update quantity
+                // Update quantity - check if new total exceeds stock
+                $newQuantity = $existingItem->quantity + $validated['quantity'];
+                if ($newQuantity > $product->stock_quantity) {
+                    return response()->json([
+                        'message' => 'Insufficient stock for quantity increase',
+                        'available_stock' => $product->stock_quantity,
+                        'success' => false
+                    ], 400);
+                }
+
                 $existingItem->update([
-                    'quantity' => $existingItem->quantity + $validated['quantity'],
+                    'quantity' => $newQuantity,
                     'updated_at' => now()
                 ]);
                 $cartItem = $existingItem;
@@ -196,7 +214,16 @@ class CartController extends Controller
             // Find cart item that belongs to this user
             $cartItem = CartItem::whereHas('cart', function ($query) use ($user) {
                 $query->where('user_id', $user->id);
-            })->findOrFail($cartItemId);
+            })->with('product')->findOrFail($cartItemId);
+
+            // Check stock availability for quantity update
+            if ($cartItem->product->stock_quantity < $validated['quantity']) {
+                return response()->json([
+                    'message' => 'Insufficient stock for requested quantity',
+                    'available_stock' => $cartItem->product->stock_quantity,
+                    'success' => false
+                ], 400);
+            }
 
             $cartItem->update([
                 'quantity' => $validated['quantity'],

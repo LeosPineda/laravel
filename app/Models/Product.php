@@ -15,7 +15,7 @@ class Product extends Model
         'category',
         'image_url',
         'is_active',
-        // ✅ CHANGED: stock_quantity removed from fillable (required but not user-set)
+        'stock_quantity',
     ];
 
     protected $casts = [
@@ -73,6 +73,18 @@ class Product extends Model
             return true;
         }
         return false;
+    }
+
+    /**
+     * Decrement stock quantity with exception.
+     *
+     * @throws \Exception When insufficient stock
+     */
+    public function decrementStockOrFail(int $quantity): void
+    {
+        if (!$this->decrementStock($quantity)) {
+            throw new \Exception("Insufficient stock for product '{$this->name}'. Available: {$this->stock_quantity}, Requested: {$quantity}");
+        }
     }
 
     /**
