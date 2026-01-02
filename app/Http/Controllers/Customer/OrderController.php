@@ -247,26 +247,20 @@ class OrderController extends Controller
             if ($order->status === 'accepted') {
                 $statusHistory[] = [
                     'status' => 'accepted',
-                    'label' => 'Accepted',
-                    'description' => 'Vendor has accepted your order',
+                    'label' => 'Accepted & Preparing',
+                    'description' => 'Your order has been accepted and is being prepared',
                     'timestamp' => $order->updated_at,
                     'completed' => true
                 ];
             } elseif (in_array($order->status, ['ready_for_pickup', 'completed'])) {
                 $statusHistory[] = [
                     'status' => 'accepted',
-                    'label' => 'Accepted',
-                    'description' => 'Vendor has accepted your order',
+                    'label' => 'Accepted & Preparing',
+                    'description' => 'Your order has been accepted and is being prepared',
                     'timestamp' => $order->updated_at,
                     'completed' => true
                 ];
-                $statusHistory[] = [
-                    'status' => 'preparing',
-                    'label' => 'Preparing',
-                    'description' => 'Your food is being prepared',
-                    'timestamp' => $order->updated_at,
-                    'completed' => true
-                ];
+                // ✅ REMOVED: Separate "preparing" status (now combined with accepted)
                 $statusHistory[] = [
                     'status' => 'ready_for_pickup',
                     'label' => 'Ready for Pickup',

@@ -40,5 +40,5 @@
 
 <script setup>
 import CustomerLayout from '@/layouts/customer/CustomerLayout.vue'
-import DeleteAccount from '@/components/DeleteAccount.vue'
+import DeleteAccount from '@/components/customer/DeleteAccount.vue'
 </script>

@@ -183,7 +183,7 @@ import { Link, router } from '@inertiajs/vue3'
 import { usePage } from '@inertiajs/vue3'
 import ToastContainer from '@/components/ui/ToastContainer.vue'
 // 🔔 Import NotificationBell component
-import NotificationBell from '@/components/NotificationBell.vue'
+import NotificationBell from '@/components/vendor/VendorNotificationBell.vue'
 
 const page = usePage()
 const user = page.props.auth?.user

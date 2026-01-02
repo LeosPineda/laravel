@@ -123,12 +123,11 @@ const toggleDropdown = () => {
 }
 
 const getAlertIcon = (type) => {
-  // ✅ FIXED: Customer order status icons (NO 'completed' - uses ready_for_pickup as final status)
+  // ✅ FIXED: Customer order status icons (NO 'completed' or 'preparing' - uses ready_for_pickup as final status)
   const icons = {
     'order_status': '📱',        // Order status update
     'receipt_ready': '🧾',        // Receipt available
     'accepted': '✅',             // Order accepted
-    'preparing': '👨‍🍳',          // Being prepared
     'ready_for_pickup': '🔔',     // Ready for pickup (FINAL STATUS)
     'cancelled': '❌',            // Order cancelled
   }
@@ -136,12 +135,11 @@ const getAlertIcon = (type) => {
 }
 
 const getAlertClass = (type) => {
-  // ✅ FIXED: Customer order status colors (NO 'completed')
+  // ✅ FIXED: Customer order status colors (NO 'completed' or 'preparing')
   const classes = {
     'order_status': 'bg-blue-500',      // Order status update - blue
     'receipt_ready': 'bg-green-500',    // Receipt ready - green
     'accepted': 'bg-green-500',         // Accepted - green
-    'preparing': 'bg-yellow-500',       // Preparing - yellow
     'ready_for_pickup': 'bg-orange-500', // Ready - orange (FINAL STATUS)
     'cancelled': 'bg-red-500',          // Cancelled - red
   }
@@ -240,9 +238,9 @@ const subscribeToNotifications = () => {
     try {
       window.Echo.private(`customer-orders.${props.userId}`)
         .listen('.OrderStatusChanged', (e) => {
-          // ✅ FIXED: Only handle vendor status changes for customers (NO 'completed')
+          // ✅ FIXED: Only handle real vendor status changes for customers (NO 'preparing' or 'completed')
           const status = e.order?.status
-          if (status && ['accepted', 'preparing', 'ready_for_pickup', 'cancelled'].includes(status)) {
+          if (status && ['accepted', 'ready_for_pickup', 'cancelled'].includes(status)) {
             if (Array.isArray(notifications.value)) {
               notifications.value.unshift({
                 id: Date.now(),
@@ -284,10 +282,9 @@ const subscribeToNotifications = () => {
 }
 
 const getStatusTitle = (status) => {
-  // ✅ FIXED: Order status titles (NO 'completed' - ready_for_pickup is final)
+  // ✅ FIXED: Order status titles (NO 'completed' or 'preparing' - ready_for_pickup is final)
   const titles = {
     'accepted': 'Order Accepted ✅',
-    'preparing': 'Being Prepared 👨‍🍳',
     'ready_for_pickup': 'Ready for Pickup 🔔',
     'cancelled': 'Order Cancelled ❌'
   }
@@ -295,10 +292,9 @@ const getStatusTitle = (status) => {
 }
 
 const getStatusMessage = (status) => {
-  // ✅ FIXED: Order status messages (NO 'completed' - ready_for_pickup is final)
+  // ✅ FIXED: Order status messages (NO 'completed' or 'preparing' - ready_for_pickup is final)
   const messages = {
     'accepted': 'has been accepted by the vendor',
-    'preparing': 'is being prepared',
     'ready_for_pickup': 'is ready for pickup',
     'cancelled': 'was cancelled by the vendor'
   }

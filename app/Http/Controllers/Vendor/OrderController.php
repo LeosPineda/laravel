@@ -84,7 +84,6 @@ class OrderController extends Controller
             }
 
             // Load order items with product details and customer info
-            // special_instructions is available directly from the Order model
             $order->load([
                 'items.product.addons',
                 'customer:id,name,email'
@@ -133,14 +132,14 @@ class OrderController extends Controller
                 // Broadcast status change event
                 event(new OrderStatusChanged($vendor, $order, $order->customer, $oldStatus, 'accepted'));
 
-                // ✅ FIXED: Create customer notification in database
+                // ✅ UPDATED: Combined "Accepted & Preparing" notification
                 $customerNotification = Notification::create([
                     'user_id' => $order->customer_id,
                     'vendor_id' => $vendor->id,
                     'order_id' => $order->id,
                     'type' => 'order_status',
-                    'title' => 'Order Accepted ✅',
-                    'message' => "Your order #{$order->order_number} is now accepted",
+                    'title' => 'Order Accepted & Preparing 👨‍🍳',
+                    'message' => "Your order #{$order->order_number} has been accepted and is now being prepared. Please wait for updates.",
                     'is_read' => false,
                     'created_at' => now(),
                 ]);
@@ -194,7 +193,7 @@ class OrderController extends Controller
                 // Broadcast status change event
                 event(new OrderStatusChanged($vendor, $order, $order->customer, $oldStatus, 'cancelled'));
 
-                // ✅ FIXED: Create customer notification in database
+                // Create customer notification
                 $customerNotification = Notification::create([
                     'user_id' => $order->customer_id,
                     'vendor_id' => $vendor->id,
@@ -257,7 +256,7 @@ class OrderController extends Controller
                 // Broadcast status change event
                 event(new OrderStatusChanged($vendor, $order, $order->customer, $oldStatus, 'ready_for_pickup'));
 
-                // ✅ FIXED: Create customer notification in database
+                // Create customer notification
                 $customerNotification = Notification::create([
                     'user_id' => $order->customer_id,
                     'vendor_id' => $vendor->id,
@@ -284,7 +283,7 @@ class OrderController extends Controller
         } catch (\Exception $e) {
             Log::error('Error marking order as ready', [
                 'order_id' => $order->id,
-                'error' => $e->e->getMessage()
+                'error' => $e->getMessage()
             ]);
 
             return response()->json(['error' => 'Failed to mark order as ready'], 500);
