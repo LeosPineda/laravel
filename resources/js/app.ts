@@ -10,7 +10,7 @@ import axios from 'axios';
 
 const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
 
-// Configure Axios for CSRF (required for web.php routes)
+// Configure Axios for session-based authentication (CSRF tokens needed for web routes)
 axios.defaults.withCredentials = true;
 axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
 

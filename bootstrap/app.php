@@ -24,8 +24,14 @@ return Application::configure(basePath: dirname(__DIR__))
             AddLinkHeadersForPreloadedAssets::class,
         ]);
 
-        // CSRF validation completely removed - no CSRF protection needed for same-origin apps
-        // Session-based authentication with same-origin policy provides adequate security
+        // Re-enable CSRF protection but exclude API routes and admin routes for testing
+        $middleware->validateCsrfTokens(except: [
+            'api/vendor/*',
+            'api/customer/*',
+            'api/test',
+            'login',           // Temporary: exclude login route for testing
+            'superadmin/*',    // All superadmin routes
+        ]);
 
         $middleware->alias([
             'role' => \App\Http\Middleware\CheckRole::class,

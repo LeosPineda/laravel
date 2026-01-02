@@ -4,7 +4,7 @@
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
 
-        {{-- FIX: Add CSRF token meta tag to prevent CSRF token mismatch errors --}}
+        {{-- RESTORED: Add CSRF token meta tag (backend excludes API routes from CSRF) --}}
         <meta name="csrf-token" content="{{ csrf_token() }}">
 
         {{-- Inline script to detect system dark mode preference and apply it immediately --}}

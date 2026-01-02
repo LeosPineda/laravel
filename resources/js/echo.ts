@@ -11,7 +11,7 @@ declare global {
 
 window.Pusher = Pusher;
 
-// ✅ FIXED: Include CSRF token in broadcasting auth headers
+// ✅ RESTORED: Include CSRF token in broadcasting auth headers (backend excludes API routes from CSRF)
 window.Echo = new Echo({
     broadcaster: 'pusher',
     key: import.meta.env.VITE_PUSHER_APP_KEY || 'd7844fc467464fad6f63',
