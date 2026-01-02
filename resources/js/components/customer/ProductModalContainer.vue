@@ -162,7 +162,8 @@ interface Product {
   price: string | number
   image_url?: string
   category?: string
-  is_in_stock: boolean
+  stock_quantity: number
+  is_active?: boolean
   is_featured?: boolean
 }
 

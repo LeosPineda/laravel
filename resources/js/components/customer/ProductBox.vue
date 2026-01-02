@@ -19,16 +19,23 @@
       <!-- Stock Status Badge -->
       <div class="absolute top-1 left-1">
         <span
-          v-if="!product.is_in_stock"
-          class="px-2 py-0.5 bg-red-500 text-white text-xs rounded-full font-medium"
+          v-if="isLowStock"
+          class="px-2 py-0.5 bg-yellow-500 text-white text-xs rounded-full font-medium"
         >
-          Out
+          Low
         </span>
         <span
-          v-else-if="product.is_featured"
+          v-else-if="isInStock && product.is_featured"
           class="px-2 py-0.5 bg-orange-500 text-white text-xs rounded-full font-medium"
         >
           Featured
+        </span>
+      </div>
+
+      <!-- Stock Quantity (when in stock) -->
+      <div v-if="isInStock" class="absolute top-1 right-1">
+        <span class="px-2 py-0.5 bg-black/70 text-white text-xs rounded-full font-medium">
+          {{ product.stock_quantity }} left
         </span>
       </div>
     </div>
@@ -49,7 +56,7 @@
 
         <!-- Order Button -->
         <button
-          v-if="product.is_in_stock"
+          v-if="isInStock"
           @click.stop="handleOrderNow"
           :disabled="ordering"
           class="px-3 py-1.5 bg-orange-500 hover:bg-orange-600 disabled:bg-orange-300 text-white rounded-md transition-colors text-xs font-medium"
@@ -62,22 +69,28 @@
           v-else
           class="px-3 py-1.5 bg-gray-300 text-gray-500 rounded-md text-xs font-medium"
         >
-          Out
+          Out of Stock
         </span>
+      </div>
+
+      <!-- Stock Info (when low) -->
+      <div v-if="isLowStock" class="mt-1 text-xs text-yellow-600">
+        Only {{ product.stock_quantity }} left!
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 
 interface Product {
   id: number
   name: string
   price: string | number
   image_url?: string
-  is_in_stock: boolean
+  stock_quantity: number
+  is_active?: boolean
   is_featured?: boolean
 }
 
@@ -94,6 +107,15 @@ const props = defineProps<Props>()
 const emit = defineEmits<Emits>()
 
 const ordering = ref(false)
+
+// Computed properties for stock logic
+const isInStock = computed(() => {
+  return props.product.stock_quantity > 0
+})
+
+const isLowStock = computed(() => {
+  return props.product.stock_quantity > 0 && props.product.stock_quantity <= 5
+})
 
 // Methods
 const formatPrice = (price: string | number): string => {
@@ -121,7 +143,7 @@ const handleImageError = (event: Event) => {
 }
 
 const handleOrderNow = async () => {
-  if (ordering.value || !props.product.is_in_stock) return
+  if (ordering.value || !isInStock.value) return
 
   ordering.value = true
 
