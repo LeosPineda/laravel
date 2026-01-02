@@ -5,7 +5,7 @@
     <!-- Product Image -->
     <div
       class="relative h-32 sm:h-36 bg-gradient-to-br from-orange-50 to-red-50 cursor-pointer"
-      @click="handleOrderNow"
+      @click.stop="handleImageClick"
     >
       <img
         v-if="product.image_url"
@@ -43,44 +43,45 @@
     </div>
 
     <!-- Product Info -->
-    <div
-      class="p-3 cursor-pointer"
-      @click="handleViewDetails"
-    >
+    <div class="p-3">
       <!-- Product Name -->
-      <h3 class="font-medium text-gray-900 text-sm mb-1 line-clamp-2 hover:text-orange-600 transition-colors">
+      <h3
+        class="font-medium text-gray-900 text-sm mb-2 line-clamp-2 hover:text-orange-600 transition-colors cursor-pointer"
+        @click.stop="handleImageClick"
+      >
         {{ product.name }}
       </h3>
 
       <!-- Price and Action Row -->
-      <div class="flex items-center justify-between">
+      <div class="flex items-end justify-between">
         <!-- Price -->
-        <span class="font-bold text-orange-600 text-sm">
-          ₱{{ formatPrice(product.price) }}
-        </span>
+        <div>
+          <span class="font-bold text-orange-600 text-sm">
+            ₱{{ formatPrice(product.price) }}
+          </span>
+          <!-- Stock Info (when low) -->
+          <div v-if="isLowStock" class="mt-1 text-xs text-yellow-600">
+            Only {{ product.stock_quantity }} left!
+          </div>
+        </div>
 
         <!-- Order Button -->
-        <button
-          v-if="isInStock"
-          @click.stop="handleOrderNow"
-          :disabled="ordering"
-          class="px-3 py-1.5 bg-orange-500 hover:bg-orange-600 disabled:bg-orange-300 text-white rounded-md transition-colors text-xs font-medium"
-        >
-          {{ ordering ? '...' : 'Order Now' }}
-        </button>
-
-        <!-- Out of Stock -->
-        <span
-          v-else
-          class="px-3 py-1.5 bg-gray-300 text-gray-500 rounded-md text-xs font-medium"
-        >
-          Out of Stock
-        </span>
-      </div>
-
-      <!-- Stock Info (when low) -->
-      <div v-if="isLowStock" class="mt-1 text-xs text-yellow-600">
-        Only {{ product.stock_quantity }} left!
+        <div class="flex-shrink-0">
+          <button
+            v-if="isInStock"
+            @click.stop="handleOrderNow"
+            :disabled="ordering"
+            class="px-4 py-2 bg-orange-500 hover:bg-orange-600 disabled:bg-orange-300 text-white rounded-lg transition-colors text-sm font-medium min-w-[80px]"
+          >
+            {{ ordering ? '...' : 'Order' }}
+          </button>
+          <span
+            v-else
+            class="px-4 py-2 bg-gray-300 text-gray-500 rounded-lg text-sm font-medium min-w-[80px] text-center block"
+          >
+            Sold Out
+          </span>
+        </div>
       </div>
     </div>
   </div>
@@ -89,14 +90,23 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 
+interface Addon {
+  id: number
+  name: string
+  price: number
+  is_active: boolean
+}
+
 interface Product {
   id: number
   name: string
   price: string | number
   image_url?: string
+  category?: string
   stock_quantity: number
   is_active?: boolean
   is_featured?: boolean
+  addons?: Addon[]
 }
 
 interface Props {
@@ -147,6 +157,11 @@ const handleImageError = (event: Event) => {
   target.style.display = 'none'
 }
 
+// ✅ Image click shows product details
+const handleImageClick = () => {
+  emit('view-details', props.product)
+}
+
 const handleOrderNow = async () => {
   if (ordering.value || !isInStock.value) return
 
@@ -159,10 +174,6 @@ const handleOrderNow = async () => {
       ordering.value = false
     }, 300)
   }
-}
-
-const handleViewDetails = () => {
-  emit('view-details', props.product)
 }
 </script>
 

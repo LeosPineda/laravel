@@ -377,6 +377,22 @@ class MenuController extends Controller
     }
 
     /**
+     * Get all products (used by search)
+     */
+    public function allProducts(Request $request)
+    {
+        return $this->searchProducts($request);
+    }
+
+    /**
+     * Get product details - FIXED: Alias method for route compatibility
+     */
+    public function showProduct(Request $request, $productId)
+    {
+        return $this->productDetails($request, $productId);
+    }
+
+    /**
      * Get product details
      */
     public function productDetails(Request $request, $productId)
