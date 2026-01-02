@@ -12,7 +12,7 @@
     <!-- Updated: All corners rounded for better appearance -->
     <div
       ref="modalContent"
-      class="relative bg-white rounded-3xl shadow-2xl w-full h-[70vh] lg:h-[70vh] lg:max-w-3xl lg:mx-4 transform transition-all duration-300 ease-out"
+      class="relative bg-white rounded-3xl shadow-2xl w-full h-[70vh] lg:h-[70vh] lg:max-w-6xl lg:mx-4 transform transition-all duration-300 ease-out"
       :class="{
         'translate-y-0 opacity-100': isOpen,
         'translate-y-full opacity-0 lg:translate-y-0 lg:scale-95 lg:opacity-0': !isOpen
@@ -123,7 +123,7 @@
             </div>
 
             <!-- Products Grid using ProductBox Component -->
-            <div v-if="filteredProducts.length > 0" class="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4">
+            <div v-if="filteredProducts.length > 0" class="grid grid-cols-2 lg:grid-cols-5 gap-3 lg:gap-4">
               <ProductBox
                 v-for="product in filteredProducts"
                 :key="product.id"
@@ -152,6 +152,13 @@
 import { ref, computed, watch } from 'vue'
 import ProductBox from './ProductBox.vue'
 
+interface Addon {
+  id: number
+  name: string
+  price: string | number
+  is_active: boolean
+}
+
 interface Product {
   id: number
   name: string
@@ -161,6 +168,7 @@ interface Product {
   stock_quantity: number
   is_active?: boolean
   is_featured?: boolean
+  addons?: Addon[]
 }
 
 interface Vendor {
@@ -244,12 +252,61 @@ const setCategoryFilter = (category: string | null) => {
   selectedCategory.value = category
 }
 
-const handleViewDetails = (product: Product) => {
-  emit('product-select', product)
+// 🔧 THE FIX: Fetch complete product details with addons when viewing details
+const handleViewDetails = async (product: Product) => {
+  try {
+    console.log('Fetching complete product details for:', product.name)
+
+    // Fetch the complete product details with addons
+    const response = await fetch(`/api/customer/menu/products/${product.id}`)
+    if (response.ok) {
+      const data = await response.json()
+      console.log('API Response with addons:', data)
+
+      if (data.success && data.product) {
+        // Emit the complete product with addons
+        console.log('Complete product with addons:', data.product)
+        emit('product-select', data.product)
+      } else {
+        // Fallback to basic product if API fails
+        console.log('API response missing product data, using fallback')
+        emit('product-select', product)
+      }
+    } else {
+      console.log('API request failed with status:', response.status)
+      // Fallback to basic product if API fails
+      emit('product-select', product)
+    }
+  } catch (err) {
+    console.error('Error fetching product details:', err)
+    // Fallback to basic product if API fails
+    emit('product-select', product)
+  }
 }
 
-const handleOrderNow = (product: Product) => {
-  emit('order-now', product)
+// ✅ THE FIX: Also fetch complete product details for "Order Now"
+const handleOrderNow = async (product: Product) => {
+  try {
+    // Fetch the complete product details with addons
+    const response = await fetch(`/api/customer/menu/products/${product.id}`)
+    if (response.ok) {
+      const data = await response.json()
+      if (data.success && data.product) {
+        // Emit the complete product with addons
+        emit('order-now', data.product)
+      } else {
+        // Fallback to basic product if API fails
+        emit('order-now', product)
+      }
+    } else {
+      // Fallback to basic product if API fails
+      emit('order-now', product)
+    }
+  } catch (err) {
+    console.error('Error fetching product details:', err)
+    // Fallback to basic product if API fails
+    emit('order-now', product)
+  }
 }
 
 const loadProducts = async () => {

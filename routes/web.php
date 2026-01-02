@@ -48,12 +48,14 @@ Route::get('/reset-password/{token}', function ($token) {
     ]);
 })->name('password.reset');
 
-// Auth POST routes are handled by Fortify
+// 🔧 FIXED: Auth POST routes - Using Inertia location for proper logout
 Route::post('/logout', function () {
     Auth::logout();
     request()->session()->invalidate();
     request()->session()->regenerateToken();
-    return redirect()->route('login');
+    
+    // ✅ FIXED: Use Inertia::location() for proper Inertia.js logout redirect
+    return Inertia::location(route('login'));
 })->name('logout');
 
 // Dashboard redirect based on role
