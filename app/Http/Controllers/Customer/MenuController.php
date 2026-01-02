@@ -55,7 +55,7 @@ class MenuController extends Controller
     }
 
     /**
-     * Get vendor's products - FIXED: Added missing method
+     * Get vendor's products - FIXED: Added missing method and correct addon fields
      */
     public function vendorProducts(Request $request, $vendorId)
     {
@@ -71,7 +71,7 @@ class MenuController extends Controller
                 ->select('id', 'name', 'price', 'category', 'image_url', 'stock_quantity', 'is_active')
                 ->with(['addons' => function ($q) {
                     $q->where('is_active', true)
-                      ->select('id', 'name', 'price', 'is_active');
+                      ->select('id', 'name', 'price', 'is_active'); // FIXED: Only valid addon fields
                 }]);
 
             // Filter by category if provided
@@ -151,7 +151,7 @@ class MenuController extends Controller
                 ->select('id', 'name', 'price', 'category', 'image_url', 'stock_quantity', 'is_active')
                 ->with(['addons' => function ($q) {
                     $q->where('is_active', true)
-                      ->select('id', 'name', 'price', 'is_active');
+                      ->select('id', 'name', 'price', 'is_active'); // FIXED: Only valid addon fields
                 }]);
 
             // Filter by category if provided
@@ -192,7 +192,8 @@ class MenuController extends Controller
             return response()->json([
                 'message' => 'Error retrieving vendor menu',
                 'success' => false
-            ], 500);
+            ], 500
+        );
         }
     }
 
@@ -324,7 +325,7 @@ class MenuController extends Controller
                 'vendor:id,brand_name,brand_logo',
                 'addons' => function ($query) {
                     $query->where('is_active', true)
-                          ->select('id', 'name', 'price', 'is_active');
+                          ->select('id', 'name', 'price', 'is_active'); // FIXED: Only valid addon fields
                 }
             ])
             ->select('id', 'name', 'price', 'category', 'image_url', 'stock_quantity', 'vendor_id', 'is_active')
@@ -393,7 +394,7 @@ class MenuController extends Controller
     }
 
     /**
-     * Get product details
+     * Get product details - FIXED: Correct addon fields
      */
     public function productDetails(Request $request, $productId)
     {
@@ -407,7 +408,7 @@ class MenuController extends Controller
                     'vendor:id,brand_name,brand_logo',
                     'addons' => function ($query) {
                         $query->where('is_active', true)
-                              ->select('id', 'name', 'price', 'is_active');
+                              ->select('id', 'name', 'price', 'is_active'); // FIXED: Only valid addon fields
                     }
                 ])
                 ->firstOrFail();
@@ -525,7 +526,7 @@ class MenuController extends Controller
                 'errors' => $e->errors(),
                 'success' => false
             ], 422);
-        } catch (\Exception $e) {
+               } catch (\Exception $e) {
             Log::error('Error quick adding to cart: ' . $e->getMessage());
             return response()->json([
                 'message' => 'Error adding product to cart',

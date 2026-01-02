@@ -252,60 +252,65 @@ const setCategoryFilter = (category: string | null) => {
   selectedCategory.value = category
 }
 
-// 🔧 THE FIX: Fetch complete product details with addons when viewing details
-const handleViewDetails = async (product: Product) => {
-  try {
-    console.log('Fetching complete product details for:', product.name)
-
-    // Fetch the complete product details with addons
-    const response = await fetch(`/api/customer/menu/products/${product.id}`)
-    if (response.ok) {
-      const data = await response.json()
-      console.log('API Response with addons:', data)
-
-      if (data.success && data.product) {
-        // Emit the complete product with addons
-        console.log('Complete product with addons:', data.product)
-        emit('product-select', data.product)
-      } else {
-        // Fallback to basic product if API fails
-        console.log('API response missing product data, using fallback')
-        emit('product-select', product)
-      }
-    } else {
-      console.log('API request failed with status:', response.status)
-      // Fallback to basic product if API fails
-      emit('product-select', product)
+// 🔧 HIGH PRIORITY FIX: Helper function to fetch product with addons only when needed
+const fetchProductWithAddons = async (productId: number): Promise<Product> => {
+  const response = await fetch(`/api/customer/menu/products/${productId}`)
+  if (response.ok) {
+    const data = await response.json()
+    if (data.success && data.product) {
+      return data.product
     }
-  } catch (err) {
-    console.error('Error fetching product details:', err)
-    // Fallback to basic product if API fails
+  }
+  throw new Error('Failed to fetch product details')
+}
+
+// 🔧 HIGH PRIORITY FIX: Eliminate duplicate API calls - use existing product data with addons
+const handleViewDetails = (product: Product) => {
+  console.log('Opening product details for:', product.name)
+  
+  // Check if product already has complete addon data
+  if (product.addons && product.addons.length > 0) {
+    console.log('Product already has addon data, using existing data')
+    // Use existing product data - no API call needed
     emit('product-select', product)
+  } else {
+    console.log('Product missing addon data, fetching from API')
+    // Only fetch if addon data is missing
+    fetchProductWithAddons(product.id)
+      .then((completeProduct: Product) => {
+        console.log('Fetched complete product with addons:', completeProduct)
+        emit('product-select', completeProduct)
+      })
+      .catch((err: Error) => {
+        console.error('Error fetching product details:', err)
+        // Fallback to basic product if API fails
+        emit('product-select', product)
+      })
   }
 }
 
-// ✅ THE FIX: Also fetch complete product details for "Order Now"
-const handleOrderNow = async (product: Product) => {
-  try {
-    // Fetch the complete product details with addons
-    const response = await fetch(`/api/customer/menu/products/${product.id}`)
-    if (response.ok) {
-      const data = await response.json()
-      if (data.success && data.product) {
-        // Emit the complete product with addons
-        emit('order-now', data.product)
-      } else {
+// ✅ HIGH PRIORITY FIX: Eliminate duplicate API calls for Order Now functionality
+const handleOrderNow = (product: Product) => {
+  console.log('Opening order modal for:', product.name)
+  
+  // Check if product already has complete addon data
+  if (product.addons && product.addons.length > 0) {
+    console.log('Product already has addon data, using existing data')
+    // Use existing product data - no API call needed
+    emit('order-now', product)
+  } else {
+    console.log('Product missing addon data, fetching from API')
+    // Only fetch if addon data is missing
+    fetchProductWithAddons(product.id)
+      .then((completeProduct: Product) => {
+        console.log('Fetched complete product with addons for order:', completeProduct)
+        emit('order-now', completeProduct)
+      })
+      .catch((err: Error) => {
+        console.error('Error fetching product details for order:', err)
         // Fallback to basic product if API fails
         emit('order-now', product)
-      }
-    } else {
-      // Fallback to basic product if API fails
-      emit('order-now', product)
-    }
-  } catch (err) {
-    console.error('Error fetching product details:', err)
-    // Fallback to basic product if API fails
-    emit('order-now', product)
+      })
   }
 }
 

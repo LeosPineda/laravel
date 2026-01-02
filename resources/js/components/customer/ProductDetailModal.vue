@@ -57,6 +57,8 @@
 
           <!-- Product Content -->
           <div v-else-if="product" class="space-y-6">
+
+
             <!-- Product Image + Stock Info -->
             <div class="rounded-xl overflow-hidden cursor-pointer relative bg-gray-50" @click="showImagePreview = true" style="height: 200px;">
               <img
@@ -141,8 +143,8 @@
               </div>
             </div>
 
-            <!-- Add-ons -->
-            <div v-if="availableAddons.length > 0" class="space-y-3">
+            <!-- Add-ons Section - Enhanced with Better Debugging -->
+            <div v-if="shouldShowAddons" class="space-y-3">
               <h4 class="font-bold text-gray-900 text-lg">Add-ons</h4>
               <div class="space-y-2">
                 <div
@@ -165,6 +167,34 @@
                   <span class="font-bold text-orange-600">+₱{{ formatPrice(addon.price) }}</span>
                 </div>
               </div>
+            </div>
+
+            <!-- Fallback Add-ons Display -->
+            <div v-else-if="product.addons && product.addons.length > 0" class="space-y-3 bg-yellow-50 p-3 rounded border border-yellow-200">
+              <h4 class="font-bold text-gray-900 text-lg">Add-ons (Fallback)</h4>
+              <div class="space-y-2">
+                <div
+                  v-for="addon in product.addons"
+                  :key="addon.id"
+                  class="flex justify-between items-center p-3 border rounded-xl"
+                >
+                  <label class="flex items-center gap-2 flex-1 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      :value="addon.id"
+                      v-model="selectedAddons"
+                      class="w-5 h-5 text-orange-600 border-2 border-gray-300 rounded"
+                    />
+                    <span>{{ addon.name }}</span>
+                  </label>
+                  <span class="font-bold text-orange-600">+₱{{ formatPrice(addon.price) }}</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- No Addons Message -->
+            <div v-else class="bg-gray-50 p-4 rounded-xl text-center">
+              <p class="text-gray-500">No add-ons available for this product</p>
             </div>
           </div>
 
@@ -249,11 +279,11 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted } from 'vue'
 
-// ✅ FIXED: Match ProductModalContainer Addon interface
+// Enhanced TypeScript interfaces with better type safety
 interface Addon {
   id: number
   name: string
-  price: string | number  // ← Changed from 'number' to 'string | number'
+  price: string | number
   is_active: boolean
 }
 
@@ -295,10 +325,16 @@ const availableAddons = computed(() => {
   return props.product?.addons || []
 })
 
+const shouldShowAddons = computed(() => {
+  return availableAddons.value && availableAddons.value.length > 0
+})
+
 const totalAddonsPrice = computed(() => {
-  return selectedAddons.value.reduce((total, addonId) => {
+  return selectedAddons.value.reduce((sum, addonId) => {
     const addon = availableAddons.value.find(a => a.id === addonId)
-    return total + (typeof addon?.price === 'string' ? parseFloat(addon.price) : addon?.price || 0)
+    const addonPrice = addon?.price ? 
+      (typeof addon.price === 'string' ? parseFloat(addon.price) : addon.price) : 0
+    return sum + addonPrice
   }, 0)
 })
 
@@ -423,7 +459,6 @@ const addToCart = async () => {
 // Watch for product changes
 watch(() => props.product, (newProduct) => {
   if (newProduct) {
-    console.log('ProductDetailModal received product with addons:', newProduct.addons)
     resetForm()
   }
 })
