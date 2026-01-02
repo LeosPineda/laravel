@@ -1,8 +1,8 @@
 <template>
   <!-- Product Detail Modal -->
   <div
-    v-if="isOpen"
-    class="fixed inset-0 z-50 flex items-center justify-center"
+    v-if="isOpen && !showImagePreview"
+    class="fixed inset-0 z-[60] flex items-center justify-center"
     @click="handleBackdropClick"
   >
     <!-- Backdrop -->
@@ -10,181 +10,165 @@
 
     <!-- Modal Content -->
     <div
-      class="relative bg-white rounded-t-3xl lg:rounded-3xl shadow-2xl w-full h-[90vh] lg:h-[85vh] lg:max-w-3xl lg:mx-4 transform transition-all duration-300 ease-out"
+      ref="modalContent"
+      data-modal-content
+      class="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm lg:max-w-md transform transition-all duration-300 ease-out flex flex-col"
       :class="{
         'translate-y-0 opacity-100': isOpen,
-        'translate-y-full opacity-0 lg:translate-y-0 lg:scale-95 lg:opacity-0': !isOpen
+        'translate-y-4 opacity-0': !isOpen
       }"
+      :style="{ height: isMobile ? 'auto max-h-[80vh]' : 'auto max-h-[80vh]' }"
       @click.stop
     >
       <!-- Header -->
-      <div class="flex items-center justify-between p-4 lg:p-6 border-b border-gray-200">
-        <div class="flex items-center gap-3">
-          <!-- Close Button (X) -->
+      <div class="flex items-center justify-between p-3 lg:p-4 border-b border-gray-200 flex-shrink-0">
+        <div class="flex items-center gap-2">
+          <!-- Close Button -->
           <button
             @click="closeModal"
-            class="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors"
+            class="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors"
             aria-label="Close modal"
           >
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
 
           <!-- Product Title -->
           <div>
-            <h2 class="text-lg lg:text-xl font-bold text-gray-900">
-              {{ product?.name || 'Checkout' }}
+            <h2 class="text-base lg:text-lg font-bold text-gray-900">
+              {{ product?.name || 'Product Details' }}
             </h2>
-            <p class="text-sm text-gray-500">
-              Complete your order
-            </p>
+            <p class="text-xs text-gray-500">Customize your order</p>
           </div>
-        </div>
-
-        <!-- Cart Badge -->
-        <div class="flex items-center gap-2">
-          <div class="relative">
-            <svg class="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4m0 0L7 13m0 0l-1.5 6M7 13l1.5 6m6.5-6l-1.5-6m-3 6l-1.5-6m-3 6l-1.5-6" />
-            </svg>
-            <span
-              v-if="cartCount && cartCount > 0"
-              class="absolute -top-2 -right-2 bg-orange-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold"
-            >
-              {{ cartCount }}
-            </span>
-          </div>
-          <span class="text-sm text-gray-500">Cart</span>
         </div>
       </div>
 
       <!-- Content -->
-      <div class="flex-1 overflow-hidden flex flex-col">
-        <div class="flex-1 overflow-y-auto">
+      <div class="flex-1 flex flex-col">
+        <div class="flex-1 p-3 lg:p-4 space-y-4">
           <!-- Loading State -->
           <div v-if="loading" class="flex items-center justify-center h-full">
             <div class="text-center">
-              <div class="animate-spin rounded-full h-8 w-8 lg:h-12 lg:w-12 border-b-2 border-orange-500 mx-auto mb-4"></div>
+              <div class="animate-spin rounded-full h-10 w-10 lg:h-12 lg:w-12 border-b-2 border-orange-500 mx-auto mb-4"></div>
               <p class="text-gray-600">Loading product details...</p>
             </div>
           </div>
 
           <!-- Product Content -->
-          <div v-else-if="product" class="p-4 lg:p-6 space-y-6">
-            <!-- Product Image and Basic Info -->
-            <div class="flex gap-4">
-              <!-- Clickable Product Image -->
-              <div
-                @click="showImagePreview = true"
-                class="w-24 h-24 lg:w-32 lg:h-32 bg-gradient-to-br from-orange-50 to-red-50 rounded-xl overflow-hidden flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity"
-              >
-                <img
-                  v-if="product.image_url"
-                  :src="getImageUrl(product.image_url)"
-                  :alt="product.name"
-                  class="w-full h-full object-cover"
-                  @error="handleImageError"
-                />
-                <div v-else class="w-full h-full flex items-center justify-center text-gray-400">
-                  <span class="text-2xl">🍽️</span>
-                </div>
+          <div v-else-if="product" class="space-y-6">
+            <!-- Product Image + Stock Info -->
+            <div class="rounded-xl overflow-hidden cursor-pointer relative bg-gray-50" @click="showImagePreview = true" style="height: 200px;">
+              <img
+                v-if="product.image_url"
+                :src="getImageUrl(product.image_url)"
+                :alt="product.name"
+                class="w-full h-full object-cover"
+                @error="handleImageError"
+              />
+              <div v-else class="w-full h-full flex items-center justify-center bg-gray-100 text-gray-400 text-2xl">
+                🍽️
               </div>
 
-              <!-- Product Details -->
-              <div class="flex-1">
-                <h3 class="text-xl font-bold text-gray-900 mb-2">{{ product.name }}</h3>
+              <!-- Stock Badge -->
+              <div class="absolute top-3 right-3">
+                <span
+                  v-if="product.stock_quantity > 5"
+                  class="px-2 py-1 rounded-full bg-green-100 text-green-800 text-xs font-medium"
+                >
+                  ✓ In Stock ({{ product.stock_quantity }})
+                </span>
+                <span
+                  v-else-if="product.stock_quantity > 0"
+                  class="px-2 py-1 rounded-full bg-yellow-100 text-yellow-800 text-xs font-medium"
+                >
+                  ⚠ Only {{ product.stock_quantity }} left
+                </span>
+                <span
+                  v-else
+                  class="px-2 py-1 rounded-full bg-red-100 text-red-800 text-xs font-medium"
+                >
+                  ❌ Out of Stock
+                </span>
+              </div>
+            </div>
 
-                <!-- Price -->
-                <div class="text-2xl font-bold text-orange-600 mb-2">
-                  ₱{{ formatPrice(product.price) }}
-                </div>
-
-                <!-- Stock Info -->
-                <div class="text-sm">
-                  <span
-                    v-if="product.stock_quantity > 5"
-                    class="text-green-600"
-                  >
-                    ✓ In Stock ({{ product.stock_quantity }} available)
-                  </span>
-                  <span
-                    v-else-if="product.stock_quantity > 0"
-                    class="text-yellow-600"
-                  >
-                    ⚠ Only {{ product.stock_quantity }} left!
-                  </span>
-                  <span
-                    v-else
-                    class="text-red-600"
-                  >
-                    ❌ Out of Stock
-                  </span>
-                </div>
+            <!-- Product Name + Price -->
+            <div class="flex justify-between items-center">
+              <h3 class="text-lg lg:text-xl font-bold text-gray-900">{{ product.name }}</h3>
+              <div class="text-xl lg:text-2xl font-bold text-orange-600">
+                ₱{{ formatPrice(product.price) }}
               </div>
             </div>
 
             <!-- Quantity Selector -->
-            <div class="border-t pt-6">
-              <h4 class="font-semibold text-gray-900 mb-3">Quantity</h4>
+            <div class="flex items-center justify-between bg-gray-50 p-4 rounded-xl">
+              <span class="font-semibold text-gray-700">Quantity</span>
               <div class="flex items-center gap-3">
                 <button
                   @click="decrementQuantity"
                   :disabled="quantity <= 1 || adding"
-                  class="w-10 h-10 rounded-full border border-gray-300 flex items-center justify-center hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  class="w-10 h-10 rounded-full border-2 border-gray-300 flex items-center justify-center hover:bg-white hover:border-orange-400 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg class="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4" />
                   </svg>
                 </button>
 
-                <div class="flex-1 text-center">
-                  <span class="text-2xl font-bold">{{ quantity }}</span>
-                </div>
+                <input
+                  v-model="quantityInput"
+                  @input="handleQuantityInput"
+                  @blur="validateQuantity"
+                  @keydown.enter="validateQuantity"
+                  type="number"
+                  inputmode="numeric"
+                  pattern="[0-9]*"
+                  :min="1"
+                  :max="product?.stock_quantity || 999"
+                  :disabled="adding"
+                  class="w-20 h-10 text-center text-xl font-bold text-gray-900 border-2 border-gray-300 rounded-lg focus:border-orange-400 focus:ring-0 disabled:opacity-50 disabled:cursor-not-allowed transition-colors spin-button-none"
+                />
 
                 <button
                   @click="incrementQuantity"
                   :disabled="quantity >= product.stock_quantity || adding"
-                  class="w-10 h-10 rounded-full border border-gray-300 flex items-center justify-center hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  class="w-10 h-10 rounded-full border-2 border-gray-300 flex items-center justify-center hover:bg-white hover:border-orange-400 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg class="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                   </svg>
                 </button>
               </div>
             </div>
 
-            <!-- Add-ons Section -->
-            <div v-if="availableAddons.length > 0" class="border-t pt-6">
-              <h4 class="font-semibold text-gray-900 mb-3">Add-ons</h4>
-              <div class="space-y-3">
+            <!-- Add-ons -->
+            <div v-if="availableAddons.length > 0" class="space-y-3">
+              <h4 class="font-bold text-gray-900 text-lg">Add-ons</h4>
+              <div class="space-y-2">
                 <div
                   v-for="addon in availableAddons"
                   :key="addon.id"
-                  class="flex items-center justify-between p-3 border border-gray-200 rounded-lg"
+                  class="flex justify-between items-center p-3 border rounded-xl transition-all duration-200"
+                  :class="selectedAddons.includes(addon.id)
+                    ? 'border-orange-400 bg-orange-50'
+                    : 'border-gray-200 hover:border-orange-200 hover:bg-orange-25'"
                 >
-                  <label class="flex items-center gap-3 cursor-pointer flex-1">
+                  <label class="flex items-center gap-2 flex-1 cursor-pointer">
                     <input
                       type="checkbox"
                       :value="addon.id"
                       v-model="selectedAddons"
-                      class="w-4 h-4 text-orange-600 border-gray-300 rounded focus:ring-orange-500"
-                    >
-                    <div>
-                      <div class="font-medium text-gray-900">{{ addon.name }}</div>
-                      <div class="text-sm text-gray-500">+₱{{ formatPrice(addon.price) }}</div>
-                    </div>
+                      class="w-5 h-5 text-orange-600 border-2 border-gray-300 rounded focus:ring-orange-500 focus:ring-2"
+                    />
+                    <span>{{ addon.name }}</span>
                   </label>
-
-                  <div class="text-right">
-                    <div class="font-medium text-orange-600">+₱{{ formatPrice(addon.price) }}</div>
-                  </div>
+                  <span class="font-bold text-orange-600">+₱{{ formatPrice(addon.price) }}</span>
                 </div>
               </div>
             </div>
           </div>
 
-          <!-- Error State -->
+          <!-- Error -->
           <div v-else class="flex items-center justify-center h-full">
             <div class="text-center px-4">
               <div class="text-red-500 text-4xl mb-4">❌</div>
@@ -199,64 +183,32 @@
           </div>
         </div>
 
-        <!-- Bottom Section - Price and Action Buttons -->
-        <div v-if="product" class="border-t bg-gray-50 p-4 lg:p-6">
-          <!-- Success Message -->
-          <div
-            v-if="showSuccessMessage"
-            class="mb-4 p-3 bg-green-100 border border-green-200 rounded-lg text-green-800 text-sm font-medium"
-          >
-            ✅ Successfully added to cart!
+        <!-- Bottom Section -->
+        <div v-if="product" class="border-t bg-white p-3 lg:p-4 flex-shrink-0 space-y-2 rounded-b-3xl">
+          <div class="flex justify-between text-sm">
+            <span>Base Price ({{ quantity }}x)</span>
+            <span class="font-medium">₱{{ formatPrice(Number(product.price) * quantity) }}</span>
+          </div>
+          <div v-if="selectedAddons.length > 0" class="flex justify-between text-sm">
+            <span>Add-ons ({{ selectedAddons.length }}x{{ quantity }})</span>
+            <span class="font-medium">₱{{ formatPrice(totalAddonsPrice * quantity) }}</span>
+          </div>
+          <div class="flex justify-between font-bold text-lg border-t pt-2">
+            <span>Total</span>
+            <span class="text-orange-600">₱{{ formatPrice(totalPrice) }}</span>
           </div>
 
-          <!-- Price Breakdown -->
-          <div class="mb-4 space-y-1">
-            <div class="flex justify-between text-sm">
-              <span>Base Price ({{ quantity }}x)</span>
-              <span>₱{{ formatPrice(Number(product.price) * quantity) }}</span>
-            </div>
-
-            <div v-if="selectedAddons.length > 0" class="flex justify-between text-sm">
-              <span>Add-ons ({{ selectedAddons.length }}x{{ quantity }})</span>
-              <span>₱{{ formatPrice(totalAddonsPrice * quantity) }}</span>
-            </div>
-
-            <div class="flex justify-between font-bold text-lg border-t pt-2">
-              <span>Total</span>
-              <span class="text-orange-600">₱{{ formatPrice(totalPrice) }}</span>
-            </div>
-          </div>
-
-          <!-- Action Buttons -->
-          <div class="flex gap-3">
-            <!-- Add to Cart Button -->
+          <div class="flex justify-end mt-4">
             <button
               @click="addToCart"
               :disabled="!canAddToCart || adding"
-              class="flex-1 py-3 bg-orange-500 hover:bg-orange-600 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-medium rounded-lg transition-colors flex items-center justify-center gap-2"
+              class="px-6 py-3 bg-orange-500 hover:bg-orange-600 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-medium rounded-lg transition-colors flex items-center justify-center gap-2"
             >
               <svg v-if="adding" class="animate-spin w-5 h-5" fill="none" viewBox="0 0 24 24">
                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                 <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
               </svg>
-              <svg v-else class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4m0 0L7 13m0 0l-1.5 6M7 13l1.5 6m6.5-6l-1.5-6m-3 6l-1.5-6m-3 6l-1.5-6" />
-              </svg>
-
-              {{ adding ? 'Adding...' : `Add to Cart` }}
-            </button>
-
-            <!-- Proceed to Checkout Button -->
-            <button
-              @click="proceedToCheckout"
-              :disabled="!canAddToCart || adding"
-              class="flex-1 py-3 bg-green-600 hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-medium rounded-lg transition-colors flex items-center justify-center gap-2"
-            >
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-              </svg>
-
-              Proceed to Checkout
+              {{ adding ? 'Adding...' : 'Add to Cart' }}
             </button>
           </div>
 
@@ -265,20 +217,15 @@
           </p>
         </div>
       </div>
-
-      <!-- Bottom Sheet Handle (Mobile Only) -->
-      <div class="lg:hidden absolute -top-2 left-1/2 transform -translate-x-1/2">
-        <div class="w-12 h-1 bg-gray-300 rounded-full"></div>
-      </div>
     </div>
 
     <!-- Image Preview Modal -->
     <div
       v-if="showImagePreview"
-      class="fixed inset-0 z-60 flex items-center justify-center bg-black/80"
-      @click="showImagePreview = false"
+      class="fixed inset-0 z-[80] flex items-center justify-center bg-black/90"
+      @click="closeImagePreview"
     >
-      <div class="relative max-w-lg max-h-[80vh] mx-4">
+      <div class="relative max-w-lg max-h-[80vh] mx-4" @click.stop>
         <img
           v-if="product?.image_url"
           :src="getImageUrl(product.image_url)"
@@ -286,8 +233,9 @@
           class="w-full h-full object-contain rounded-lg"
         />
         <button
-          @click="showImagePreview = false"
-          class="absolute top-4 right-4 p-2 bg-black/50 text-white rounded-full hover:bg-black/70 transition-colors"
+          @click="closeImagePreview"
+          class="absolute top-4 right-4 p-3 bg-black/70 text-white rounded-full hover:bg-black/90 transition-colors"
+          aria-label="Close image preview"
         >
           <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -299,7 +247,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 
 interface Addon {
   id: number
@@ -312,6 +260,7 @@ interface Product {
   name: string
   price: string | number
   image_url?: string
+  category?: string
   stock_quantity: number
   addons?: Addon[]
 }
@@ -325,7 +274,6 @@ interface Props {
 interface Emits {
   (e: 'close'): void
   (e: 'added-to-cart', product: Product, quantity: number, addons: number[]): void
-  (e: 'proceed-to-checkout'): void
 }
 
 const props = defineProps<Props>()
@@ -335,9 +283,10 @@ const emit = defineEmits<Emits>()
 const loading = ref(false)
 const adding = ref(false)
 const quantity = ref(1)
+const quantityInput = ref('1')
 const selectedAddons = ref<number[]>([])
-const showSuccessMessage = ref(false)
 const showImagePreview = ref(false)
+const isMobile = ref(false)
 
 // Computed properties
 const availableAddons = computed(() => {
@@ -396,26 +345,59 @@ const handleBackdropClick = () => {
 
 const closeModal = () => {
   emit('close')
- resetForm()
+  resetForm()
 }
 
 const resetForm = () => {
   quantity.value = 1
+  quantityInput.value = '1'
   selectedAddons.value = []
-  showSuccessMessage.value = false
+  showImagePreview.value = false
+}
+
+const closeImagePreview = () => {
   showImagePreview.value = false
 }
 
 const incrementQuantity = () => {
   if (props.product && quantity.value < props.product.stock_quantity) {
     quantity.value++
+    quantityInput.value = quantity.value.toString()
   }
 }
 
 const decrementQuantity = () => {
   if (quantity.value > 1) {
     quantity.value--
+    quantityInput.value = quantity.value.toString()
   }
+}
+
+const handleQuantityInput = (event: Event) => {
+  const target = event.target as HTMLInputElement
+  quantityInput.value = target.value
+
+  // Parse the input value
+  const newValue = parseInt(target.value)
+  if (!isNaN(newValue) && newValue > 0) {
+    quantity.value = newValue
+  }
+}
+
+const validateQuantity = () => {
+  let newQuantity = parseInt(quantityInput.value)
+
+  // Validate and clamp the quantity
+  if (isNaN(newQuantity) || newQuantity < 1) {
+    newQuantity = 1
+  }
+
+  if (props.product && newQuantity > props.product.stock_quantity) {
+    newQuantity = props.product.stock_quantity
+  }
+
+  quantity.value = newQuantity
+  quantityInput.value = newQuantity.toString()
 }
 
 const addToCart = async () => {
@@ -427,9 +409,6 @@ const addToCart = async () => {
     // Emit event with all order details
     emit('added-to-cart', props.product!, quantity.value, selectedAddons.value)
 
-    // Show success message
-    showSuccessMessage.value = true
-
     // Reset form after a delay
     setTimeout(() => {
       resetForm()
@@ -439,15 +418,7 @@ const addToCart = async () => {
   }
 }
 
-const proceedToCheckout = () => {
-  // First add to cart if not already added
-  if (!showSuccessMessage.value) {
-    addToCart()
-  }
 
-  // Emit proceed to checkout event
-  emit('proceed-to-checkout')
-}
 
 // Watch for product changes
 watch(() => props.product, (newProduct) => {
@@ -455,9 +426,42 @@ watch(() => props.product, (newProduct) => {
     resetForm()
   }
 })
+
+// Watch for quantity changes to sync with input
+watch(quantity, (newQuantity) => {
+  quantityInput.value = newQuantity.toString()
+})
+
+// Initialize mobile detection
+onMounted(() => {
+  isMobile.value = window.innerWidth < 1024
+
+  // Update mobile detection on resize
+  const handleResize = () => {
+    isMobile.value = window.innerWidth < 1024
+  }
+
+  window.addEventListener('resize', handleResize)
+
+  // Cleanup on unmount
+  return () => {
+    window.removeEventListener('resize', handleResize)
+  }
+})
 </script>
 
 <style scoped>
+/* Remove browser spinner controls */
+.spin-button-none {
+  -moz-appearance: textfield;
+}
+
+.spin-button-none::-webkit-outer-spin-button,
+.spin-button-none::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
 /* Custom scrollbar */
 .overflow-y-auto::-webkit-scrollbar {
   width: 6px;
@@ -489,5 +493,66 @@ watch(() => props.product, (newProduct) => {
 
 .animate-spin {
   animation: spin 1s linear infinite;
+}
+
+/* Modal positioning fixes */
+.fixed.inset-0.z-50 {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 50;
+}
+
+.z-\[70\] {
+  z-index: 70;
+}
+
+/* Bottom sheet handle */
+.lg\:hidden.absolute.-top-2 {
+  display: none;
+}
+
+@media (max-width: 1023px) {
+  .lg\:hidden.absolute.-top-2 {
+    display: block;
+  }
+}
+
+/* Responsive improvements */
+@media (max-width: 640px) {
+  .flex.gap-4 {
+    gap: 1rem;
+  }
+
+  .p-4 {
+    padding: 1rem;
+  }
+
+  .space-y-6 > * + * {
+    margin-top: 1.5rem;
+  }
+}
+
+/* Button hover effects */
+.hover\:bg-white:hover {
+  background-color: white;
+}
+
+.hover\:border-orange-400:hover {
+  border-color: #fb923c;
+}
+
+/* Transition improvements */
+* {
+  transition-property: color, background-color, border-color, opacity, box-shadow, transform;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 150ms;
+}
+
+/* Additional hover states for add-ons */
+.hover\:bg-orange-25:hover {
+  background-color: #fff7ed;
 }
 </style>

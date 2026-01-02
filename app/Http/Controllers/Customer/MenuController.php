@@ -105,6 +105,36 @@ class MenuController extends Controller
     }
 
     /**
+     * Get vendor details - FIXED: Added missing method
+     */
+    public function showVendor(Request $request, $vendorId)
+    {
+        try {
+            $vendor = Vendor::where('id', $vendorId)
+                ->where('is_active', true)
+                ->select('id', 'brand_name', 'brand_logo', 'is_active')
+                ->firstOrFail();
+
+            return response()->json([
+                'vendor' => $vendor,
+                'success' => true
+            ]);
+
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json([
+                'message' => 'Vendor not found or inactive',
+                'success' => false
+            ], 404);
+        } catch (\Exception $e) {
+            Log::error('Error getting vendor: ' . $e->getMessage());
+            return response()->json([
+                'message' => 'Error retrieving vendor',
+                'success' => false
+            ], 500);
+        }
+    }
+
+    /**
      * Get vendor menu with products
      */
     public function vendorMenu(Request $request, $vendorId)

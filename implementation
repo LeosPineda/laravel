@@ -1,0 +1,78 @@
+# Detailed Implementation Strategy
+
+## Problem Analysis Summary
+
+After reviewing the code, here are the specific issues and solutions:
+
+### 1. Product Modal Size Issue
+**Current**: `h-[85vh] lg:h-[80vh] lg:max-w-4xl`
+**Solution**: Reduce to `h-[70vh] lg:h-[70vh] lg:max-w-3xl`
+
+### 2. Out of Stock Products Display
+**Current**: All products shown regardless of stock
+**Solution**: Add stock filter in `filteredProducts` computed property:
+```javascript
+const filteredProducts = computed(() => {
+  let filtered = products.value.filter(product => product.stock_quantity > 0)
+  // ... rest of filtering logic
+})
+```
+
+### 3. Quantity Input Interface
+**Current**: Has both +/- buttons and input field (as implemented)
+**Status**: This should be working correctly. User may need to test the current implementation.
+
+### 4. Image Preview Modal Behavior
+**Problem**: `closeImagePreview` only sets `showImagePreview.value = false`
+**Solution**: Need to ensure proper event propagation handling
+
+### 5. Vendor Box Image Click Behavior
+**Problem**: Entire ProductBox has `@click="handleViewDetails"` (line 4)
+**Solution**: Move click handler to product info section only, keep image area for "order-now"
+
+## Implementation Order
+
+### Phase 1: Modal Size and Stock Filtering
+1. Modify ProductModalContainer.vue modal dimensions
+2. Add stock filtering to hide out-of-stock items
+
+### Phase 2: Vendor Box Click Behavior
+1. Modify ProductBox.vue to separate image clicks from info clicks
+2. Image clicks → "order-now"
+3. Product info clicks → "view-details"
+
+### Phase 3: Image Preview Modal Fix
+1. Review ProductDetailModal.vue image preview event handling
+2. Fix closing behavior
+
+### Phase 4: Testing
+1. Test each fix individually
+2. Test complete user flow
+
+## Code Changes Required
+
+### File: ProductModalContainer.vue
+- Line 14: Change `h-[85vh] lg:h-[80vh] lg:max-w-4xl` to `h-[70vh] lg:h-[70vh] lg:max-w-3xl`
+- Line 208: Add stock filter to `filteredProducts` computed property
+
+### File: ProductBox.vue
+- Line 2-5: Remove `@click="handleViewDetails"` from container div
+- Line 44: Add `@click="handleViewDetails"` to product info section only
+- Line 7-17: Keep image area separate for "order-now" behavior
+
+### File: ProductDetailModal.vue
+- Review image preview modal event handling (lines 225-248)
+
+## Expected User Flow After Fixes
+
+1. **Vendor Selection**: Click vendor → see products (no out-of-stock items)
+2. **Product Interaction**:
+   - Click product image → direct to "order now" (product details modal)
+   - Click product info → "view details"
+3. **Product Details**:
+   - Smaller, more manageable modal size
+   - Quantity input with both +/- buttons and manual input
+   - Image preview closes properly back to product details
+4. **Cart Actions**: Add to cart or proceed to checkout
+
+This plan ensures all identified problems are addressed systematically.

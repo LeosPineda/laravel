@@ -1,15 +1,17 @@
 <template>
   <div
-    class="bg-white border border-gray-200 rounded-lg hover:shadow-md hover:border-orange-200 transition-all duration-200 cursor-pointer group overflow-hidden"
-    @click="handleViewDetails"
+    class="bg-white border border-gray-200 rounded-lg hover:shadow-md hover:border-orange-200 transition-all duration-200 overflow-hidden"
   >
     <!-- Product Image -->
-    <div class="relative h-32 sm:h-36 bg-gradient-to-br from-orange-50 to-red-50">
+    <div
+      class="relative h-32 sm:h-36 bg-gradient-to-br from-orange-50 to-red-50 cursor-pointer"
+      @click="handleOrderNow"
+    >
       <img
         v-if="product.image_url"
         :src="getImageUrl(product.image_url)"
         :alt="product.name"
-        class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+        class="w-full h-full object-cover hover:scale-105 transition-transform duration-200"
         @error="handleImageError"
       />
       <div v-else class="w-full h-full flex items-center justify-center text-gray-400">
@@ -41,9 +43,12 @@
     </div>
 
     <!-- Product Info -->
-    <div class="p-3">
+    <div
+      class="p-3 cursor-pointer"
+      @click="handleViewDetails"
+    >
       <!-- Product Name -->
-      <h3 class="font-medium text-gray-900 text-sm mb-1 line-clamp-2 group-hover:text-orange-600 transition-colors">
+      <h3 class="font-medium text-gray-900 text-sm mb-1 line-clamp-2 hover:text-orange-600 transition-colors">
         {{ product.name }}
       </h3>
 
@@ -174,14 +179,5 @@ const handleViewDetails = () => {
   transition-property: color, background-color, border-color, opacity, box-shadow, transform;
   transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
   transition-duration: 150ms;
-}
-
-/* Hover effects */
-.group:hover .group-hover\:scale-105 {
-  transform: scale(1.05);
-}
-
-.group:hover .group-hover\:text-orange-600 {
-  color: #ea580c;
 }
 </style>

@@ -14,8 +14,11 @@
 
     <!-- Vendor Grid -->
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div v-if="loading" class="flex justify-center items-center h-64">
-        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      <div v-if="loading" class="flex justify-center items-center min-h-[60vh]">
+        <div class="text-center">
+          <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p class="text-gray-600">Loading vendors...</p>
+        </div>
       </div>
 
       <div v-else-if="error" class="text-center py-12">
@@ -48,6 +51,15 @@
       @product-select="handleProductSelect"
       @order-now="handleOrderNow"
     />
+
+    <!-- Product Detail Modal -->
+    <ProductDetailModal
+      :product="selectedProduct"
+      :is-open="isProductDetailModalOpen"
+      :cart-count="cartItemCount"
+      @close="closeProductDetailModal"
+      @added-to-cart="handleAddedToCart"
+    />
   </CustomerLayout>
 </template>
 
@@ -57,6 +69,7 @@ import { Link } from '@inertiajs/vue3'
 import CustomerLayout from '@/layouts/customer/CustomerLayout.vue'
 import VendorBox from '@/components/customer/VendorBox.vue'
 import ProductModalContainer from '@/components/customer/ProductModalContainer.vue'
+import ProductDetailModal from '@/components/customer/ProductDetailModal.vue'
 import { useCart } from '@/composables/useCart'
 import { useToast } from '@/composables/useToast'
 import axios from 'axios'
@@ -69,10 +82,12 @@ const error = ref(null)
 // Modal state
 const isProductModalOpen = ref(false)
 const selectedVendorId = ref(null)
+const isProductDetailModalOpen = ref(false)
+const selectedProduct = ref(null)
 
 // Cart and toast composables
 const { cartCount, fetchCart } = useCart()
-const { showToast } = useToast()
+const { success } = useToast()
 
 // Computed properties
 const activeVendors = computed(() => {
@@ -115,16 +130,36 @@ const closeProductModal = () => {
 }
 
 const handleProductSelect = (product) => {
-  // TODO: Open product detail modal for ordering
-  console.log('Product selected for viewing:', product)
-  // This will be implemented in Phase 3
+  selectedProduct.value = product
+  isProductDetailModalOpen.value = true
 }
 
 const handleOrderNow = (product) => {
-  // TODO: Open product detail modal for ordering
-  console.log('Order now clicked for:', product)
-  // This will be implemented in Phase 3 - ProductDetailModal
-  showToast('info', 'Product detail modal coming in Phase 3!')
+  selectedProduct.value = product
+  isProductDetailModalOpen.value = true
+}
+
+const closeProductDetailModal = () => {
+  isProductDetailModalOpen.value = false
+  selectedProduct.value = null
+}
+
+const handleAddedToCart = async (product, quantity, addons) => {
+  try {
+    // Show success message
+    success(`${product.name} added to cart!`)
+
+    // Refresh cart count
+    await fetchCart()
+
+    // Close modal after a delay
+    setTimeout(() => {
+      closeProductDetailModal()
+    }, 2000)
+  } catch (error) {
+    console.error('Error adding to cart:', error)
+    info('Failed to add item to cart. Please try again.')
+  }
 }
 
 // Lifecycle

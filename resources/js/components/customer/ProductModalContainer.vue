@@ -2,16 +2,17 @@
   <!-- Product Modal Container -->
   <div
     v-if="isOpen"
-    class="fixed inset-0 z-50 flex items-center justify-center"
+    class="fixed inset-0 z-40 flex items-center justify-center"
     @click="handleBackdropClick"
   >
     <!-- Backdrop -->
     <div class="absolute inset-0 bg-black/50 backdrop-blur-sm"></div>
 
     <!-- Modal Content -->
+    <!-- Updated: All corners rounded for better appearance -->
     <div
       ref="modalContent"
-      class="relative bg-white rounded-t-3xl lg:rounded-3xl shadow-2xl w-full h-[85vh] lg:h-[80vh] lg:max-w-4xl lg:mx-4 transform transition-all duration-300 ease-out"
+      class="relative bg-white rounded-3xl shadow-2xl w-full h-[70vh] lg:h-[70vh] lg:max-w-3xl lg:mx-4 transform transition-all duration-300 ease-out"
       :class="{
         'translate-y-0 opacity-100': isOpen,
         'translate-y-full opacity-0 lg:translate-y-0 lg:scale-95 lg:opacity-0': !isOpen
@@ -55,10 +56,10 @@
       <!-- Content Area -->
       <div class="flex-1 overflow-hidden">
         <!-- Loading State -->
-        <div v-if="loading" class="flex items-center justify-center h-full">
+        <div v-if="loading" class="flex items-center justify-center h-full min-h-[400px]">
           <div class="text-center">
-            <div class="animate-spin rounded-full h-8 w-8 lg:h-12 lg:w-12 border-b-2 border-orange-500 mx-auto mb-4"></div>
-            <p class="text-gray-600">Loading products...</p>
+            <div class="animate-spin rounded-full h-12 w-12 lg:h-16 lg:w-16 border-b-2 border-orange-500 mx-auto mb-4"></div>
+            <p class="text-gray-600 font-medium">Loading products...</p>
           </div>
         </div>
 
@@ -80,8 +81,8 @@
         <!-- Products Grid -->
         <div v-else class="h-full overflow-y-auto">
           <div class="p-4 lg:p-6">
-            <!-- Search Bar (Mobile) -->
-            <div class="lg:hidden mb-4">
+            <!-- Search Bar -->
+            <div class="mb-4">
               <div class="relative">
                 <input
                   v-model="searchQuery"
@@ -143,11 +144,6 @@
           </div>
         </div>
       </div>
-
-      <!-- Bottom Sheet Handle (Mobile Only) -->
-      <div class="lg:hidden absolute -top-2 left-1/2 transform -translate-x-1/2">
-        <div class="w-12 h-1 bg-gray-300 rounded-full"></div>
-      </div>
     </div>
   </div>
 </template>
@@ -207,6 +203,9 @@ const availableCategories = computed(() => {
 
 const filteredProducts = computed(() => {
   let filtered = products.value
+
+  // Filter out out of stock products
+  filtered = filtered.filter(product => product.stock_quantity > 0)
 
   // Apply search filter
   if (searchQuery.value) {
