@@ -239,6 +239,7 @@ class OrderController extends Controller
     /**
      * Mark order as ready for pickup (FINAL STATUS).
      * This is the completion point - ready_for_pickup = completed
+     * NEW: Generates receipt and sends receipt notification to customer
      */
     public function markReady(Order $order): JsonResponse
     {
@@ -265,7 +266,7 @@ class OrderController extends Controller
                 // Broadcast status change event
                 event(new OrderStatusChanged($vendor, $order, $order->customer, $oldStatus, 'ready_for_pickup'));
 
-                // Create customer notification
+                // Create order status notification for customer
                 $customerNotification = Notification::create([
                     'user_id' => $order->customer_id,
                     'vendor_id' => $vendor->id,
@@ -273,6 +274,21 @@ class OrderController extends Controller
                     'type' => 'order_status',
                     'title' => 'Ready for Pickup 🔔',
                     'message' => "Your order #{$order->order_number} is ready for pickup",
+                    'is_read' => false,
+                    'created_at' => now(),
+                ]);
+
+                // NEW: Generate receipt and send receipt notification
+                $receiptUrl = $this->generateAndSaveReceipt($order);
+
+                // Create receipt notification for customer
+                $receiptNotification = Notification::create([
+                    'user_id' => $order->customer_id,
+                    'vendor_id' => $vendor->id,
+                    'order_id' => $order->id,
+                    'type' => 'receipt_ready', // This matches frontend filter!
+                    'title' => 'Receipt Ready 🧾',
+                    'message' => "Your receipt for order #{$order->order_number} is ready! You can download and print it.",
                     'is_read' => false,
                     'created_at' => now(),
                 ]);
@@ -296,6 +312,41 @@ class OrderController extends Controller
             ]);
 
             return response()->json(['error' => 'Failed to mark order as ready'], 500);
+        }
+    }
+
+    /**
+     * Generate receipt and save URL to order record
+     * NEW: Helper method for receipt generation and storage
+     */
+    private function generateAndSaveReceipt(Order $order): string
+    {
+        try {
+            // Generate PDF receipt
+            $pdf = Pdf::loadView('receipts.customer', compact('order'));
+
+            // Create unique filename
+            $fileName = "receipt-{$order->order_number}-" . time() . ".pdf";
+
+            // Save PDF to storage (public disk for easy access)
+            $filePath = "receipts/{$fileName}";
+            $pdf->save(storage_path("app/public/{$filePath}"));
+
+            // Update order with receipt URL
+            $order->update([
+                'receipt_url' => $filePath
+            ]);
+
+            return $filePath;
+
+        } catch (\Exception $e) {
+            Log::error('Error generating receipt', [
+                'order_id' => $order->id,
+                'error' => $e->getMessage()
+            ]);
+
+            // Return empty string if generation fails
+            return '';
         }
     }
 
@@ -553,4 +604,3 @@ class OrderController extends Controller
         // Custom reason (user entered text)
         return $reason;
     }
-}
