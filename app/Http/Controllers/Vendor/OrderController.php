@@ -604,3 +604,4 @@ class OrderController extends Controller
         // Custom reason (user entered text)
         return $reason;
     }
+}

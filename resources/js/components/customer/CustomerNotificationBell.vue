@@ -18,10 +18,10 @@
       </span>
     </button>
 
-    <!-- Customer Order Status Dropdown -->
+    <!-- Customer Order Status Dropdown - FIXED WIDTH FOR DESKTOP -->
     <div
       v-if="showDropdown"
-      class="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg border border-gray-200 z-50 max-h-96 overflow-hidden"
+      class="absolute right-0 mt-2 w-80 md:w-96 lg:w-[600px] bg-white rounded-lg shadow-lg border border-gray-200 z-50 max-h-96 overflow-hidden"
     >
       <!-- Header -->
       <div class="px-4 py-3 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-purple-50">
