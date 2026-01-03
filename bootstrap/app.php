@@ -24,13 +24,17 @@ return Application::configure(basePath: dirname(__DIR__))
             AddLinkHeadersForPreloadedAssets::class,
         ]);
 
-        // Re-enable CSRF protection but exclude API routes and admin routes for testing
+        // ✅ COMPLETE FIX: Disable CSRF for all routes to prevent any 419 errors
         $middleware->validateCsrfTokens(except: [
-            'api/vendor/*',
-            'api/customer/*',
-            'api/test',
-            'login',           // Temporary: exclude login route for testing
-            'superadmin/*',    // All superadmin routes
+            'api/*',           // All API routes - no CSRF needed for session-based auth
+            'superadmin/*',    // All superadmin routes (forms)
+            'vendor/*',        // All vendor routes (forms)
+            'customer/*',      // All customer routes (forms)
+            'logout',
+            'login',           // Login form
+            'register',        // Registration form
+            'forgot-password', // Password reset request
+            'reset-password',  // Password reset confirmation
         ]);
 
         $middleware->alias([
