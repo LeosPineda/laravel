@@ -11,12 +11,10 @@ class Addon extends Model
         'product_id',
         'name',
         'price',
-        'is_active',
     ];
 
     protected $casts = [
         'price' => 'decimal:2',
-        'is_active' => 'boolean',
     ];
 
     /**
@@ -28,27 +26,11 @@ class Addon extends Model
     }
 
     /**
-     * Check if addon is active.
-     */
-    public function isActive(): bool
-    {
-        return $this->is_active;
-    }
-
-    /**
      * Get price formatted for display.
      */
     public function getFormattedPriceAttribute(): string
     {
         return '₱' . number_format($this->price, 2);
-    }
-
-    /**
-     * Scope to get active addons.
-     */
-    public function scopeActive($query)
-    {
-        return $query->where('is_active', true);
     }
 
     /**

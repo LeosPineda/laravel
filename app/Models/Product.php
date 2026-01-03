@@ -14,13 +14,11 @@ class Product extends Model
         'price',
         'category',
         'image_url',
-        'is_active',
         'stock_quantity',
     ];
 
     protected $casts = [
         'price' => 'decimal:2',
-        'is_active' => 'boolean',
     ];
 
     /**
@@ -53,14 +51,6 @@ class Product extends Model
     public function isInStock(): bool
     {
         return $this->stock_quantity > 0;
-    }
-
-    /**
-     * Check if product is active.
-     */
-    public function isActive(): bool
-    {
-        return $this->is_active;
     }
 
     /**
@@ -117,14 +107,6 @@ class Product extends Model
     public function scopeForVendor($query, int $vendorId)
     {
         return $query->where('vendor_id', $vendorId);
-    }
-
-    /**
-     * Scope to get active products.
-     */
-    public function scopeActive($query)
-    {
-        return $query->where('is_active', true);
     }
 
     /**

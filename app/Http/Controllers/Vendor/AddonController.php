@@ -60,14 +60,12 @@ class AddonController extends Controller
                     })
                 ],
                 'price' => 'required|numeric|min:0',
-                'is_active' => 'boolean',
             ]);
 
             $addon = Addon::create([
                 'product_id' => $product->id,
                 'name' => $request->name,
                 'price' => $request->price,
-                'is_active' => $request->is_active ?? true,
             ]);
 
             return response()->json([
@@ -134,13 +132,11 @@ class AddonController extends Controller
                     })
                 ],
                 'price' => 'required|numeric|min:0',
-                'is_active' => 'boolean',
             ]);
 
             $addon->update([
                 'name' => $request->name,
                 'price' => $request->price,
-                'is_active' => $request->is_active ?? $addon->is_active,
             ]);
 
             return response()->json([
@@ -188,45 +184,14 @@ class AddonController extends Controller
     }
 
     /**
-     * Toggle addon active status.
-     */
-    public function toggleStatus(Addon $addon): JsonResponse
-    {
-        try {
-            $vendor = $this->getCurrentVendor();
-            $product = $addon->product;
-
-            if (!$vendor || !$product || $product->vendor_id !== $vendor->id) {
-                return response()->json(['error' => 'Addon not found'], 404);
-            }
-
-            $addon->update(['is_active' => !$addon->is_active]);
-
-            return response()->json([
-                'message' => 'Addon status updated successfully',
-                'addon' => $addon->fresh()
-            ]);
-
-        } catch (\Exception $e) {
-            Log::error('Error toggling addon status', [
-                'addon_id' => $addon->id,
-                'error' => $e->getMessage()
-            ]);
-
-            return response()->json(['error' => 'Failed to update addon status'], 500);
-        }
-    }
-
-    /**
      * Bulk operations on addons.
      */
-    public function bulkToggle(Request $request): JsonResponse
+    public function bulkDelete(Request $request): JsonResponse
     {
         try {
             $request->validate([
                 'addon_ids' => 'required|array|min:1',
                 'addon_ids.*' => 'integer|exists:addons,id',
-                'action' => 'required|in:activate,deactivate,delete',
             ]);
 
             $vendor = $this->getCurrentVendor();
@@ -235,7 +200,6 @@ class AddonController extends Controller
             }
 
             $addonIds = $request->addon_ids;
-            $action = $request->action;
 
             // Verify all addons belong to the vendor's products
             $vendorAddons = Addon::whereIn('id', $addonIds)
@@ -251,28 +215,12 @@ class AddonController extends Controller
             DB::beginTransaction();
 
             try {
-                $count = 0;
-
-                switch ($action) {
-                    case 'activate':
-                        $count = Addon::whereIn('id', $addonIds)
-                            ->update(['is_active' => true]);
-                        break;
-
-                    case 'deactivate':
-                        $count = Addon::whereIn('id', $addonIds)
-                            ->update(['is_active' => false]);
-                        break;
-
-                    case 'delete':
-                        $count = Addon::whereIn('id', $addonIds)->delete();
-                        break;
-                }
+                $count = Addon::whereIn('id', $addonIds)->delete();
 
                 DB::commit();
 
                 return response()->json([
-                    'message' => ucfirst($action) . "d {$count} addons successfully",
+                    'message' => "Deleted {$count} addons successfully",
                     'count' => $count
                 ]);
 
@@ -282,13 +230,12 @@ class AddonController extends Controller
             }
 
         } catch (\Exception $e) {
-            Log::error('Error performing bulk addon operation', [
-                'action' => $request->action,
+            Log::error('Error performing bulk addon delete', [
                 'addon_ids' => $request->addon_ids,
                 'error' => $e->getMessage()
             ]);
 
-            return response()->json(['error' => 'Failed to perform bulk operation'], 500);
+            return response()->json(['error' => 'Failed to perform bulk delete'], 500);
         }
     }
 
@@ -304,15 +251,11 @@ class AddonController extends Controller
             }
 
             $totalAddons = $product->addons()->count();
-            $activeAddons = $product->addons()->where('is_active', true)->count();
-            $inactiveAddons = $totalAddons - $activeAddons;
             $averagePrice = $product->addons()->avg('price') ?? 0;
 
             return response()->json([
                 'statistics' => [
                     'total_addons' => $totalAddons,
-                    'active_addons' => $activeAddons,
-                    'inactive_addons' => $inactiveAddons,
                     'average_price' => round($averagePrice, 2),
                 ]
             ]);

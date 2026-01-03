@@ -405,6 +405,7 @@ const submitForm = async () => {
         if (addon.name?.trim()) {
           formData.append(`addons[${index}][name]`, addon.name)
           formData.append(`addons[${index}][price]`, (addon.price || 0).toString())
+          formData.append(`addons[${index}][is_active]`, 'true')
         }
       })
     }
@@ -466,7 +467,8 @@ const syncAddons = async (productId) => {
       if (addon.isNew || !addon.id) {
         await apiPost(`/api/vendor/products/${productId}/addons`, {
           name: addon.name,
-          price: addon.price || 0
+          price: addon.price || 0,
+          is_active: true
         })
       } else {
         const original = originalAddons.value.find(a => a.id === addon.id)

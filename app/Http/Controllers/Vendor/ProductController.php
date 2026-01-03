@@ -28,23 +28,13 @@ class ProductController extends Controller
                 return response()->json(['error' => 'Vendor record not found. Please contact administrator.'], 404);
             }
 
-            $status = $request->query('status');
             $category = $request->query('category');
             $search = $request->query('search');
             $perPage = min($request->query('per_page', 20), 100);
 
             $query = Product::forVendor($vendor->id)
-                ->with(['addons' => function ($q) {
-                    $q->where('is_active', true);
-                }])
+                ->with('addons')
                 ->orderBy('created_at', 'desc');
-
-            // Apply status filter
-            if ($status === 'active') {
-                $query->where('is_active', true);
-            } elseif ($status === 'inactive') {
-                $query->where('is_active', false);
-            }
 
             // Apply category filter
             if ($category) {
@@ -102,12 +92,11 @@ class ProductController extends Controller
                 ],
                 'price' => 'required|numeric|min:0.01',
                 'category' => 'nullable|string|max:100',
-                'stock_quantity' => 'required|integer|min:0', // ✅ REQUIRED: Stock must be provided
+                'stock_quantity' => 'required|integer|min:0',
                 'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
                 'addons' => 'nullable|array',
                 'addons.*.name' => 'required|string|max:255',
                 'addons.*.price' => 'required|numeric|min:0',
-                'addons.*.is_active' => 'boolean',
             ]);
 
             DB::beginTransaction();
@@ -120,7 +109,6 @@ class ProductController extends Controller
                     'price' => $request->price,
                     'category' => $request->category,
                     'stock_quantity' => $request->stock_quantity,
-                    'is_active' => true,
                 ];
 
                 // Handle image upload
@@ -138,7 +126,6 @@ class ProductController extends Controller
                             'product_id' => $product->id,
                             'name' => $addonData['name'],
                             'price' => $addonData['price'],
-                            'is_active' => $addonData['is_active'] ?? true,
                         ]);
                     }
                 }
@@ -178,7 +165,7 @@ class ProductController extends Controller
                 return response()->json(['error' => 'Product not found'], 404);
             }
 
-            $product->load(['addons']);
+            $product->load('addons');
 
             return response()->json(['product' => $product]);
 
@@ -215,7 +202,7 @@ class ProductController extends Controller
                 ],
                 'price' => 'required|numeric|min:0.01',
                 'category' => 'nullable|string|max:100',
-                'stock_quantity' => 'required|integer|min:0', // ✅ REQUIRED: Stock must be provided
+                'stock_quantity' => 'required|integer|min:0',
                 'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
             ]);
 
@@ -313,34 +300,6 @@ class ProductController extends Controller
     }
 
     /**
-     * Toggle product active status.
-     */
-    public function toggleStatus(Product $product): JsonResponse
-    {
-        try {
-            $vendor = $this->getCurrentVendor();
-            if (!$vendor || $product->vendor_id !== $vendor->id) {
-                return response()->json(['error' => 'Product not found'], 404);
-            }
-
-            $product->update(['is_active' => !$product->is_active]);
-
-            return response()->json([
-                'message' => 'Product status updated successfully',
-                'product' => $product->fresh()
-            ]);
-
-        } catch (\Exception $e) {
-            Log::error('Error toggling product status', [
-                'product_id' => $product->id,
-                'error' => $e->getMessage()
-            ]);
-
-            return response()->json(['error' => 'Failed to update product status'], 500);
-        }
-    }
-
-    /**
      * Get product categories for the vendor.
      */
     public function getCategories(): JsonResponse
@@ -368,13 +327,12 @@ class ProductController extends Controller
     /**
      * Bulk operations on products.
      */
-    public function bulkToggle(Request $request): JsonResponse
+    public function bulkDelete(Request $request): JsonResponse
     {
         try {
             $request->validate([
                 'product_ids' => 'required|array|min:1',
                 'product_ids.*' => 'integer|exists:products,id',
-                'action' => 'required|in:activate,deactivate,delete',
             ]);
 
             $vendor = $this->getCurrentVendor();
@@ -383,7 +341,6 @@ class ProductController extends Controller
             }
 
             $productIds = $request->product_ids;
-            $action = $request->action;
 
             // Verify all products belong to the vendor
             $vendorProducts = Product::forVendor($vendor->id)
@@ -397,34 +354,23 @@ class ProductController extends Controller
             DB::beginTransaction();
 
             try {
-                $count = 0;
-
-                switch ($action) {
-                    case 'activate':
-                        $count = Product::whereIn('id', $productIds)
-                            ->update(['is_active' => true]);
-                        break;
-
-                    case 'deactivate':
-                        $count = Product::whereIn('id', $productIds)
-                            ->update(['is_active' => false]);
-                        break;
-
-                    case 'delete':
-                        foreach ($vendorProducts as $product) {
-                            if ($product->image_url) {
-                                Storage::disk('public')->delete($product->image_url);
-                            }
-                        }
-                        Addon::whereIn('product_id', $productIds)->delete();
-                        $count = Product::whereIn('id', $productIds)->delete();
-                        break;
+                // Delete associated images
+                foreach ($vendorProducts as $product) {
+                    if ($product->image_url) {
+                        Storage::disk('public')->delete($product->image_url);
+                    }
                 }
+
+                // Delete addons
+                Addon::whereIn('product_id', $productIds)->delete();
+
+                // Delete products
+                $count = Product::whereIn('id', $productIds)->delete();
 
                 DB::commit();
 
                 return response()->json([
-                    'message' => ucfirst($action) . "d {$count} products successfully",
+                    'message' => "Deleted {$count} products successfully",
                     'count' => $count
                 ]);
 
@@ -434,13 +380,12 @@ class ProductController extends Controller
             }
 
         } catch (\Exception $e) {
-            Log::error('Error performing bulk operation', [
-                'action' => $request->action,
+            Log::error('Error performing bulk delete', [
                 'product_ids' => $request->product_ids,
                 'error' => $e->getMessage()
             ]);
 
-            return response()->json(['error' => 'Failed to perform bulk operation'], 500);
+            return response()->json(['error' => 'Failed to perform bulk delete'], 500);
         }
     }
 

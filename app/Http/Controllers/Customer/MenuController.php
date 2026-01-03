@@ -17,7 +17,7 @@ use Illuminate\Support\Facades\Storage;
 class MenuController extends Controller
 {
     /**
-     * Get list of active vendors - FIXED: Removed non-existent description field
+     * Get list of active vendors
      */
     public function vendors(Request $request)
     {
@@ -32,11 +32,9 @@ class MenuController extends Controller
                 });
             }
 
-            // FIXED: Only select fields that actually exist in database
+            // Get vendor count with all their products (no is_active filtering)
             $vendors = $query->select('id', 'brand_name', 'brand_logo', 'is_active')
-                ->withCount(['products' => function ($q) {
-                    $q->where('is_active', true);
-                }])
+                ->withCount('products')
                 ->orderBy('brand_name')
                 ->get();
 
@@ -55,7 +53,7 @@ class MenuController extends Controller
     }
 
     /**
-     * Get vendor's products - FIXED: Added missing method and correct addon fields
+     * Get vendor's products
      */
     public function vendorProducts(Request $request, $vendorId)
     {
@@ -65,14 +63,10 @@ class MenuController extends Controller
                 ->select('id', 'brand_name', 'brand_logo')
                 ->firstOrFail();
 
-            // Build product query
+            // Build product query - NO is_active filtering
             $query = Product::where('vendor_id', $vendorId)
-                ->where('is_active', true)
-                ->select('id', 'name', 'price', 'category', 'image_url', 'stock_quantity', 'is_active')
-                ->with(['addons' => function ($q) {
-                    $q->where('is_active', true)
-                      ->select('id', 'name', 'price', 'is_active'); // FIXED: Only valid addon fields
-                }]);
+                ->select('id', 'name', 'price', 'category', 'image_url', 'stock_quantity')
+                ->with('addons');
 
             // Filter by category if provided
             if ($request->has('category') && $request->category) {
@@ -105,7 +99,7 @@ class MenuController extends Controller
     }
 
     /**
-     * Get vendor details - FIXED: Added missing method
+     * Get vendor details
      */
     public function showVendor(Request $request, $vendorId)
     {
@@ -145,14 +139,10 @@ class MenuController extends Controller
                 ->select('id', 'brand_name', 'brand_logo', 'qr_code_image')
                 ->firstOrFail();
 
-            // Build product query
+            // Build product query - NO is_active filtering
             $query = Product::where('vendor_id', $vendorId)
-                ->where('is_active', true)
-                ->select('id', 'name', 'price', 'category', 'image_url', 'stock_quantity', 'is_active')
-                ->with(['addons' => function ($q) {
-                    $q->where('is_active', true)
-                      ->select('id', 'name', 'price', 'is_active'); // FIXED: Only valid addon fields
-                }]);
+                ->select('id', 'name', 'price', 'category', 'image_url', 'stock_quantity')
+                ->with('addons');
 
             // Filter by category if provided
             if ($request->has('category') && $request->category) {
@@ -167,7 +157,6 @@ class MenuController extends Controller
 
             // Get unique categories (from all products, not just current page)
             $categories = Product::where('vendor_id', $vendorId)
-                ->where('is_active', true)
                 ->whereNotNull('category')
                 ->distinct()
                 ->pluck('category')
@@ -192,8 +181,7 @@ class MenuController extends Controller
             return response()->json([
                 'message' => 'Error retrieving vendor menu',
                 'success' => false
-            ], 500
-        );
+            ], 500);
         }
     }
 
@@ -288,10 +276,9 @@ class MenuController extends Controller
     public function searchProducts(Request $request)
     {
         try {
-            $query = Product::where('is_active', true)
-                ->whereHas('vendor', function ($q) {
-                    $q->where('is_active', true);
-                });
+            $query = Product::whereHas('vendor', function ($q) {
+                $q->where('is_active', true);
+            });
 
             // Apply search filter
             if ($request->has('search') && $request->search) {
@@ -323,12 +310,9 @@ class MenuController extends Controller
 
             $products = $query->with([
                 'vendor:id,brand_name,brand_logo',
-                'addons' => function ($query) {
-                    $query->where('is_active', true)
-                          ->select('id', 'name', 'price', 'is_active'); // FIXED: Only valid addon fields
-                }
+                'addons'
             ])
-            ->select('id', 'name', 'price', 'category', 'image_url', 'stock_quantity', 'vendor_id', 'is_active')
+            ->select('id', 'name', 'price', 'category', 'image_url', 'stock_quantity', 'vendor_id')
             ->orderBy('name')
             ->paginate(20);
 
@@ -352,16 +336,15 @@ class MenuController extends Controller
     public function categories(Request $request)
     {
         try {
-            $categories = Product::where('is_active', true)
-                ->whereHas('vendor', function ($q) {
-                    $q->where('is_active', true);
-                })
-                ->whereNotNull('category')
-                ->distinct()
-                ->pluck('category')
-                ->sort()
-                ->values()
-                ->all();
+            $categories = Product::whereHas('vendor', function ($q) {
+                $q->where('is_active', true);
+            })
+            ->whereNotNull('category')
+            ->distinct()
+            ->pluck('category')
+            ->sort()
+            ->values()
+            ->all();
 
             return response()->json([
                 'categories' => $categories,
@@ -386,7 +369,7 @@ class MenuController extends Controller
     }
 
     /**
-     * Get product details - FIXED: Alias method for route compatibility
+     * Get product details
      */
     public function showProduct(Request $request, $productId)
     {
@@ -394,22 +377,18 @@ class MenuController extends Controller
     }
 
     /**
-     * Get product details - FIXED: Correct addon fields
+     * Get product details
      */
     public function productDetails(Request $request, $productId)
     {
         try {
             $product = Product::where('id', $productId)
-                ->where('is_active', true)
                 ->whereHas('vendor', function ($q) {
                     $q->where('is_active', true);
                 })
                 ->with([
                     'vendor:id,brand_name,brand_logo',
-                    'addons' => function ($query) {
-                        $query->where('is_active', true)
-                              ->select('id', 'name', 'price', 'is_active'); // FIXED: Only valid addon fields
-                    }
+                    'addons'
                 ])
                 ->firstOrFail();
 
@@ -447,7 +426,6 @@ class MenuController extends Controller
             ]);
 
             $product = Product::where('id', $productId)
-                ->where('is_active', true)
                 ->whereHas('vendor', function ($q) {
                     $q->where('is_active', true);
                 })
@@ -526,7 +504,7 @@ class MenuController extends Controller
                 'errors' => $e->errors(),
                 'success' => false
             ], 422);
-               } catch (\Exception $e) {
+        } catch (\Exception $e) {
             Log::error('Error quick adding to cart: ' . $e->getMessage());
             return response()->json([
                 'message' => 'Error adding product to cart',

@@ -159,6 +159,13 @@ interface Addon {
   is_active: boolean
 }
 
+interface AddonFlexible {
+  id: number
+  name: string
+  price: string | number
+  is_active: boolean
+}
+
 interface Product {
   id: number
   name: string
@@ -168,7 +175,7 @@ interface Product {
   stock_quantity: number
   is_active?: boolean
   is_featured?: boolean
-  addons?: Addon[]
+  addons?: AddonFlexible[]
 }
 
 interface Vendor {
@@ -264,27 +271,32 @@ const fetchProductWithAddons = async (productId: number): Promise<Product> => {
   throw new Error('Failed to fetch product details')
 }
 
-// 🔧 HIGH PRIORITY FIX: Eliminate duplicate API calls - use existing product data with addons
+// Fix: Properly handle product addon data
 const handleViewDetails = (product: Product) => {
-  console.log('Opening product details for:', product.name)
-  
-  // Check if product already has complete addon data
-  if (product.addons && product.addons.length > 0) {
-    console.log('Product already has addon data, using existing data')
-    // Use existing product data - no API call needed
-    emit('product-select', product)
+  console.log('🔍 Opening product details for:', product.name)
+  console.log('🔍 Product addons check:', {
+    hasAddons: !!product.addons,
+    isArray: Array.isArray(product.addons),
+    length: product.addons?.length || 0,
+    addons: product.addons
+  })
+
+  // Check if product has addon property and it's an array
+  if (product.addons && Array.isArray(product.addons)) {
+    console.log('✅ Product has addon array, using existing data')
+    emit('product-select', { ...product }) // Create a copy to avoid reference issues
   } else {
-    console.log('Product missing addon data, fetching from API')
+    console.log('❌ Product missing addon array, fetching from API')
     // Only fetch if addon data is missing
     fetchProductWithAddons(product.id)
       .then((completeProduct: Product) => {
-        console.log('Fetched complete product with addons:', completeProduct)
+        console.log('✅ Fetched complete product with addons:', completeProduct)
         emit('product-select', completeProduct)
       })
       .catch((err: Error) => {
-        console.error('Error fetching product details:', err)
+        console.error('❌ Error fetching product details:', err)
         // Fallback to basic product if API fails
-        emit('product-select', product)
+        emit('product-select', { ...product, addons: [] })
       })
   }
 }
@@ -292,7 +304,7 @@ const handleViewDetails = (product: Product) => {
 // ✅ HIGH PRIORITY FIX: Eliminate duplicate API calls for Order Now functionality
 const handleOrderNow = (product: Product) => {
   console.log('Opening order modal for:', product.name)
-  
+
   // Check if product already has complete addon data
   if (product.addons && product.addons.length > 0) {
     console.log('Product already has addon data, using existing data')
