@@ -3,6 +3,7 @@ import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { usePage } from '@inertiajs/vue3';
 import OrderDetailModal from '@/components/vendor/OrderDetailModal.vue';
 import IncomingOrderCard from '@/components/vendor/IncomingOrderCard.vue';
+import DeclineReasonModal from '@/components/vendor/DeclineReasonModal.vue';
 import { useToast } from '@/composables/useToast';
 import { apiGet, apiPatch } from '@/composables/useApi';
 
@@ -19,9 +20,11 @@ const activeTab = ref('pending');
 const searchQuery = ref('');
 let searchTimeout: NodeJS.Timeout | null = null;
 
-// Modal
+// Modals
 const showOrderModal = ref(false);
+const showDeclineModal = ref(false);
 const selectedOrderId = ref<number | null>(null);
+const selectedOrder = ref<any | null>(null);
 
 // Computed
 const pendingOrders = computed(() => {
@@ -100,14 +103,23 @@ const acceptOrder = async (order: any) => {
   }
 };
 
-const declineOrder = async (order: any) => {
-  if (!confirm(`Decline order #${order.order_number}? The customer will be notified.`)) return;
+// UPDATED: Show decline modal instead of confirm dialog
+const declineOrder = (order: any) => {
+  selectedOrder.value = order;
+  showDeclineModal.value = true;
+};
+
+// NEW: Handle decline from modal
+const handleDeclineOrder = async (reason: string) => {
+  if (!selectedOrder.value) return;
 
   try {
-    const response = await apiPatch(`/api/vendor/orders/${order.id}/decline`);
+    const response = await apiPatch(`/api/vendor/orders/${selectedOrder.value.id}/decline`, {
+      decline_reason: reason
+    });
 
     if (response.ok) {
-      toast.warning(`Order #${order.order_number} declined. Customer will be notified.`);
+      toast.warning(`Order #${selectedOrder.value.order_number} declined. Customer will be notified.`);
       await loadOrders();
       emit('ordersUpdated');
     } else {
@@ -290,6 +302,14 @@ onUnmounted(() => {
       :is-open="showOrderModal"
       :order-id="selectedOrderId"
       @close="showOrderModal = false"
+    />
+
+    <!-- Decline Reason Modal -->
+    <DeclineReasonModal
+      :is-open="showDeclineModal"
+      :order="selectedOrder"
+      @close="showDeclineModal = false"
+      @decline="handleDeclineOrder"
     />
   </div>
 </template>

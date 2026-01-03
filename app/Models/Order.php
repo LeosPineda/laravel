@@ -19,6 +19,7 @@ class Order extends Model
         'payment_method',
         'table_number',
         'special_instructions',
+        'decline_reason',
         'payment_proof_url',
         'receipt_url',
         'completed_at',
@@ -121,6 +122,25 @@ class Order extends Model
             'cash' => 'Cashier',
             default => ucfirst($this->payment_method),
         };
+    }
+
+    /**
+     * Get decline reason display.
+     * UPDATED: Handle single pre-written reason
+     */
+    public function getDeclineReasonDisplayAttribute(): string
+    {
+        if (!$this->decline_reason) {
+            return '';
+        }
+
+        // Check if it's the pre-written reason
+        if ($this->decline_reason === 'cannot_prepare') {
+            return 'Cannot prepare the order at the moment';
+        }
+
+        // Custom reason (user entered text)
+        return $this->decline_reason;
     }
 
     /**

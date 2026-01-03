@@ -27,6 +27,7 @@ return new class extends Migration
             $table->string('payment_method')->default('cash'); // 'qr_code' or 'cash'
             $table->string('table_number')->nullable();
             $table->text('special_instructions')->nullable();
+            $table->string('decline_reason')->nullable(); // Reason when order is cancelled
             $table->string('payment_proof_url')->nullable(); // Local storage path
             $table->string('receipt_url')->nullable(); // Generated receipt path
             $table->timestamp('completed_at')->nullable();

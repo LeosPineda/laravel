@@ -75,11 +75,7 @@
 
           <!-- Right side -->
           <div class="flex items-center gap-4">
-            <!-- 🔔 FIXED: Now vendor relationship is loaded properly -->
-            <NotificationBell
-              v-if="user?.vendor?.id"
-              :vendor-id="user.vendor.id"
-            />
+            <!-- Toast notifications will be handled by ToastContainer below -->
 
             <!-- Logout -->
             <button
@@ -181,16 +177,77 @@
 <script setup>
 import { Link, router } from '@inertiajs/vue3'
 import { usePage } from '@inertiajs/vue3'
+import { useToast } from '@/composables/useToast'
 import ToastContainer from '@/components/ui/ToastContainer.vue'
-// 🔔 Import NotificationBell component
-import NotificationBell from '@/components/vendor/VendorNotificationBell.vue'
 
 const page = usePage()
-const user = page.props.auth?.user
+const { newOrder: toastNewOrder, error: toastError } = useToast()
 
 const logout = () => {
   router.post('/logout')
 }
+
+// Real-time toast notifications for vendor - FIXED VERSION with proper error handling
+const setupToastNotifications = () => {
+  const user = page.props.auth?.user
+
+  // FIXED: Check if user and vendor exist
+  if (!user) {
+    console.warn('⚠️ No authenticated user found')
+    return
+  }
+
+  if (!user.vendor?.id) {
+    console.warn('⚠️ No vendor ID found for user')
+    return
+  }
+
+  // FIXED: Check if Echo is available
+  if (!window.Echo) {
+    console.warn('⚠️ Laravel Echo not available - toast notifications disabled')
+    toastError('⚠️ Real-time notifications unavailable', 5000)
+    return
+  }
+
+  try {
+    console.log('🔔 Setting up vendor toast notifications for vendor ID:', user.vendor.id)
+
+    const channel = window.Echo.private(`vendor-toasts.${user.vendor.id}`)
+
+    channel.listen('.VendorNewOrder', (e) => {
+      console.log('🛒 NEW ORDER TOAST RECEIVED:', e)
+      // Show simple toast for new order - EXTENDED DURATION FOR TESTING (30 seconds)
+      toastNewOrder('🛒 New order received!', 30000)
+    })
+    .listen('.VendorOrderCancelled', (e) => {
+      console.log('❌ ORDER CANCELLED TOAST RECEIVED:', e)
+      // ✅ FIXED: Changed message to reflect vendor action, not customer
+      toastError('❌ Order cancelled by vendor!', 20000)
+    })
+
+  } catch (error) {
+    console.error('❌ Toast notification setup error:', error)
+    toastError('❌ Notification system error', 5000)
+  }
+}
+
+// Setup toast notifications on mount
+import { onMounted, onUnmounted } from 'vue'
+
+onMounted(() => {
+  setupToastNotifications()
+})
+
+onUnmounted(() => {
+  const user = page.props.auth?.user
+  if (user?.vendor?.id && window.Echo) {
+    try {
+      window.Echo.leave(`vendor-toasts.${user.vendor.id}`)
+    } catch (error) {
+      console.error('Error leaving toast channel:', error)
+    }
+  }
+})
 </script>
 
 <style scoped>

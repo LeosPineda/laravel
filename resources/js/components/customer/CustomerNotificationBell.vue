@@ -246,7 +246,7 @@ const subscribeToNotifications = () => {
                 id: Date.now(),
                 type: 'order_status',
                 title: getStatusTitle(status),
-                message: `Order #${e.order.order_number} ${getStatusMessage(status)}`,
+                message: e.message || 'Order status updated', // ✅ FIXED: Add null check for e.message
                 data: e.order,
                 is_read: false,
                 created_at: new Date().toISOString()
@@ -256,7 +256,7 @@ const subscribeToNotifications = () => {
                 id: Date.now(),
                 type: 'order_status',
                 title: getStatusTitle(status),
-                message: `Order #${e.order.order_number} ${getStatusMessage(status)}`,
+                message: e.message || 'Order status updated', // ✅ FIXED: Add null check for e.message
                 data: e.order,
                 is_read: false,
                 created_at: new Date().toISOString()
@@ -267,7 +267,7 @@ const subscribeToNotifications = () => {
             // Show browser notification
             if (Notification.permission === 'granted') {
               new Notification(getStatusTitle(status), {
-                body: `Order #${e.order.order_number} ${getStatusMessage(status)}`,
+                body: e.message || 'Order status updated', // ✅ FIXED: Add null check for e.message
                 icon: '/fast-food.png',
                 tag: `order-status-${status}`
               })
@@ -289,16 +289,6 @@ const getStatusTitle = (status) => {
     'cancelled': 'Order Cancelled ❌'
   }
   return titles[status] || 'Order Update'
-}
-
-const getStatusMessage = (status) => {
-  // ✅ FIXED: Order status messages (NO 'completed' or 'preparing' - ready_for_pickup is final)
-  const messages = {
-    'accepted': 'has been accepted by the vendor',
-    'ready_for_pickup': 'is ready for pickup',
-    'cancelled': 'was cancelled by the vendor'
-  }
-  return messages[status] || 'status has been updated'
 }
 
 onMounted(() => {

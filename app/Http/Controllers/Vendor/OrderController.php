@@ -167,7 +167,7 @@ class OrderController extends Controller
     }
 
     /**
-     * Decline an order.
+     * Decline an order with reason.
      */
     public function decline(Request $request, Order $order): JsonResponse
     {
@@ -183,24 +183,33 @@ class OrderController extends Controller
 
             $oldStatus = $order->status;
 
+            // Validate decline reason
+            $request->validate([
+                'decline_reason' => 'required|string|max:255'
+            ]);
+
+            $declineReason = $request->input('decline_reason');
+
             DB::beginTransaction();
 
             try {
                 $order->update([
-                    'status' => 'cancelled'
+                    'status' => 'cancelled',
+                    'decline_reason' => $declineReason
                 ]);
 
                 // Broadcast status change event
                 event(new OrderStatusChanged($vendor, $order, $order->customer, $oldStatus, 'cancelled'));
 
-                // Create customer notification
+                // Create customer notification with decline reason
+                $declineReasonDisplay = $this->getDeclineReasonDisplay($declineReason);
                 $customerNotification = Notification::create([
                     'user_id' => $order->customer_id,
                     'vendor_id' => $vendor->id,
                     'order_id' => $order->id,
                     'type' => 'order_status',
                     'title' => 'Order Cancelled ❌',
-                    'message' => "Your order #{$order->order_number} was cancelled by the vendor",
+                    'message' => "Your order #{$order->order_number} has been declined. Reason: {$declineReasonDisplay}",
                     'is_read' => false,
                     'created_at' => now(),
                 ]);
@@ -528,5 +537,20 @@ class OrderController extends Controller
                 ->whereYear('created_at', now()->year)
                 ->count(),
         ];
+    }
+
+    /**
+     * Get decline reason display for customers.
+     * UPDATED: Handle single pre-written reason
+     */
+    private function getDeclineReasonDisplay(string $reason): string
+    {
+        // Check if it's the pre-written reason
+        if ($reason === 'cannot_prepare') {
+            return 'Cannot prepare the order at the moment';
+        }
+
+        // Custom reason (user entered text)
+        return $reason;
     }
 }
