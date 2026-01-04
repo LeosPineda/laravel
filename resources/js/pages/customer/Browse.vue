@@ -21,8 +21,8 @@
         </div>
       </div>
 
-      <div v-else-if="error" class="text-center py-12">
-        <div class="text-red-500 text-lg mb-4">{{ error }}</div>
+      <div v-else-if="loadError" class="text-center py-12">
+        <div class="text-red-500 text-lg mb-4">{{ loadError }}</div>
         <button @click="loadVendors" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
           Try Again
         </button>
@@ -65,7 +65,6 @@
 
 <script setup>
 import { ref, onMounted, computed } from 'vue'
-import { Link } from '@inertiajs/vue3'
 import CustomerLayout from '@/layouts/customer/CustomerLayout.vue'
 import VendorBox from '@/components/customer/VendorBox.vue'
 import ProductModalContainer from '@/components/customer/ProductModalContainer.vue'
@@ -77,7 +76,7 @@ import axios from 'axios'
 // Reactive data
 const vendors = ref([])
 const loading = ref(true)
-const error = ref(null)
+const loadError = ref(null)
 
 // Modal state
 const isProductModalOpen = ref(false)
@@ -86,8 +85,8 @@ const isProductDetailModalOpen = ref(false)
 const selectedProduct = ref(null)
 
 // Cart and toast composables
-const { cartCount, fetchCart } = useCart()
-const { success } = useToast()
+const { cartCount, fetchCart, addToCart } = useCart()
+const { success, error } = useToast()
 
 // Computed properties
 const activeVendors = computed(() => {
@@ -102,7 +101,7 @@ const cartItemCount = computed(() => {
 const loadVendors = async () => {
   try {
     loading.value = true
-    error.value = null
+    loadError.value = null
 
     const response = await axios.get('/api/customer/menu/vendors')
 
@@ -113,7 +112,7 @@ const loadVendors = async () => {
     }
   } catch (err) {
     console.error('Error loading vendors:', err)
-    error.value = err.response?.data?.message || 'Failed to load vendors. Please try again.'
+    loadError.value = err.response?.data?.message || 'Failed to load vendors. Please try again.'
   } finally {
     loading.value = false
   }
@@ -144,21 +143,33 @@ const closeProductDetailModal = () => {
   selectedProduct.value = null
 }
 
-const handleAddedToCart = async (product, quantity, addons) => {
+const handleAddedToCart = async (product, quantity, addonIds) => {
   try {
-    // Show success message
-    success(`${product.name} added to cart!`)
+    // Convert addon IDs to addon objects with price info
+    const addons = addonIds.map(addonId => {
+      const addon = product.addons?.find(a => a.id === addonId)
+      return {
+        addon_id: addonId,
+        quantity: 1,
+        price: addon ? parseFloat(addon.price) : 0
+      }
+    })
 
-    // Refresh cart count
-    await fetchCart()
+    // Call the actual cart API
+    const result = await addToCart(product.id, quantity, addons)
 
-    // Close modal after a delay
-    setTimeout(() => {
-      closeProductDetailModal()
-    }, 2000)
-  } catch (error) {
-    console.error('Error adding to cart:', error)
-    info('Failed to add item to cart. Please try again.')
+    if (result.success) {
+      success(`${product.name} added to cart!`)
+      // Close modal after a delay
+      setTimeout(() => {
+        closeProductDetailModal()
+      }, 1500)
+    } else {
+      error(result.message || 'Failed to add item to cart')
+    }
+  } catch (err) {
+    console.error('Error adding to cart:', err)
+    error('Failed to add item to cart. Please try again.')
   }
 }
 

@@ -145,65 +145,70 @@
       </div>
     </div>
 
-    <!-- FIXED: Mobile Navigation (< 768px) - NON-OVERLAPPING -->
-    <div class="md:hidden border-t border-[#E0E0E0] bg-white">
-      <div class="px-4 sm:px-6">
-        <nav class="flex justify-between py-2">
-          <Link
-            href="/customer/browse"
-            class="flex flex-col items-center py-3 px-2 hover:bg-[#F5F5F5] rounded-lg transition-colors"
-          >
-            <span class="text-2xl">🔍</span>
-            <span
-              class="text-xs mt-1 font-medium"
-              :class="$page.url.startsWith('/customer/browse') ? 'text-[#FF6B35]' : 'text-[#1A1A1A]/60'"
-            >
-              Browse
-            </span>
-          </Link>
-
-          <Link
-            href="/customer/cart"
-            class="flex flex-col items-center py-3 px-2 hover:bg-[#F5F5F5] rounded-lg transition-colors relative"
-          >
-            <span class="text-2xl">🛒</span>
-            <span
-              class="text-xs mt-1 font-medium"
-              :class="$page.url.startsWith('/customer/cart') ? 'text-[#FF6B35]' : 'text-[#1A1A1A]/60'"
-            >
-              Cart
-            </span>
-            <!-- Cart Badge for Mobile -->
-            <span
-              v-if="cartItemCount > 0"
-              class="absolute top-1 right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center"
-            >
-              {{ cartItemCount > 9 ? '9+' : cartItemCount }}
-            </span>
-          </Link>
-
-
-
-          <Link
-            href="/customer/profile"
-            class="flex flex-col items-center py-3 px-2 hover:bg-[#F5F5F5] rounded-lg transition-colors"
-          >
-            <span class="text-2xl">👤</span>
-            <span
-              class="text-xs mt-1 font-medium"
-              :class="$page.url.startsWith('/customer/profile') ? 'text-[#FF6B35]' : 'text-[#1A1A1A]/60'"
-            >
-              Profile
-            </span>
-          </Link>
-        </nav>
-      </div>
-    </div>
-
-    <!-- Main Content -->
-    <main class="flex-1 px-4 sm:px-6 py-4">
+    <!-- Main Content - Add bottom padding on mobile for fixed nav -->
+    <main class="flex-1 md:px-4 sm:px-6 py-4 pb-20 md:pb-4">
       <slot />
     </main>
+
+    <!-- MOBILE: Fixed Bottom Navigation Bar (like native app) -->
+    <nav class="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-[#E0E0E0] z-50 safe-area-bottom">
+      <div class="flex justify-around items-center h-16">
+        <Link
+          href="/customer/browse"
+          class="flex flex-col items-center justify-center flex-1 py-2 active:scale-95 transition-transform"
+        >
+          <span
+            class="text-2xl"
+            :class="$page.url.startsWith('/customer/browse') ? '' : 'grayscale opacity-60'"
+          >🔍</span>
+          <span
+            class="text-xs mt-0.5 font-medium"
+            :class="$page.url.startsWith('/customer/browse') ? 'text-[#FF6B35]' : 'text-[#1A1A1A]/50'"
+          >
+            Browse
+          </span>
+        </Link>
+
+        <Link
+          href="/customer/cart"
+          class="flex flex-col items-center justify-center flex-1 py-2 relative active:scale-95 transition-transform"
+        >
+          <span
+            class="text-2xl"
+            :class="$page.url.startsWith('/customer/cart') ? '' : 'grayscale opacity-60'"
+          >🛒</span>
+          <span
+            class="text-xs mt-0.5 font-medium"
+            :class="$page.url.startsWith('/customer/cart') ? 'text-[#FF6B35]' : 'text-[#1A1A1A]/50'"
+          >
+            Cart
+          </span>
+          <!-- Cart Badge -->
+          <span
+            v-if="cartItemCount > 0"
+            class="absolute top-1 left-1/2 ml-2 bg-red-500 text-white text-xs rounded-full h-5 min-w-5 px-1 flex items-center justify-center font-bold"
+          >
+            {{ cartItemCount > 99 ? '99+' : cartItemCount }}
+          </span>
+        </Link>
+
+        <Link
+          href="/customer/profile"
+          class="flex flex-col items-center justify-center flex-1 py-2 active:scale-95 transition-transform"
+        >
+          <span
+            class="text-2xl"
+            :class="$page.url.startsWith('/customer/profile') ? '' : 'grayscale opacity-60'"
+          >👤</span>
+          <span
+            class="text-xs mt-0.5 font-medium"
+            :class="$page.url.startsWith('/customer/profile') ? 'text-[#FF6B35]' : 'text-[#1A1A1A]/50'"
+          >
+            Profile
+          </span>
+        </Link>
+      </div>
+    </nav>
 
     <!-- Toast Notifications -->
     <ToastContainer />

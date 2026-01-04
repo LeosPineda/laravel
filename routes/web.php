@@ -2,15 +2,15 @@
 
 use App\Http\Controllers\Superadmin\DashboardController as SuperadminDashboardController;
 use App\Http\Controllers\Superadmin\VendorController as SuperadminVendorController;
+use App\Http\Controllers\Vendor\AddonController;
 use App\Http\Controllers\Vendor\AnalyticsController;
+use App\Http\Controllers\Vendor\NotificationController as VendorNotificationController;
 use App\Http\Controllers\Vendor\OrderController as VendorOrderController;
 use App\Http\Controllers\Vendor\ProductController;
-use App\Http\Controllers\Vendor\AddonController;
-use App\Http\Controllers\Vendor\NotificationController as VendorNotificationController;
 use App\Http\Controllers\Vendor\QrController;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Broadcast;
+use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
 // Broadcasting authentication for Pusher
@@ -44,7 +44,7 @@ Route::get('/reset-password', function () {
 Route::get('/reset-password/{token}', function ($token) {
     return Inertia::render('auth/ResetPassword', [
         'token' => $token,
-        'email' => request('email')
+        'email' => request('email'),
     ]);
 })->name('password.reset');
 
@@ -53,7 +53,7 @@ Route::post('/logout', function () {
     Auth::logout();
     request()->session()->invalidate();
     request()->session()->regenerateToken();
-    
+
     // ✅ FIXED: Use Inertia::location() for proper Inertia.js logout redirect
     return Inertia::location(route('login'));
 })->name('logout');
@@ -173,9 +173,9 @@ Route::middleware(['auth', 'role:customer', 'throttle:60,1'])->prefix('api/custo
 
     // Cart
     Route::get('/cart', [\App\Http\Controllers\Customer\CartController::class, 'index'])->name('cart.index');
-    Route::post('/cart/items', [\App\Http\Controllers\Customer\CartController::class, 'addItem'])->name('cart.items.store');
-    Route::put('/cart/items/{item}', [\App\Http\Controllers\Customer\CartController::class, 'updateItem'])->name('cart.items.update');
-    Route::delete('/cart/items/{item}', [\App\Http\Controllers\Customer\CartController::class, 'removeItem'])->name('cart.items.destroy');
+    Route::post('/cart/items', [\App\Http\Controllers\Customer\CartController::class, 'store'])->name('cart.items.store');
+    Route::put('/cart/items/{item}', [\App\Http\Controllers\Customer\CartController::class, 'update'])->name('cart.items.update');
+    Route::delete('/cart/items/{item}', [\App\Http\Controllers\Customer\CartController::class, 'destroy'])->name('cart.items.destroy');
     Route::delete('/cart/items', [\App\Http\Controllers\Customer\CartController::class, 'clearCart'])->name('cart.clear');
     Route::post('/cart/merge', [\App\Http\Controllers\Customer\CartController::class, 'mergeCart'])->name('cart.merge');
 

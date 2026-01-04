@@ -3,30 +3,57 @@ import { ref, computed } from 'vue'
 interface CartItem {
   id: number
   product_id: number
-  vendor_id: number
   quantity: number
+  unit_price: number
+  selected_addons: AddonSelection[]
+  special_instructions?: string
+  total_price: number
   product: {
+    id: number
     name: string
     price: number
     image_url?: string
     category?: string
   }
-  vendor: {
+  // Added for flattened cart items
+  vendor?: {
+    id: number
     brand_name: string
+    brand_image?: string
+    qr_code_image?: string
   }
-  created_at: string
-  updated_at: string
+  vendor_id?: number
 }
 
-export function useCart() {
-  const cart = ref<CartItem[]>([])
-  const loading = ref(false)
-  const cartCount = ref(0)
+interface AddonSelection {
+  addon_id: number
+  quantity: number
+  price: number
+}
 
+interface VendorCart {
+  vendor: {
+    id: number
+    brand_name: string
+    brand_image?: string
+    qr_code_image?: string
+  }
+  items: CartItem[]
+}
+
+// ⚠️ SINGLETON PATTERN: State defined OUTSIDE the function
+// This ensures all components share the same cart state
+const cart = ref<CartItem[]>([])
+const vendorCarts = ref<VendorCart[]>([])
+const loading = ref(false)
+const cartCount = ref(0)
+
+export function useCart() {
   // Group cart items by vendor for multi-vendor display
   const cartByVendor = computed(() => {
     const grouped = cart.value.reduce((acc, item) => {
       const vendorId = item.vendor_id
+      if (vendorId === undefined) return acc
       if (!acc[vendorId]) {
         acc[vendorId] = {
           vendor: item.vendor,
@@ -63,8 +90,16 @@ export function useCart() {
 
       if (response.ok) {
         const data = await response.json()
-        cart.value = data.cart || []
-        cartCount.value = data.count || 0
+        // Backend returns vendorCarts array with vendor and items
+        vendorCarts.value = data.vendorCarts || []
+        cartCount.value = data.cartCount || 0
+
+        // Also flatten items for backwards compatibility
+        cart.value = vendorCarts.value.flatMap(vc => vc.items.map(item => ({
+          ...item,
+          vendor: vc.vendor,
+          vendor_id: vc.vendor.id
+        })))
       }
     } catch (error) {
       console.error('Error fetching cart:', error)
@@ -73,9 +108,14 @@ export function useCart() {
     }
   }
 
-  const addToCart = async (productId: number, quantity = 1) => {
+  const addToCart = async (
+    productId: number,
+    quantity = 1,
+    addons: AddonSelection[] = [],
+    specialInstructions?: string
+  ) => {
     try {
-      const response = await fetch('/api/customer/cart', {
+      const response = await fetch('/api/customer/cart/items', {
         method: 'POST',
         headers: {
           'Accept': 'application/json',
@@ -85,14 +125,17 @@ export function useCart() {
         credentials: 'include',
         body: JSON.stringify({
           product_id: productId,
-          quantity: quantity
+          quantity: quantity,
+          addons: addons,
+          special_instructions: specialInstructions || null
         })
       })
 
       if (response.ok) {
         const data = await response.json()
+        cartCount.value = data.cartCount || cartCount.value
         await fetchCart() // Refresh cart
-        return { success: true, message: data.message }
+        return { success: true, message: data.message, cartItem: data.cartItem }
       } else {
         const errorData = await response.json()
         return { success: false, message: errorData.message || 'Failed to add to cart' }
@@ -105,7 +148,7 @@ export function useCart() {
 
   const updateCartItem = async (cartItemId: number, quantity: number) => {
     try {
-      const response = await fetch(`/api/customer/cart/${cartItemId}`, {
+      const response = await fetch(`/api/customer/cart/items/${cartItemId}`, {
         method: 'PUT',
         headers: {
           'Accept': 'application/json',
@@ -133,7 +176,7 @@ export function useCart() {
 
   const removeFromCart = async (cartItemId: number) => {
     try {
-      const response = await fetch(`/api/customer/cart/${cartItemId}`, {
+      const response = await fetch(`/api/customer/cart/items/${cartItemId}`, {
         method: 'DELETE',
         headers: {
           'Accept': 'application/json',
@@ -157,9 +200,8 @@ export function useCart() {
 
   const clearCart = async (vendorId?: number) => {
     try {
-      const url = vendorId
-        ? `/api/customer/cart/clear/${vendorId}`
-        : '/api/customer/cart/clear'
+      // Route: DELETE /api/customer/cart/items clears all items
+      const url = '/api/customer/cart/items'
 
       const response = await fetch(url, {
         method: 'DELETE',
@@ -186,6 +228,7 @@ export function useCart() {
   return {
     // State
     cart,
+    vendorCarts,
     loading,
     cartCount,
 
