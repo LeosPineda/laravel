@@ -1,33 +1,33 @@
 <template>
   <div class="min-h-screen bg-[#F5F5F5]">
-    <!-- Header - MATCHED TO VENDOR STYLING -->
-    <header class="bg-white border-b border-[#E0E0E0] sticky top-0 z-50">
-      <div class="px-4 sm:px-6">
-        <div class="flex justify-between items-center h-16">
+    <!-- Header - BIGGER & MORE VISIBLE -->
+    <header class="bg-white border-b border-gray-200 sticky top-0 z-50 shadow-sm">
+      <div class="px-4 sm:px-6 lg:px-8">
+        <div class="flex justify-between items-center h-16 lg:h-20">
           <!-- Logo & Brand -->
-          <div class="flex items-center gap-3 lg:gap-4">
-            <div class="flex items-center gap-2">
-              <!-- Changed to orange like vendor -->
-              <div class="w-9 h-9 bg-[#FF6B35] rounded-xl flex items-center justify-center">
-                <span class="text-white text-lg">🍴</span>
+          <div class="flex items-center gap-4 lg:gap-6">
+            <div class="flex items-center gap-3">
+              <!-- Logo - Bigger -->
+              <div class="w-10 h-10 lg:w-12 lg:h-12 bg-gradient-to-br from-[#FF6B35] to-[#FF8C5A] rounded-xl flex items-center justify-center shadow-md">
+                <span class="text-white text-xl lg:text-2xl">🍴</span>
               </div>
-              <!-- Changed text color to match vendor -->
-              <span class="text-lg font-bold text-[#1A1A1A] hidden sm:block">Food Court Customer</span>
+              <!-- Brand Name - Bigger -->
+              <span class="text-xl lg:text-2xl font-bold text-gray-900 hidden sm:block">Food Court</span>
             </div>
 
-            <!-- Desktop Navigation - MATCHED TO VENDOR -->
-            <nav class="hidden lg:flex items-center gap-1">
+            <!-- Desktop Navigation - BIGGER -->
+            <nav class="hidden lg:flex items-center gap-2 ml-8">
               <Link
                 href="/customer/browse"
                 :class="[
                   $page.url.startsWith('/customer/browse')
-                    ? 'text-white bg-[#FF6B35]' // Orange like vendor
-                    : 'text-[#1A1A1A]/70 hover:text-[#1A1A1A] hover:bg-[#F5F5F5]', // Dark text like vendor
-                  'px-4 py-2 text-sm font-medium rounded-lg transition-colors'
+                    ? 'text-white bg-[#FF6B35] shadow-md'
+                    : 'text-gray-700 hover:text-[#FF6B35] hover:bg-orange-50',
+                  'px-5 py-2.5 text-base font-semibold rounded-xl transition-all'
                 ]"
               >
                 <span class="flex items-center gap-2">
-                  <span>🔍</span>
+                  <span class="text-lg">🔍</span>
                   Browse
                 </span>
               </Link>
@@ -35,18 +35,18 @@
                 href="/customer/cart"
                 :class="[
                   $page.url.startsWith('/customer/cart')
-                    ? 'text-white bg-[#FF6B35]' // Orange like vendor
-                    : 'text-[#1A1A1A]/70 hover:text-[#1A1A1A] hover:bg-[#F5F5F5]', // Dark text like vendor
-                  'px-4 py-2 text-sm font-medium rounded-lg transition-colors relative'
+                    ? 'text-white bg-[#FF6B35] shadow-md'
+                    : 'text-gray-700 hover:text-[#FF6B35] hover:bg-orange-50',
+                  'px-5 py-2.5 text-base font-semibold rounded-xl transition-all relative'
                 ]"
               >
                 <span class="flex items-center gap-2">
-                  <span>🛒</span>
+                  <span class="text-lg">🛒</span>
                   Cart
-                  <!-- Cart Badge -->
+                  <!-- Cart Badge - BIGGER -->
                   <span
                     v-if="cartItemCount > 0"
-                    class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center"
+                    class="absolute -top-2 -right-2 bg-red-500 text-white text-sm font-bold rounded-full h-6 min-w-6 px-1 flex items-center justify-center shadow-md"
                   >
                     {{ cartItemCount > 99 ? '99+' : cartItemCount }}
                   </span>
@@ -57,30 +57,30 @@
                 href="/customer/profile"
                 :class="[
                   $page.url.startsWith('/customer/profile')
-                    ? 'text-white bg-[#FF6B35]' // Orange like vendor
-                    : 'text-[#1A1A1A]/70 hover:text-[#1A1A1A] hover:bg-[#F5F5F5]', // Dark text like vendor
-                  'px-4 py-2 text-sm font-medium rounded-lg transition-colors'
+                    ? 'text-white bg-[#FF6B35] shadow-md'
+                    : 'text-gray-700 hover:text-[#FF6B35] hover:bg-orange-50',
+                  'px-5 py-2.5 text-base font-semibold rounded-xl transition-all'
                 ]"
               >
                 <span class="flex items-center gap-2">
-                  <span>👤</span>
+                  <span class="text-lg">👤</span>
                   Profile
                 </span>
               </Link>
             </nav>
           </div>
 
-          <!-- Right side - MATCHED TO VENDOR -->
-          <div class="flex items-center gap-4">
+          <!-- Right side - BIGGER -->
+          <div class="flex items-center gap-3 lg:gap-4">
             <!-- 🔔 Customer Notification Bell -->
             <CustomerNotificationBell v-if="user?.id" :user-id="user.id" />
 
-            <!-- Logout Button - MATCHED TO VENDOR -->
+            <!-- Logout Button - BIGGER -->
             <button
               @click="logout"
-              class="flex items-center gap-2 px-4 py-2 text-sm font-medium text-[#1A1A1A]/70 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+              class="flex items-center gap-2 px-4 py-2.5 text-base font-medium text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-xl transition-colors"
             >
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
               </svg>
               <span class="hidden sm:inline">Logout</span>
@@ -145,8 +145,8 @@
       </div>
     </div>
 
-    <!-- Main Content - Add bottom padding on mobile for fixed nav -->
-    <main class="flex-1 md:px-4 sm:px-6 py-4 pb-20 md:pb-4">
+    <!-- Main Content - Full width on desktop, proper padding -->
+    <main class="flex-1 px-4 sm:px-6 lg:px-8 xl:px-12 py-4 sm:py-6 pb-24 md:pb-6">
       <slot />
     </main>
 
@@ -227,14 +227,15 @@ import { useCart } from '@/composables/useCart'
 
 const page = usePage()
 const user = page.props.auth?.user
-const { cartItemCount } = useCart()
+const { cartCount: cartItemCount, fetchCart } = useCart()
 
 const logout = () => {
   router.post('/logout')
 }
 
-// Request notification permission on mount
+// Fetch cart on mount + request notification permission
 onMounted(() => {
+  fetchCart()
   if ('Notification' in window && Notification.permission === 'default') {
     Notification.requestPermission()
   }

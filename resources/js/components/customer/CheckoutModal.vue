@@ -8,9 +8,9 @@
     <!-- Backdrop -->
     <div class="absolute inset-0 bg-black/50 backdrop-blur-sm"></div>
 
-    <!-- Modal Content - Bottom sheet on mobile, centered on desktop -->
+    <!-- Modal Content - Bottom sheet on mobile, larger on desktop -->
     <div
-      class="relative bg-white w-full sm:max-w-md sm:mx-4 sm:rounded-2xl rounded-t-3xl shadow-2xl transform transition-all duration-300 ease-out max-h-[95vh] sm:max-h-[90vh] flex flex-col"
+      class="relative bg-white w-full sm:max-w-lg md:max-w-xl sm:mx-4 sm:rounded-2xl rounded-t-3xl shadow-2xl transform transition-all duration-300 ease-out max-h-[95vh] sm:max-h-[90vh] flex flex-col"
       :class="{
         'translate-y-0 opacity-100': isOpen,
         'translate-y-4 opacity-0': !isOpen
@@ -72,7 +72,7 @@
           <button
             @click="selectPaymentMethod('qr')"
             class="w-full p-4 border-2 rounded-xl text-left hover:border-orange-400 hover:bg-orange-50 transition-all"
-            :class="paymentMethod === 'qr' ? 'border-orange-500 bg-orange-50' : 'border-gray-200'"
+            :class="paymentMethod === 'qr_code' ? 'border-orange-500 bg-orange-50' : 'border-gray-200'"
           >
             <div class="flex items-center gap-3">
               <div class="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center text-2xl">
@@ -87,39 +87,48 @@
         </div>
 
         <!-- STEP: QR Code Payment -->
-        <div v-else-if="step === 'qr-payment'" class="space-y-4">
-          <p class="text-gray-600 text-center">Scan QR code to pay:</p>
+        <div v-else-if="step === 'qr-payment'" class="space-y-5">
+          <p class="text-gray-600 text-center font-medium">Scan QR code to pay:</p>
 
-          <!-- QR Code Image -->
+          <!-- QR Code Image - Bigger on desktop -->
           <div class="flex justify-center">
-            <div class="w-48 h-48 bg-gray-100 rounded-xl overflow-hidden">
+            <div class="w-56 h-56 sm:w-72 sm:h-72 bg-white rounded-2xl overflow-hidden shadow-lg border-2 border-gray-100 p-2">
               <img
                 v-if="vendorCart?.vendor?.qr_code_image"
                 :src="getImageUrl(vendorCart.vendor.qr_code_image)"
                 alt="QR Code"
-                class="w-full h-full object-contain"
+                class="w-full h-full object-contain rounded-lg"
               />
-              <div v-else class="w-full h-full flex items-center justify-center text-gray-400">
-                <span class="text-sm">No QR Code available</span>
+              <div v-else class="w-full h-full flex flex-col items-center justify-center text-gray-400 bg-gray-50 rounded-lg">
+                <span class="text-4xl mb-2">📱</span>
+                <span class="text-sm text-center px-4">No QR Code available from vendor</span>
               </div>
             </div>
           </div>
 
-          <!-- Mobile Number -->
-          <div v-if="vendorCart?.vendor?.qr_mobile_number" class="text-center">
-            <p class="text-sm text-gray-500">Or send payment to:</p>
-            <div class="flex items-center justify-center gap-2 mt-1">
-              <span class="font-semibold text-gray-900">📱 {{ vendorCart.vendor.qr_mobile_number }}</span>
+          <!-- Mobile Number - Prominent display -->
+          <div v-if="vendorCart?.vendor?.qr_mobile_number" class="bg-blue-50 rounded-xl p-4">
+            <p class="text-sm text-blue-600 text-center mb-2">Or send payment to:</p>
+            <div class="flex items-center justify-center gap-3 bg-white rounded-lg px-4 py-3 shadow-sm">
+              <span class="text-xl">📱</span>
+              <span class="text-xl font-bold text-gray-900 tracking-wide">{{ vendorCart.vendor.qr_mobile_number }}</span>
               <button
                 @click="copyMobileNumber"
-                class="p-1.5 text-gray-400 hover:text-orange-500 hover:bg-orange-50 rounded transition-colors"
-                title="Copy"
+                class="px-3 py-1.5 bg-blue-500 hover:bg-blue-600 text-white text-sm font-medium rounded-lg transition-colors flex items-center gap-1"
+                title="Copy number"
               >
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
                 </svg>
+                {{ copied ? 'Copied!' : 'Copy' }}
               </button>
             </div>
+          </div>
+
+          <!-- No mobile number fallback -->
+          <div v-else-if="!vendorCart?.vendor?.qr_code_image" class="bg-amber-50 rounded-xl p-4 text-center">
+            <span class="text-2xl">⚠️</span>
+            <p class="text-amber-700 text-sm mt-2">Vendor has not set up QR payment. Please select "Pay at Cashier" instead.</p>
           </div>
 
           <!-- Upload Payment Proof -->
@@ -192,12 +201,28 @@
           <!-- Payment Method Display -->
           <div class="space-y-2">
             <h4 class="font-semibold text-gray-900">Payment Method</h4>
-            <div class="bg-gray-50 rounded-xl p-3 flex items-center gap-2">
-              <span class="text-xl">{{ paymentMethod === 'cashier' ? '💵' : '📱' }}</span>
-              <span class="text-gray-700">
-                {{ paymentMethod === 'cashier' ? 'Pay at Cashier' : 'QR Code Payment' }}
-              </span>
-              <span v-if="paymentProof" class="ml-auto text-green-600 text-sm">✓ Proof uploaded</span>
+            <div class="bg-gray-50 rounded-xl p-3">
+              <div class="flex items-center gap-2">
+                <span class="text-xl">{{ paymentMethod === 'cashier' ? '💵' : '📱' }}</span>
+                <span class="text-gray-700">
+                  {{ paymentMethod === 'cashier' ? 'Pay at Cashier' : 'QR Code Payment' }}
+                </span>
+                <span v-if="paymentMethod === 'qr_code' && paymentProof" class="ml-auto text-green-600 text-sm">✓ Proof uploaded</span>
+              </div>
+
+              <!-- Payment Proof Preview -->
+              <div v-if="paymentMethod === 'qr_code' && paymentProofPreview" class="mt-3 pt-3 border-t border-gray-200">
+                <p class="text-xs text-gray-500 mb-2">Payment Proof:</p>
+                <div class="relative">
+                  <img
+                    :src="paymentProofPreview"
+                    alt="Payment Proof"
+                    class="w-full max-h-40 object-contain rounded-lg border border-gray-200 cursor-pointer"
+                    @click="showProofFullscreen = true"
+                  />
+                  <p class="text-xs text-gray-400 mt-1 text-center">Tap to enlarge</p>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -245,6 +270,28 @@
       </div>
     </div>
   </div>
+
+  <!-- Fullscreen Proof Preview Modal -->
+  <div
+    v-if="showProofFullscreen && paymentProofPreview"
+    class="fixed inset-0 z-[70] flex items-center justify-center bg-black/90"
+    @click="showProofFullscreen = false"
+  >
+    <button
+      @click="showProofFullscreen = false"
+      class="absolute top-4 right-4 p-2 bg-white/20 hover:bg-white/30 rounded-full text-white transition-colors"
+    >
+      <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+      </svg>
+    </button>
+    <img
+      :src="paymentProofPreview"
+      alt="Payment Proof"
+      class="max-w-full max-h-full object-contain p-4"
+      @click.stop
+    />
+  </div>
 </template>
 
 <script setup>
@@ -267,9 +314,12 @@ const emit = defineEmits(['close', 'complete'])
 const step = ref('payment-method') // 'payment-method', 'qr-payment', 'order-summary'
 const paymentMethod = ref(null) // 'cashier' or 'qr'
 const paymentProof = ref(null)
+const paymentProofPreview = ref(null)
 const tableNumber = ref('')
 const specialInstructions = ref('')
 const submitting = ref(false)
+const copied = ref(false)
+const showProofFullscreen = ref(false)
 
 // Computed
 const modalTitle = computed(() => {
@@ -323,7 +373,7 @@ const closeModal = () => {
 }
 
 const goBack = () => {
-  if (step.value === 'order-summary' && paymentMethod.value === 'qr') {
+  if (step.value === 'order-summary' && paymentMethod.value === 'qr_code') {
     step.value = 'qr-payment'
   } else {
     step.value = 'payment-method'
@@ -331,7 +381,8 @@ const goBack = () => {
 }
 
 const selectPaymentMethod = (method) => {
-  paymentMethod.value = method
+  // Backend expects 'cashier' or 'qr_code' (not 'qr')
+  paymentMethod.value = method === 'qr' ? 'qr_code' : method
   if (method === 'cashier') {
     step.value = 'order-summary'
   } else {
@@ -343,7 +394,10 @@ const copyMobileNumber = async () => {
   if (props.vendorCart?.vendor?.qr_mobile_number) {
     try {
       await navigator.clipboard.writeText(props.vendorCart.vendor.qr_mobile_number)
-      // Could show a toast here
+      copied.value = true
+      setTimeout(() => {
+        copied.value = false
+      }, 2000)
     } catch (err) {
       console.error('Failed to copy:', err)
     }
@@ -354,6 +408,8 @@ const handleFileUpload = (event) => {
   const file = event.target.files?.[0]
   if (file) {
     paymentProof.value = file
+    // Create preview URL
+    paymentProofPreview.value = URL.createObjectURL(file)
   }
 }
 
@@ -388,7 +444,7 @@ const submitOrder = async () => {
     })
 
     // Add payment proof if QR payment
-    if (paymentMethod.value === 'qr' && paymentProof.value) {
+    if (paymentMethod.value === 'qr_code' && paymentProof.value) {
       formData.append('payment_proof', paymentProof.value)
     }
 
@@ -423,9 +479,11 @@ watch(() => props.isOpen, (isOpen) => {
     step.value = 'payment-method'
     paymentMethod.value = null
     paymentProof.value = null
+    paymentProofPreview.value = null
     tableNumber.value = ''
     specialInstructions.value = ''
     submitting.value = false
+    showProofFullscreen.value = false
   }
 })
 </script>

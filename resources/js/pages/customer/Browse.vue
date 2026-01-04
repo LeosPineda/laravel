@@ -54,6 +54,7 @@
 
     <!-- Product Detail Modal -->
     <ProductDetailModal
+      ref="productDetailModalRef"
       :product="selectedProduct"
       :is-open="isProductDetailModalOpen"
       :cart-count="cartItemCount"
@@ -83,6 +84,7 @@ const isProductModalOpen = ref(false)
 const selectedVendorId = ref(null)
 const isProductDetailModalOpen = ref(false)
 const selectedProduct = ref(null)
+const productDetailModalRef = ref(null)
 
 // Cart and toast composables
 const { cartCount, fetchCart, addToCart } = useCart()
@@ -158,18 +160,23 @@ const handleAddedToCart = async (product, quantity, addonIds) => {
     // Call the actual cart API
     const result = await addToCart(product.id, quantity, addons)
 
+    // Reset adding state in modal
+    productDetailModalRef.value?.setAdding(false)
+
     if (result.success) {
       success(`${product.name} added to cart!`)
       // Close modal after a delay
       setTimeout(() => {
         closeProductDetailModal()
-      }, 1500)
+      }, 1200)
     } else {
       error(result.message || 'Failed to add item to cart')
     }
   } catch (err) {
     console.error('Error adding to cart:', err)
     error('Failed to add item to cart. Please try again.')
+    // Reset adding state on error
+    productDetailModalRef.value?.setAdding(false)
   }
 }
 

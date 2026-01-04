@@ -233,7 +233,7 @@
 
 <script setup>
 import { ref, watch, computed } from 'vue'
-import { apiGet, apiPost, apiUpload, apiDelete } from '@/composables/useApi'
+import { apiGet, apiPost, apiPut, apiUpload, apiDelete } from '@/composables/useApi'
 
 const props = defineProps({
   isOpen: { type: Boolean, default: false },
@@ -473,8 +473,7 @@ const syncAddons = async (productId) => {
       } else {
         const original = originalAddons.value.find(a => a.id === addon.id)
         if (original && (original.name !== addon.name || original.price !== addon.price)) {
-          await apiPost(`/api/vendor/addons/${addon.id}`, {
-            _method: 'PUT',
+          await apiPut(`/api/vendor/addons/${addon.id}`, {
             name: addon.name,
             price: addon.price || 0
           })

@@ -1,7 +1,7 @@
 <?php
 
-use Illuminate\Support\Facades\Broadcast;
 use App\Models\User;
+use Illuminate\Support\Facades\Broadcast;
 
 /*
 |--------------------------------------------------------------------------
@@ -23,6 +23,12 @@ Broadcast::channel('vendor-notifications.{vendorId}', function (User $user, int 
 // ✅ VENDOR ORDERS: Private channel for real-time order updates
 Broadcast::channel('vendor-orders.{vendorId}', function (User $user, int $vendorId) {
     // Only allow vendor to listen to their own orders
+    return $user->vendor && $user->vendor->id === $vendorId && $user->role === 'vendor';
+});
+
+// ✅ VENDOR TOASTS: Private channel for vendor toast notifications (new orders, cancellations)
+Broadcast::channel('vendor-toasts.{vendorId}', function (User $user, int $vendorId) {
+    // Only allow vendor to listen to their own toasts
     return $user->vendor && $user->vendor->id === $vendorId && $user->role === 'vendor';
 });
 

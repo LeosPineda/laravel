@@ -1,5 +1,5 @@
 <template>
-  <div class="min-h-screen bg-[#F5F5F5]">
+  <div class="min-h-screen bg-[#F5F5F5] flex flex-col">
     <!-- Header -->
     <header class="bg-white border-b border-[#E0E0E0] sticky top-0 z-50">
       <div class="px-4 sm:px-6">
@@ -164,9 +164,11 @@
       </div>
     </div>
 
-    <!-- Main Content -->
-    <main class="flex-1 px-4 sm:px-6 py-4">
-      <slot />
+    <!-- Main Content - Scrollable -->
+    <main class="flex-1 px-4 sm:px-6 lg:px-8 py-4 sm:py-6 overflow-y-auto">
+      <div class="max-w-7xl mx-auto">
+        <slot />
+      </div>
     </main>
 
     <!-- Toast Notifications -->

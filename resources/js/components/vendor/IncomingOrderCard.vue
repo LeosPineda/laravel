@@ -1,8 +1,4 @@
 <script setup lang="ts">
-import { ref } from 'vue';
-import { useToast } from '@/composables/useToast';
-import { apiPatch } from '@/composables/useApi';
-
 const props = defineProps<{
   order: {
     id: number;
@@ -21,59 +17,17 @@ const emit = defineEmits<{
   markReady: [order: any];
 }>();
 
-const toast = useToast();
-
-const acceptOrder = async (order: any) => {
-  try {
-    const response = await apiPatch(`/api/vendor/orders/${order.id}/accept`);
-
-    if (response.ok) {
-      toast.success(`Order #${order.order_number} accepted! Customer will be notified.`);
-      emit('acceptOrder', order);
-    } else {
-      const error = await response.json();
-      toast.error(error.message || 'Failed to accept order');
-    }
-  } catch (error) {
-    console.error('Error accepting order:', error);
-    toast.error('Failed to accept order');
-  }
+// Just emit events - parent handles API calls
+const acceptOrder = (order: any) => {
+  emit('acceptOrder', order);
 };
 
-const declineOrder = async (order: any) => {
-  if (!confirm(`Decline order #${order.order_number}? The customer will be notified.`)) return;
-
-  try {
-    const response = await apiPatch(`/api/vendor/orders/${order.id}/decline`);
-
-    if (response.ok) {
-      toast.warning(`Order #${order.order_number} declined. Customer will be notified.`);
-      emit('declineOrder', order);
-    } else {
-      const error = await response.json();
-      toast.error(error.message || 'Failed to decline order');
-    }
-  } catch (error) {
-    console.error('Error declining order:', error);
-    toast.error('Failed to decline order');
-  }
+const declineOrder = (order: any) => {
+  emit('declineOrder', order);
 };
 
-const markReady = async (order: any) => {
-  try {
-    const response = await apiPatch(`/api/vendor/orders/${order.id}/ready`);
-
-    if (response.ok) {
-      toast.success(`Order #${order.order_number} is ready! Customer notified + receipt sent.`);
-      emit('markReady', order);
-    } else {
-      const error = await response.json();
-      toast.error(error.message || 'Failed to mark order as ready');
-    }
-  } catch (error) {
-    console.error('Error marking order as ready:', error);
-    toast.error('Failed to mark order as ready');
-  }
+const markReady = (order: any) => {
+  emit('markReady', order);
 };
 
 const formatTime = (dateString: string) => {
@@ -123,7 +77,7 @@ const getStatusInfo = (status: string) => {
         <p class="text-sm text-gray-500">Table {{ order.table_number || 'N/A' }}</p>
         <p class="text-sm text-gray-500">{{ formatTime(order.created_at) }}</p>
       </div>
-      <span class="text-lg font-bold text-orange-600">₱{{ parseFloat(order.total_amount).toFixed(0) }}</span>
+      <span class="text-lg font-bold text-orange-600">₱{{ Number(order.total_amount).toFixed(0) }}</span>
     </div>
 
     <div class="flex gap-2">

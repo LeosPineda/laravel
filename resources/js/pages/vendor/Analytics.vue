@@ -73,8 +73,8 @@
                 </div>
 
                 <div class="bg-green-50 rounded-lg p-4 text-center">
-                  <div class="text-2xl font-bold text-green-600">{{ orderMetrics.ready_for_pickup || 0 }}</div>
-                  <div class="text-sm text-green-700">Ready</div>
+                  <div class="text-2xl font-bold text-green-600">{{ orderMetrics.completed || 0 }}</div>
+                  <div class="text-sm text-green-700">Completed</div>
                 </div>
 
                 <div class="bg-red-50 rounded-lg p-4 text-center">
@@ -176,7 +176,7 @@ const sales = ref({
 const orderMetrics = ref({
   pending: 0,
   accepted: 0,
-  ready_for_pickup: 0,
+  completed: 0,
   cancelled: 0
 })
 

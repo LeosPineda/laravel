@@ -67,7 +67,7 @@ class CartController extends Controller
             }
 
             // Calculate cart count and total
-            $cartCount = $cartItems->sum('quantity');
+            $cartCount = (int) $cartItems->sum('quantity');
             $cartTotal = $cartItems->sum(function ($item) {
                 return $item->total_price;
             });
@@ -173,7 +173,7 @@ class CartController extends Controller
             }
 
             // Get updated cart count
-            $cartCount = CartItem::whereHas('cart', function ($query) use ($user) {
+            $cartCount = (int) CartItem::whereHas('cart', function ($query) use ($user) {
                 $query->where('user_id', $user->id);
             })->sum('quantity');
 

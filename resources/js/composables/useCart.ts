@@ -92,7 +92,7 @@ export function useCart() {
         const data = await response.json()
         // Backend returns vendorCarts array with vendor and items
         vendorCarts.value = data.vendorCarts || []
-        cartCount.value = data.cartCount || 0
+        cartCount.value = Number(data.cartCount) || 0
 
         // Also flatten items for backwards compatibility
         cart.value = vendorCarts.value.flatMap(vc => vc.items.map(item => ({
@@ -133,7 +133,7 @@ export function useCart() {
 
       if (response.ok) {
         const data = await response.json()
-        cartCount.value = data.cartCount || cartCount.value
+        cartCount.value = Number(data.cartCount) || cartCount.value
         await fetchCart() // Refresh cart
         return { success: true, message: data.message, cartItem: data.cartItem }
       } else {

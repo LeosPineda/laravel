@@ -2,21 +2,19 @@
 
 namespace App\Http\Controllers\Customer;
 
+use App\Events\OrderReceived;
 use App\Http\Controllers\Controller;
-use App\Models\Order;
-use App\Models\OrderItem;
 use App\Models\Cart;
 use App\Models\CartItem;
-use App\Models\Vendor;
 use App\Models\Notification;
-use App\Events\OrderReceived;
-use App\Events\OrderStatusChanged;
+use App\Models\Order;
+use App\Models\OrderItem;
+use App\Models\Vendor;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 
 class OrderController extends Controller
@@ -29,25 +27,32 @@ class OrderController extends Controller
         try {
             $user = Auth::user();
 
-            $orders = Order::with([
+            $query = Order::with([
                 'vendor:id,brand_name,brand_image',
                 'items.product:id,name,image_url',
-                'items.selectedAddons'
+                'items.selectedAddons',
             ])
-            ->where('customer_id', $user->id)
-            ->orderBy('created_at', 'desc')
-            ->paginate(15);
+                ->where('customer_id', $user->id);
+
+            // Filter by status if provided
+            if ($request->has('status') && $request->status !== 'all') {
+                $query->where('status', $request->status);
+            }
+
+            $orders = $query->orderBy('created_at', 'desc')
+                ->paginate(15);
 
             return response()->json([
                 'orders' => $orders,
-                'success' => true
+                'success' => true,
             ]);
 
         } catch (\Exception $e) {
-            Log::error('Error getting customer orders: ' . $e->getMessage());
+            Log::error('Error getting customer orders: '.$e->getMessage());
+
             return response()->json([
                 'message' => 'Error retrieving orders',
-                'success' => false
+                'success' => false,
             ], 500);
         }
     }
@@ -63,27 +68,28 @@ class OrderController extends Controller
             $order = Order::with([
                 'vendor:id,brand_name,brand_image',
                 'items.product:id,name,image_url',
-                'items.selectedAddons'
+                'items.selectedAddons',
             ])
-            ->where('customer_id', $user->id)
-            ->where('id', $orderId)
-            ->firstOrFail();
+                ->where('customer_id', $user->id)
+                ->where('id', $orderId)
+                ->firstOrFail();
 
             return response()->json([
                 'order' => $order,
-                'success' => true
+                'success' => true,
             ]);
 
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
             return response()->json([
                 'message' => 'Order not found',
-                'success' => false
+                'success' => false,
             ], 404);
         } catch (\Exception $e) {
-            Log::error('Error getting order: ' . $e->getMessage());
+            Log::error('Error getting order: '.$e->getMessage());
+
             return response()->json([
                 'message' => 'Error retrieving order',
-                'success' => false
+                'success' => false,
             ], 500);
         }
     }
@@ -99,7 +105,7 @@ class OrderController extends Controller
                 'payment_method' => ['required', Rule::in(['cashier', 'qr_code'])],
                 'table_number' => 'required|string|max:10',
                 'special_instructions' => 'nullable|string|max:500',
-                'payment_proof' => 'nullable|file|image|mimes:jpeg,png,jpg,gif|max:5120'
+                'payment_proof' => 'nullable|file|image|mimes:jpeg,png,jpg,gif|max:5120',
             ]);
 
             $user = Auth::user();
@@ -113,7 +119,7 @@ class OrderController extends Controller
             if ($cartItems->isEmpty()) {
                 return response()->json([
                     'message' => 'Cart is empty',
-                    'success' => false
+                    'success' => false,
                 ], 400);
             }
 
@@ -133,7 +139,7 @@ class OrderController extends Controller
                         'quantity' => $item->quantity,
                         'unit_price' => $item->unit_price,
                         'selected_addons' => $item->selected_addons,
-                        'total_price' => $itemTotal
+                        'total_price' => $itemTotal,
                     ];
                 }
 
@@ -142,7 +148,7 @@ class OrderController extends Controller
                     $paymentProofUrl = $request->file('payment_proof')->store('payment-proofs', 'public');
                 }
 
-                $orderNumber = 'ORD-' . str_pad(Order::max('id') + 1, 6, '0', STR_PAD_LEFT);
+                $orderNumber = 'ORD-'.str_pad(Order::max('id') + 1, 6, '0', STR_PAD_LEFT);
 
                 $order = Order::create([
                     'customer_id' => $user->id,
@@ -155,7 +161,7 @@ class OrderController extends Controller
                     'special_instructions' => $validated['special_instructions'] ?? null,
                     'payment_proof_url' => $paymentProofUrl,
                     'created_at' => now(),
-                    'updated_at' => now()
+                    'updated_at' => now(),
                 ]);
 
                 foreach ($itemsData as $itemData) {
@@ -165,7 +171,7 @@ class OrderController extends Controller
                         'quantity' => $itemData['quantity'],
                         'unit_price' => $itemData['unit_price'],
                         'selected_addons' => $itemData['selected_addons'],
-                        'total_price' => $itemData['total_price']
+                        'total_price' => $itemData['total_price'],
                     ]);
 
                     // Deduct stock for this order item
@@ -193,7 +199,7 @@ class OrderController extends Controller
                 return response()->json([
                     'message' => 'Order placed successfully',
                     'order' => $order->load(['vendor', 'items.product']),
-                    'success' => true
+                    'success' => true,
                 ], 201);
 
             } catch (\Exception $e) {
@@ -205,18 +211,19 @@ class OrderController extends Controller
             return response()->json([
                 'message' => 'Validation error',
                 'errors' => $e->errors(),
-                'success' => false
+                'success' => false,
             ], 422);
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
             return response()->json([
                 'message' => 'Cart not found',
-                'success' => false
+                'success' => false,
             ], 404);
         } catch (\Exception $e) {
-            Log::error('Error placing order: ' . $e->getMessage());
+            Log::error('Error placing order: '.$e->getMessage());
+
             return response()->json([
                 'message' => 'Error placing order',
-                'success' => false
+                'success' => false,
             ], 500);
         }
     }
@@ -232,11 +239,11 @@ class OrderController extends Controller
             $order = Order::with([
                 'vendor:id,brand_name,brand_image',
                 'items.product:id,name,image_url',
-                'items.selectedAddons'
+                'items.selectedAddons',
             ])
-            ->where('customer_id', $user->id)
-            ->where('id', $orderId)
-            ->firstOrFail();
+                ->where('customer_id', $user->id)
+                ->where('id', $orderId)
+                ->firstOrFail();
 
             $statusHistory = [
                 [
@@ -244,8 +251,8 @@ class OrderController extends Controller
                     'label' => 'Order Placed',
                     'description' => 'Your order has been received',
                     'timestamp' => $order->created_at,
-                    'completed' => true
-                ]
+                    'completed' => true,
+                ],
             ];
 
             if ($order->status === 'accepted') {
@@ -254,7 +261,7 @@ class OrderController extends Controller
                     'label' => 'Accepted & Preparing',
                     'description' => 'Your order has been accepted and is being prepared',
                     'timestamp' => $order->updated_at,
-                    'completed' => true
+                    'completed' => true,
                 ];
             } elseif (in_array($order->status, ['ready_for_pickup', 'completed'])) {
                 $statusHistory[] = [
@@ -262,7 +269,7 @@ class OrderController extends Controller
                     'label' => 'Accepted & Preparing',
                     'description' => 'Your order has been accepted and is being prepared',
                     'timestamp' => $order->updated_at,
-                    'completed' => true
+                    'completed' => true,
                 ];
                 // ✅ REMOVED: Separate "preparing" status (now combined with accepted)
                 $statusHistory[] = [
@@ -270,7 +277,7 @@ class OrderController extends Controller
                     'label' => 'Ready for Pickup',
                     'description' => 'Your order is ready for pickup',
                     'timestamp' => $order->updated_at,
-                    'completed' => true
+                    'completed' => true,
                 ];
             }
 
@@ -280,7 +287,7 @@ class OrderController extends Controller
                     'label' => 'Completed',
                     'description' => 'Order completed',
                     'timestamp' => $order->updated_at,
-                    'completed' => true
+                    'completed' => true,
                 ];
             } elseif ($order->status === 'cancelled') { // FIXED: Use 'cancelled' consistently
                 $statusHistory[] = [
@@ -288,26 +295,27 @@ class OrderController extends Controller
                     'label' => 'Cancelled',
                     'description' => 'Order was cancelled by vendor',
                     'timestamp' => $order->updated_at,
-                    'completed' => true
+                    'completed' => true,
                 ];
             }
 
             return response()->json([
                 'order' => $order,
                 'status_history' => $statusHistory,
-                'success' => true
+                'success' => true,
             ]);
 
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
             return response()->json([
                 'message' => 'Order not found',
-                'success' => false
+                'success' => false,
             ], 404);
         } catch (\Exception $e) {
-            Log::error('Error tracking order: ' . $e->getMessage());
+            Log::error('Error tracking order: '.$e->getMessage());
+
             return response()->json([
                 'message' => 'Error tracking order',
-                'success' => false
+                'success' => false,
             ], 500);
         }
     }
@@ -322,9 +330,9 @@ class OrderController extends Controller
 
             $query = Order::with([
                 'vendor:id,brand_name,brand_image',
-                'items.product:id,name,image_url'
+                'items.product:id,name,image_url',
             ])
-            ->where('customer_id', $user->id);
+                ->where('customer_id', $user->id);
 
             if ($request->has('status') && $request->status !== 'all') {
                 $query->where('status', $request->status);
@@ -346,14 +354,15 @@ class OrderController extends Controller
 
             return response()->json([
                 'orders' => $orders,
-                'success' => true
+                'success' => true,
             ]);
 
         } catch (\Exception $e) {
-            Log::error('Error getting order history: ' . $e->getMessage());
+            Log::error('Error getting order history: '.$e->getMessage());
+
             return response()->json([
                 'message' => 'Error retrieving order history',
-                'success' => false
+                'success' => false,
             ], 500);
         }
     }
@@ -364,105 +373,142 @@ class OrderController extends Controller
     public function downloadReceipt(Request $request, $orderId)
     {
         try {
-            $order = Order::with(['vendor:id,brand_name', 'items.product:id,name,price'])
-                ->whereHas('customer', function ($query) {
-                    $query->where('id', auth()->id());
-                })
+            $order = Order::with(['vendor', 'items.product', 'customer'])
+                ->where('customer_id', auth()->id())
                 ->where('id', $orderId)
                 ->whereIn('status', ['ready_for_pickup', 'completed'])
                 ->firstOrFail();
 
-            // Generate PDF using dompdf
             $pdf = Pdf::loadView('receipts.customer', compact('order'));
 
             $fileName = "receipt-{$order->order_number}.pdf";
+
             return $pdf->download($fileName);
 
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
             return response()->json([
                 'message' => 'Order not found or receipt not available',
-                'success' => false
+                'success' => false,
             ], 404);
         } catch (\Exception $e) {
-            Log::error('Error generating customer receipt: ' . $e->getMessage());
+            Log::error('Error generating customer receipt: '.$e->getMessage());
+
             return response()->json([
                 'message' => 'Error generating receipt',
-                'success' => false
+                'success' => false,
             ], 500);
         }
     }
 
     /**
-     * Generate and stream PDF receipt for an order
+     * Generate and stream PDF receipt for an order (view in browser)
      */
     public function streamReceipt(Request $request, $orderId)
     {
         try {
-            $order = Order::with(['vendor:id,brand_name', 'items.product:id,name,price'])
-                ->whereHas('customer', function ($query) {
-                    $query->where('id', auth()->id());
-                })
+            $order = Order::with(['vendor', 'items.product', 'customer'])
+                ->where('customer_id', auth()->id())
                 ->where('id', $orderId)
                 ->whereIn('status', ['ready_for_pickup', 'completed'])
                 ->firstOrFail();
 
-            // Generate PDF using dompdf
             $pdf = Pdf::loadView('receipts.customer', compact('order'));
 
             $fileName = "receipt-{$order->order_number}.pdf";
+
             return $pdf->stream($fileName);
 
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
             return response()->json([
                 'message' => 'Order not found or receipt not available',
-                'success' => false
+                'success' => false,
             ], 404);
         } catch (\Exception $e) {
-            Log::error('Error streaming customer receipt: ' . $e->getMessage());
+            Log::error('Error streaming customer receipt: '.$e->getMessage());
+
             return response()->json([
                 'message' => 'Error generating receipt',
-                'success' => false
+                'success' => false,
             ], 500);
         }
     }
 
     /**
-     * Cancel an order
+     * Cancel an order and restore cart items
      */
     public function cancel(Request $request, $orderId)
     {
         try {
             $user = Auth::user();
 
-            $order = Order::where('customer_id', $user->id)
+            $order = Order::with('items.product')
+                ->where('customer_id', $user->id)
                 ->where('id', $orderId)
                 ->firstOrFail();
 
             if ($order->status !== 'pending') {
                 return response()->json([
                     'message' => 'Only pending orders can be cancelled',
-                    'success' => false
+                    'success' => false,
                 ], 400);
             }
 
-            $order->update(['status' => 'cancelled']);
+            DB::beginTransaction();
 
-            return response()->json([
-                'message' => 'Order cancelled successfully',
-                'order' => $order,
-                'success' => true
-            ]);
+            try {
+                // Restore stock for cancelled order items
+                foreach ($order->items as $item) {
+                    if ($item->product) {
+                        $item->product->increment('stock_quantity', $item->quantity);
+                    }
+                }
+
+                // Restore items to cart
+                $cart = Cart::firstOrCreate(
+                    ['user_id' => $user->id, 'vendor_id' => $order->vendor_id],
+                    ['created_at' => now(), 'updated_at' => now()]
+                );
+
+                foreach ($order->items as $item) {
+                    CartItem::create([
+                        'cart_id' => $cart->id,
+                        'product_id' => $item->product_id,
+                        'quantity' => $item->quantity,
+                        'unit_price' => $item->unit_price,
+                        'selected_addons' => $item->selected_addons,
+                        'special_instructions' => null,
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ]);
+                }
+
+                // Update order status
+                $order->update(['status' => 'cancelled']);
+
+                DB::commit();
+
+                return response()->json([
+                    'message' => 'Order cancelled. Items restored to cart.',
+                    'order' => $order,
+                    'success' => true,
+                ]);
+
+            } catch (\Exception $e) {
+                DB::rollBack();
+                throw $e;
+            }
 
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
             return response()->json([
                 'message' => 'Order not found',
-                'success' => false
+                'success' => false,
             ], 404);
         } catch (\Exception $e) {
-            Log::error('Error cancelling order: ' . $e->getMessage());
+            Log::error('Error cancelling order: '.$e->getMessage());
+
             return response()->json([
                 'message' => 'Error cancelling order',
-                'success' => false
+                'success' => false,
             ], 500);
         }
     }

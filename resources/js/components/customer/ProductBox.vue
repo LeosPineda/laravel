@@ -1,68 +1,77 @@
 <template>
   <div
-    class="bg-white border border-gray-200 rounded-lg hover:shadow-md hover:border-orange-200 transition-all duration-200 overflow-hidden"
+    class="group bg-white rounded-2xl border border-gray-100 hover:border-orange-200 shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden"
+    @click="handleImageClick"
   >
     <!-- Product Image -->
-    <div
-      class="relative h-32 sm:h-36 bg-gradient-to-br from-orange-50 to-red-50 cursor-pointer"
-      @click.stop="handleImageClick"
-    >
+    <div class="relative h-36 sm:h-40 bg-gradient-to-br from-orange-50 to-red-50 overflow-hidden cursor-pointer">
       <img
         v-if="product.image_url"
         :src="getImageUrl(product.image_url)"
         :alt="product.name"
-        class="w-full h-full object-cover hover:scale-105 transition-transform duration-200"
+        class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
         @error="handleImageError"
       />
-      <div v-else class="w-full h-full flex items-center justify-center text-gray-400">
-        <span class="text-xl">🍽️</span>
+      <div v-else class="w-full h-full flex items-center justify-center">
+        <span class="text-4xl opacity-40">🍽️</span>
       </div>
 
-      <!-- Stock Status Badge -->
-      <div class="absolute top-1 left-1">
-        <span
-          v-if="isLowStock"
-          class="px-2 py-0.5 bg-yellow-500 text-white text-xs rounded-full font-medium"
-        >
-          Low
-        </span>
-        <span
-          v-else-if="isInStock && product.is_featured"
-          class="px-2 py-0.5 bg-orange-500 text-white text-xs rounded-full font-medium"
-        >
-          Featured
-        </span>
-      </div>
+      <!-- Gradient Overlay -->
+      <div class="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
 
-      <!-- Stock Quantity (when in stock) -->
-      <div v-if="isInStock" class="absolute top-1 right-1">
-        <span class="px-2 py-0.5 bg-black/70 text-white text-xs rounded-full font-medium">
+      <!-- Badges Container -->
+      <div class="absolute top-2 left-2 right-2 flex justify-between items-start">
+        <!-- Left Badge (Featured/Low Stock) -->
+        <div>
+          <span
+            v-if="isLowStock"
+            class="px-2.5 py-1 bg-amber-500 text-white text-xs rounded-full font-semibold shadow-md"
+          >
+            ⚠ Low Stock
+          </span>
+          <span
+            v-else-if="product.is_featured"
+            class="px-2.5 py-1 bg-gradient-to-r from-orange-500 to-red-500 text-white text-xs rounded-full font-semibold shadow-md"
+          >
+            ⭐ Featured
+          </span>
+        </div>
+
+        <!-- Right Badge (Stock Count) -->
+        <span
+          v-if="isInStock"
+          class="px-2 py-1 bg-white/90 backdrop-blur-sm text-gray-700 text-xs rounded-full font-medium shadow-sm"
+        >
           {{ product.stock_quantity }} left
+        </span>
+        <span
+          v-else
+          class="px-2 py-1 bg-red-500 text-white text-xs rounded-full font-semibold shadow-md"
+        >
+          Sold Out
         </span>
       </div>
     </div>
 
     <!-- Product Info -->
-    <div class="p-3">
+    <div class="p-3.5">
       <!-- Product Name -->
-      <h3
-        class="font-medium text-gray-900 text-sm mb-2 line-clamp-2 hover:text-orange-600 transition-colors cursor-pointer"
-        @click.stop="handleImageClick"
-      >
+      <h3 class="font-semibold text-gray-900 text-sm leading-tight mb-2 line-clamp-2 group-hover:text-orange-600 transition-colors cursor-pointer min-h-[40px]">
         {{ product.name }}
       </h3>
 
       <!-- Price and Action Row -->
-      <div class="flex items-end justify-between">
+      <div class="flex items-center justify-between gap-2">
         <!-- Price -->
-        <div>
-          <span class="font-bold text-orange-600 text-sm">
-            ₱{{ formatPrice(product.price) }}
-          </span>
-          <!-- Stock Info (when low) -->
-          <div v-if="isLowStock" class="mt-1 text-xs text-yellow-600">
-            Only {{ product.stock_quantity }} left!
+        <div class="flex-1">
+          <div class="flex items-baseline gap-1">
+            <span class="text-lg font-bold text-orange-600">
+              ₱{{ formatPrice(product.price) }}
+            </span>
           </div>
+          <p v-if="product.addons && product.addons.length > 0" class="text-xs text-gray-500 mt-0.5">
+            +{{ product.addons.length }} add-ons
+          </p>
         </div>
 
         <!-- Order Button -->
@@ -71,16 +80,25 @@
             v-if="isInStock"
             @click.stop="handleOrderNow"
             :disabled="ordering"
-            class="px-4 py-2 bg-orange-500 hover:bg-orange-600 disabled:bg-orange-300 text-white rounded-lg transition-colors text-sm font-medium min-w-[80px]"
+            class="px-4 py-2.5 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 disabled:from-gray-300 disabled:to-gray-400 text-white rounded-xl transition-all duration-200 text-sm font-semibold shadow-sm hover:shadow-md active:scale-95"
           >
-            {{ ordering ? '...' : 'Order' }}
+            <span v-if="ordering" class="flex items-center gap-1">
+              <svg class="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+              </svg>
+            </span>
+            <span v-else class="flex items-center gap-1.5">
+              <span>+</span>
+              <span>Add</span>
+            </span>
           </button>
-          <span
+          <div
             v-else
-            class="px-4 py-2 bg-gray-300 text-gray-500 rounded-lg text-sm font-medium min-w-[80px] text-center block"
+            class="px-4 py-2.5 bg-gray-100 text-gray-400 rounded-xl text-sm font-medium cursor-not-allowed"
           >
             Sold Out
-          </span>
+          </div>
         </div>
       </div>
     </div>
@@ -157,7 +175,7 @@ const handleImageError = (event: Event) => {
   target.style.display = 'none'
 }
 
-// ✅ Image click shows product details
+// Image/card click shows product details
 const handleImageClick = () => {
   emit('view-details', props.product)
 }

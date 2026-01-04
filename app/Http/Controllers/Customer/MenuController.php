@@ -3,14 +3,12 @@
 namespace App\Http\Controllers\Customer;
 
 use App\Http\Controllers\Controller;
-use App\Models\Vendor;
-use App\Models\Product;
-use App\Models\Addon;
 use App\Models\Cart;
 use App\Models\CartItem;
+use App\Models\Product;
+use App\Models\Vendor;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 
@@ -40,14 +38,15 @@ class MenuController extends Controller
 
             return response()->json([
                 'vendors' => $vendors,
-                'success' => true
+                'success' => true,
             ]);
 
         } catch (\Exception $e) {
-            Log::error('Error getting vendors: ' . $e->getMessage());
+            Log::error('Error getting vendors: '.$e->getMessage());
+
             return response()->json([
                 'message' => 'Error retrieving vendors',
-                'success' => false
+                'success' => false,
             ], 500);
         }
     }
@@ -63,8 +62,9 @@ class MenuController extends Controller
                 ->select('id', 'brand_name', 'brand_logo')
                 ->firstOrFail();
 
-            // Build product query - NO is_active filtering
+            // Build product query - Only show products WITH stock
             $query = Product::where('vendor_id', $vendorId)
+                ->where('stock_quantity', '>', 0)
                 ->select('id', 'name', 'price', 'category', 'image_url', 'stock_quantity')
                 ->with('addons');
 
@@ -81,19 +81,20 @@ class MenuController extends Controller
             return response()->json([
                 'vendor' => $vendor,
                 'products' => $products,
-                'success' => true
+                'success' => true,
             ]);
 
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
             return response()->json([
                 'message' => 'Vendor not found or inactive',
-                'success' => false
+                'success' => false,
             ], 404);
         } catch (\Exception $e) {
-            Log::error('Error getting vendor products: ' . $e->getMessage());
+            Log::error('Error getting vendor products: '.$e->getMessage());
+
             return response()->json([
                 'message' => 'Error retrieving vendor products',
-                'success' => false
+                'success' => false,
             ], 500);
         }
     }
@@ -111,19 +112,20 @@ class MenuController extends Controller
 
             return response()->json([
                 'vendor' => $vendor,
-                'success' => true
+                'success' => true,
             ]);
 
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
             return response()->json([
                 'message' => 'Vendor not found or inactive',
-                'success' => false
+                'success' => false,
             ], 404);
         } catch (\Exception $e) {
-            Log::error('Error getting vendor: ' . $e->getMessage());
+            Log::error('Error getting vendor: '.$e->getMessage());
+
             return response()->json([
                 'message' => 'Error retrieving vendor',
-                'success' => false
+                'success' => false,
             ], 500);
         }
     }
@@ -139,8 +141,9 @@ class MenuController extends Controller
                 ->select('id', 'brand_name', 'brand_logo', 'qr_code_image')
                 ->firstOrFail();
 
-            // Build product query - NO is_active filtering
+            // Build product query - Only show products WITH stock
             $query = Product::where('vendor_id', $vendorId)
+                ->where('stock_quantity', '>', 0)
                 ->select('id', 'name', 'price', 'category', 'image_url', 'stock_quantity')
                 ->with('addons');
 
@@ -155,8 +158,9 @@ class MenuController extends Controller
             $perPage = $request->get('per_page', 20);
             $products = $request->has('all') ? $query->get() : $query->paginate($perPage);
 
-            // Get unique categories (from all products, not just current page)
+            // Get unique categories (from products WITH stock only)
             $categories = Product::where('vendor_id', $vendorId)
+                ->where('stock_quantity', '>', 0)
                 ->whereNotNull('category')
                 ->distinct()
                 ->pluck('category')
@@ -168,19 +172,20 @@ class MenuController extends Controller
                 'vendor' => $vendor,
                 'products' => $products,
                 'categories' => $categories,
-                'success' => true
+                'success' => true,
             ]);
 
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
             return response()->json([
                 'message' => 'Vendor not found or inactive',
-                'success' => false
+                'success' => false,
             ], 404);
         } catch (\Exception $e) {
-            Log::error('Error getting vendor menu: ' . $e->getMessage());
+            Log::error('Error getting vendor menu: '.$e->getMessage());
+
             return response()->json([
                 'message' => 'Error retrieving vendor menu',
-                'success' => false
+                'success' => false,
             ], 500);
         }
     }
@@ -195,11 +200,11 @@ class MenuController extends Controller
                 ->where('is_active', true)
                 ->firstOrFail();
 
-            if (!$vendor->qr_code_image) {
+            if (! $vendor->qr_code_image) {
                 return response()->json([
                     'message' => 'Vendor has no QR payment setup',
                     'has_qr' => false,
-                    'success' => true
+                    'success' => true,
                 ]);
             }
 
@@ -209,19 +214,20 @@ class MenuController extends Controller
                 'qr_code_url' => Storage::url($vendor->qr_code_image),
                 'mobile_number' => $vendor->qr_mobile_number, // Customer can copy this
                 'download_url' => route('customer.vendor.qr-download', $vendor->id),
-                'success' => true
+                'success' => true,
             ]);
 
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
             return response()->json([
                 'message' => 'Vendor not found',
-                'success' => false
+                'success' => false,
             ], 404);
         } catch (\Exception $e) {
-            Log::error('Error getting QR payment info: ' . $e->getMessage());
+            Log::error('Error getting QR payment info: '.$e->getMessage());
+
             return response()->json([
                 'message' => 'Error getting QR payment info',
-                'success' => false
+                'success' => false,
             ], 500);
         }
     }
@@ -236,36 +242,37 @@ class MenuController extends Controller
                 ->where('is_active', true)
                 ->firstOrFail();
 
-            if (!$vendor->qr_code_image) {
+            if (! $vendor->qr_code_image) {
                 return response()->json([
                     'message' => 'Vendor has no QR code available',
-                    'success' => false
+                    'success' => false,
                 ], 404);
             }
 
             $filePath = $vendor->qr_code_image;
 
-            if (!Storage::disk('public')->exists($filePath)) {
+            if (! Storage::disk('public')->exists($filePath)) {
                 return response()->json([
                     'message' => 'QR code file not found',
-                    'success' => false
+                    'success' => false,
                 ], 404);
             }
 
-            $fileName = $vendor->brand_name . '-payment-qr.' . pathinfo($filePath, PATHINFO_EXTENSION);
+            $fileName = $vendor->brand_name.'-payment-qr.'.pathinfo($filePath, PATHINFO_EXTENSION);
 
             return Storage::disk('public')->download($filePath, $fileName);
 
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
             return response()->json([
                 'message' => 'Vendor not found',
-                'success' => false
+                'success' => false,
             ], 404);
         } catch (\Exception $e) {
-            Log::error('Error downloading QR code: ' . $e->getMessage());
+            Log::error('Error downloading QR code: '.$e->getMessage());
+
             return response()->json([
                 'message' => 'Error downloading QR code',
-                'success' => false
+                'success' => false,
             ], 500);
         }
     }
@@ -278,14 +285,15 @@ class MenuController extends Controller
         try {
             $query = Product::whereHas('vendor', function ($q) {
                 $q->where('is_active', true);
-            });
+            })
+                ->where('stock_quantity', '>', 0);
 
             // Apply search filter
             if ($request->has('search') && $request->search) {
                 $searchTerm = $request->search;
                 $query->where(function ($q) use ($searchTerm) {
                     $q->where('name', 'like', "%{$searchTerm}%")
-                      ->orWhere('category', 'like', "%{$searchTerm}%");
+                        ->orWhere('category', 'like', "%{$searchTerm}%");
                 });
             }
 
@@ -310,22 +318,23 @@ class MenuController extends Controller
 
             $products = $query->with([
                 'vendor:id,brand_name,brand_logo',
-                'addons'
+                'addons',
             ])
-            ->select('id', 'name', 'price', 'category', 'image_url', 'stock_quantity', 'vendor_id')
-            ->orderBy('name')
-            ->paginate(20);
+                ->select('id', 'name', 'price', 'category', 'image_url', 'stock_quantity', 'vendor_id')
+                ->orderBy('name')
+                ->paginate(20);
 
             return response()->json([
                 'products' => $products,
-                'success' => true
+                'success' => true,
             ]);
 
         } catch (\Exception $e) {
-            Log::error('Error searching products: ' . $e->getMessage());
+            Log::error('Error searching products: '.$e->getMessage());
+
             return response()->json([
                 'message' => 'Error searching products',
-                'success' => false
+                'success' => false,
             ], 500);
         }
     }
@@ -339,23 +348,24 @@ class MenuController extends Controller
             $categories = Product::whereHas('vendor', function ($q) {
                 $q->where('is_active', true);
             })
-            ->whereNotNull('category')
-            ->distinct()
-            ->pluck('category')
-            ->sort()
-            ->values()
-            ->all();
+                ->whereNotNull('category')
+                ->distinct()
+                ->pluck('category')
+                ->sort()
+                ->values()
+                ->all();
 
             return response()->json([
                 'categories' => $categories,
-                'success' => true
+                'success' => true,
             ]);
 
         } catch (\Exception $e) {
-            Log::error('Error getting categories: ' . $e->getMessage());
+            Log::error('Error getting categories: '.$e->getMessage());
+
             return response()->json([
                 'message' => 'Error retrieving categories',
-                'success' => false
+                'success' => false,
             ], 500);
         }
     }
@@ -388,25 +398,26 @@ class MenuController extends Controller
                 })
                 ->with([
                     'vendor:id,brand_name,brand_logo',
-                    'addons'
+                    'addons',
                 ])
                 ->firstOrFail();
 
             return response()->json([
                 'product' => $product,
-                'success' => true
+                'success' => true,
             ]);
 
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
             return response()->json([
                 'message' => 'Product not found',
-                'success' => false
+                'success' => false,
             ], 404);
         } catch (\Exception $e) {
-            Log::error('Error getting product details: ' . $e->getMessage());
+            Log::error('Error getting product details: '.$e->getMessage());
+
             return response()->json([
                 'message' => 'Error retrieving product details',
-                'success' => false
+                'success' => false,
             ], 500);
         }
     }
@@ -422,7 +433,7 @@ class MenuController extends Controller
                 'selected_addons' => 'nullable|array',
                 'selected_addons.*.id' => 'exists:addons,id',
                 'selected_addons.*.name' => 'string',
-                'selected_addons.*.price' => 'numeric|min:0'
+                'selected_addons.*.price' => 'numeric|min:0',
             ]);
 
             $product = Product::where('id', $productId)
@@ -437,7 +448,7 @@ class MenuController extends Controller
                 return response()->json([
                     'message' => 'Insufficient stock',
                     'available_stock' => $product->stock_quantity,
-                    'success' => false
+                    'success' => false,
                 ], 400);
             }
 
@@ -461,13 +472,13 @@ class MenuController extends Controller
                     return response()->json([
                         'message' => 'Insufficient stock for quantity increase',
                         'available_stock' => $product->stock_quantity,
-                        'success' => false
+                        'success' => false,
                     ], 400);
                 }
 
                 $existingItem->update([
                     'quantity' => $newQuantity,
-                    'updated_at' => now()
+                    'updated_at' => now(),
                 ]);
                 $cartItem = $existingItem;
             } else {
@@ -477,7 +488,7 @@ class MenuController extends Controller
                     'product_id' => $product->id,
                     'quantity' => $validated['quantity'],
                     'unit_price' => $product->price,
-                    'selected_addons' => $validated['selected_addons'] ?? []
+                    'selected_addons' => $validated['selected_addons'] ?? [],
                 ]);
             }
 
@@ -490,25 +501,26 @@ class MenuController extends Controller
                 'message' => 'Product added to cart successfully',
                 'cartCount' => $cartCount,
                 'cartItem' => $cartItem->load('product'),
-                'success' => true
+                'success' => true,
             ]);
 
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
             return response()->json([
                 'message' => 'Product not found or unavailable',
-                'success' => false
+                'success' => false,
             ], 404);
         } catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json([
                 'message' => 'Validation error',
                 'errors' => $e->errors(),
-                'success' => false
+                'success' => false,
             ], 422);
         } catch (\Exception $e) {
-            Log::error('Error quick adding to cart: ' . $e->getMessage());
+            Log::error('Error quick adding to cart: '.$e->getMessage());
+
             return response()->json([
                 'message' => 'Error adding product to cart',
-                'success' => false
+                'success' => false,
             ], 500);
         }
     }

@@ -3,11 +3,10 @@
 namespace App\Events;
 
 use App\Models\Order;
-use App\Models\Vendor;
 use App\Models\User;
+use App\Models\Vendor;
 use Illuminate\Broadcasting\Channel;
 use Illuminate\Broadcasting\InteractsWithSockets;
-use Illuminate\Broadcasting\PresenceChannel;
 use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Foundation\Events\Dispatchable;
@@ -18,9 +17,13 @@ class OrderStatusChanged implements ShouldBroadcast
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
     public $vendor;
+
     public $order;
+
     public $customer;
+
     public $oldStatus;
+
     public $newStatus;
 
     /**
@@ -41,13 +44,13 @@ class OrderStatusChanged implements ShouldBroadcast
     public function broadcastOn(): array
     {
         $channels = [
-            new PrivateChannel('vendor-orders.' . $this->vendor->id),
-            new PrivateChannel('customer-orders.' . $this->customer->id),
+            new PrivateChannel('vendor-orders.'.$this->vendor->id),
+            new PrivateChannel('customer-orders.'.$this->customer->id),
         ];
 
         // Add vendor-toasts channel for customer cancellations
         if ($this->newStatus === 'cancelled') {
-            $channels[] = new PrivateChannel('vendor-toasts.' . $this->vendor->id);
+            $channels[] = new PrivateChannel('vendor-toasts.'.$this->vendor->id);
         }
 
         return $channels;
@@ -55,12 +58,11 @@ class OrderStatusChanged implements ShouldBroadcast
 
     /**
      * The event's broadcast name.
-     * FIXED: Use different names for different channels to avoid conflicts
+     * FIXED: Must match what frontend listens to (.OrderStatusChanged)
      */
     public function broadcastAs(): string
     {
-        // For vendor-toasts channel, use a different event name
-        return 'VendorOrderCancelled';
+        return 'OrderStatusChanged';
     }
 
     /**
@@ -103,6 +105,7 @@ class OrderStatusChanged implements ShouldBroadcast
     {
         if ($this->newStatus === 'cancelled' && $this->order->decline_reason) {
             $declineReasonDisplay = $this->getDeclineReasonDisplay($this->order->decline_reason);
+
             return "Order #{$this->order->order_number} has been declined. Reason: {$declineReasonDisplay}";
         }
 
