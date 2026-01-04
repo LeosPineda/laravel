@@ -1,8 +1,15 @@
 <template>
   <VendorLayout>
-    <div class="bg-white">
-      <!-- Sticky Filters Header -->
-      <div class="sticky top-0 z-40 bg-white border-b border-gray-200 px-4 py-3">
+    <!-- Header -->
+    <div class="bg-white shadow-sm border-b border-gray-200">
+      <div class="px-4 sm:px-6 py-6">
+        <h1 class="text-2xl font-bold text-gray-900">Products</h1>
+        <p class="text-gray-600 mt-1">Manage your product catalog</p>
+      </div>
+    </div>
+
+    <!-- Sticky Filters Header -->
+    <div class="sticky top-0 z-40 bg-white border-b border-gray-200 px-4 sm:px-6 py-3">
         <div class="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
           <!-- Search -->
           <div class="flex-1">
@@ -198,7 +205,6 @@
           </div>
         </div>
       </div>
-    </div>
 
     <!-- Product Form Modal -->
     <ProductFormModal

@@ -1,27 +1,29 @@
 <template>
   <VendorLayout>
-    <div class="bg-white">
-      <!-- Header -->
-      <div class="bg-white border-b border-gray-200 px-6 py-4">
+    <!-- Header -->
+    <div class="bg-white shadow-sm border-b border-gray-200">
+      <div class="px-4 sm:px-6 py-6">
         <div class="flex items-center justify-between">
-          <h1 class="text-xl font-bold text-gray-900">Analytics Dashboard</h1>
-          <div class="flex gap-2">
-            <select
-              v-model="selectedPeriod"
-              @change="loadAllData"
-              class="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
-            >
-              <option value="today">Today</option>
-              <option value="week">This Week</option>
-              <option value="month">This Month</option>
-              <option value="year">This Year</option>
-            </select>
+          <div>
+            <h1 class="text-2xl font-bold text-gray-900">Analytics Dashboard</h1>
+            <p class="text-gray-600 mt-1">Track your sales and performance</p>
           </div>
+          <select
+            v-model="selectedPeriod"
+            @change="loadAllData"
+            class="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+          >
+            <option value="today">Today</option>
+            <option value="week">This Week</option>
+            <option value="month">This Month</option>
+            <option value="year">This Year</option>
+          </select>
         </div>
       </div>
+    </div>
 
-      <!-- Analytics Content -->
-      <div class="p-6">
+    <!-- Analytics Content -->
+    <div class="px-4 sm:px-6 py-6">
         <div class="max-w-6xl mx-auto">
           <!-- Loading State -->
           <div v-if="loading" class="text-center py-12">
@@ -155,7 +157,6 @@
           </div>
         </div>
       </div>
-    </div>
   </VendorLayout>
 </template>
 

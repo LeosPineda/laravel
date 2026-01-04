@@ -2,18 +2,14 @@
   <CustomerLayout>
     <!-- Header -->
     <div class="bg-white shadow-sm border-b border-gray-200">
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <div class="flex items-center justify-between">
-          <div>
-            <h1 class="text-2xl font-bold text-gray-900">Browse Vendors</h1>
-            <p class="text-gray-600 mt-1">Choose from our active food vendors</p>
-          </div>
-        </div>
+      <div class="px-4 sm:px-6 py-6">
+        <h1 class="text-2xl font-bold text-gray-900">Browse Vendors</h1>
+        <p class="text-gray-600 mt-1">Choose from our active food vendors</p>
       </div>
     </div>
 
     <!-- Vendor Grid -->
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div class="px-4 sm:px-6 py-8">
       <div v-if="loading" class="flex justify-center items-center min-h-[60vh]">
         <div class="text-center">
           <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>

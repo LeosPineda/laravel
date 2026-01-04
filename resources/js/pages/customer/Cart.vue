@@ -1,19 +1,15 @@
 <template>
   <CustomerLayout>
-    <!-- Header - Mobile App Style -->
-    <div class="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-10">
-      <div class="px-4 py-4 sm:py-6 sm:max-w-7xl sm:mx-auto sm:px-6 lg:px-8">
-        <div class="flex items-center justify-between">
-          <div>
-            <h1 class="text-xl sm:text-2xl font-bold text-gray-900">Your Cart</h1>
-            <p class="text-sm sm:text-base text-gray-600">Review your items</p>
-          </div>
-        </div>
+    <!-- Header -->
+    <div class="bg-white shadow-sm border-b border-gray-200">
+      <div class="px-4 sm:px-6 py-6">
+        <h1 class="text-2xl font-bold text-gray-900">Your Cart</h1>
+        <p class="text-gray-600 mt-1">Review your items</p>
       </div>
     </div>
 
-    <!-- Cart Content - Mobile First -->
-    <div class="px-3 py-4 sm:max-w-4xl sm:mx-auto sm:px-6 lg:px-8 sm:py-8">
+    <!-- Cart Content -->
+    <div class="px-4 sm:px-6 py-6">
       <!-- Loading State -->
       <div v-if="loading" class="flex justify-center items-center min-h-[40vh]">
         <div class="text-center">

@@ -1,13 +1,15 @@
 <template>
   <VendorLayout>
-    <div class="bg-white">
-      <!-- Header -->
-      <div class="bg-white border-b border-gray-200 px-6 py-4">
-        <h1 class="text-xl font-bold text-gray-900">QR Code Payment</h1>
+    <!-- Header -->
+    <div class="bg-white shadow-sm border-b border-gray-200">
+      <div class="px-4 sm:px-6 py-6">
+        <h1 class="text-2xl font-bold text-gray-900">QR Code Payment</h1>
+        <p class="text-gray-600 mt-1">Manage your payment QR code</p>
       </div>
+    </div>
 
-      <!-- QR Code Content -->
-      <div class="p-6">
+    <!-- QR Code Content -->
+    <div class="px-4 sm:px-6 py-6">
         <div class="max-w-4xl mx-auto">
           <!-- Mobile Number Section - Always Visible -->
           <div class="bg-white rounded-xl border border-gray-200 p-6 mb-6">
@@ -151,7 +153,6 @@
           </div>
         </div>
       </div>
-    </div>
 
     <!-- Delete Confirmation Modal -->
     <ConfirmModal
@@ -180,14 +181,8 @@
         <div class="relative z-10 max-w-lg w-full mx-4" @click.stop>
           <div class="bg-white rounded-2xl p-6">
             <!-- Header -->
-            <div class="flex items-center justify-between mb-4">
-              <h3 class="text-lg font-bold text-gray-900">QR Code Preview</h3>
-              <button
-                @click="showPreviewModal = false"
-                class="text-gray-400 hover:text-gray-600 text-2xl leading-none"
-              >
-                ×
-              </button>
+            <div class="mb-4">
+              <h3 class="text-lg font-bold text-gray-900 text-center">QR Code Preview</h3>
             </div>
 
             <!-- QR Image -->

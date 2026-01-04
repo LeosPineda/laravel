@@ -1,19 +1,16 @@
 <template>
   <VendorLayout>
-    <div class="bg-white">
-      <!-- Header -->
-      <div class="bg-white border-b border-gray-200 px-4 py-3">
-        <div class="flex items-center justify-between">
-          <h1 class="text-xl font-bold text-gray-900">Order Management</h1>
-          <div class="text-sm text-gray-500">
-            Manage incoming orders and view order history
-          </div>
-        </div>
+    <!-- Header -->
+    <div class="bg-white shadow-sm border-b border-gray-200">
+      <div class="px-4 sm:px-6 py-6">
+        <h1 class="text-2xl font-bold text-gray-900">Order Management</h1>
+        <p class="text-gray-600 mt-1">Manage incoming orders and view order history</p>
       </div>
+    </div>
 
-      <!-- Tab Navigation -->
-      <div class="bg-white border-b border-gray-200">
-        <div class="px-4">
+    <!-- Tab Navigation -->
+    <div class="bg-white border-b border-gray-200">
+      <div class="px-4 sm:px-6">
           <nav class="flex space-x-12">
             <button
               @click="activeTab = 'incoming'"
@@ -74,7 +71,7 @@
       </div>
 
       <!-- Tab Content -->
-      <div class="flex-1">
+      <div class="flex-1 px-4 sm:px-6 py-6">
         <IncomingOrders
           v-if="activeTab === 'incoming'"
           ref="incomingOrdersRef"
@@ -86,7 +83,6 @@
           @orders-updated="handleOrdersUpdated"
         />
       </div>
-    </div>
   </VendorLayout>
 </template>
 
@@ -142,13 +138,16 @@ const handleOrdersUpdated = async () => {
 // Real-time subscription for stats bar updates
 const subscribeToChannel = () => {
   if (window.Echo && vendorId.value) {
+    console.log('🔔 Orders: Subscribing to vendor-orders channel for vendor:', vendorId.value)
+
     window.Echo.private(`vendor-orders.${vendorId.value}`)
-      .listen('.OrderReceived', () => {
-        console.log('Orders: New order received, refreshing stats')
+      // FIXED: Event broadcasts as 'VendorNewOrder' not 'OrderReceived'
+      .listen('.VendorNewOrder', () => {
+        console.log('🛒 Orders: New order received, refreshing stats')
         loadStats()
       })
       .listen('.OrderStatusChanged', () => {
-        console.log('Orders: Order status changed, refreshing stats')
+        console.log('📦 Orders: Order status changed, refreshing stats')
         loadStats()
       })
   }

@@ -1,29 +1,28 @@
 <template>
   <VendorLayout>
-    <div class="bg-white">
-      <!-- Header -->
-      <div class="bg-white border-b border-gray-200 px-6 py-4">
+    <!-- Header -->
+    <div class="bg-white shadow-sm border-b border-gray-200">
+      <div class="px-4 sm:px-6 py-6">
         <div class="flex items-center justify-between">
-          <div class="flex items-center gap-3">
-            <div class="w-10 h-10 rounded-lg bg-orange-500 flex items-center justify-center">
-              <span class="text-white font-bold">🍔</span>
-            </div>
-            <h1 class="text-xl font-bold text-gray-900">Dashboard</h1>
+          <div>
+            <h1 class="text-2xl font-bold text-gray-900">Dashboard</h1>
+            <p class="text-gray-600 mt-1">Overview of your store performance</p>
           </div>
           <button
             @click="refreshStats"
-            class="p-2 text-gray-600 hover:text-gray-900 flex items-center gap-2"
+            class="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg flex items-center gap-2 transition-colors"
           >
             <svg class="w-5 h-5" :class="{ 'animate-spin': loadingStats }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
             </svg>
-            Refresh
+            <span class="hidden sm:inline">Refresh</span>
           </button>
         </div>
       </div>
+    </div>
 
-      <!-- Dashboard Content -->
-      <div class="p-6">
+    <!-- Dashboard Content -->
+    <div class="px-4 sm:px-6 py-6">
         <!-- Stats Grid -->
         <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
           <!-- Today's Orders -->
@@ -198,7 +197,6 @@
           </div>
         </div>
       </div>
-    </div>
   </VendorLayout>
 </template>
 
@@ -273,13 +271,16 @@ const refreshStats = async () => {
 // Real-time subscription for stats updates
 const subscribeToChannel = () => {
   if (window.Echo && vendorId.value) {
+    console.log('🔔 Dashboard: Subscribing to vendor-orders channel for vendor:', vendorId.value)
+
     window.Echo.private(`vendor-orders.${vendorId.value}`)
-      .listen('.OrderReceived', () => {
-        console.log('Dashboard: New order received, refreshing stats')
+      // FIXED: Event broadcasts as 'VendorNewOrder' not 'OrderReceived'
+      .listen('.VendorNewOrder', () => {
+        console.log('🛒 Dashboard: New order received, refreshing stats')
         refreshStats()
       })
       .listen('.OrderStatusChanged', () => {
-        console.log('Dashboard: Order status changed, refreshing stats')
+        console.log('📦 Dashboard: Order status changed, refreshing stats')
         refreshStats()
       })
   }

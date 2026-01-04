@@ -31,7 +31,7 @@ const playSound = () => {
   }
 }
 
-const show = (message: string, type: Toast['type'] = 'info', duration = 5000) => {
+const show = (message: string, type: Toast['type'] = 'info', duration = 10000) => {
   const id = ++toastId
 
   toasts.value.push({
@@ -62,14 +62,14 @@ const clear = () => {
   toasts.value = []
 }
 
-// Convenience methods
-const success = (message: string, duration = 5000) => show(message, 'success', duration)
-const error = (message: string, duration = 5000) => show(message, 'error', duration)
-const warning = (message: string, duration = 5000) => show(message, 'warning', duration)
-const info = (message: string, duration = 5000) => show(message, 'info', duration)
+// Convenience methods - 10 seconds default duration
+const success = (message: string, duration = 10000) => show(message, 'success', duration)
+const error = (message: string, duration = 10000) => show(message, 'error', duration)
+const warning = (message: string, duration = 10000) => show(message, 'warning', duration)
+const info = (message: string, duration = 10000) => show(message, 'info', duration)
 
-// Special method for new orders - with sound
-const newOrder = (message: string, duration = 8000) => {
+// Special method for new orders - with sound (15 seconds for vendor attention)
+const newOrder = (message: string, duration = 15000) => {
   playSound()
   return show(message, 'order', duration)
 }

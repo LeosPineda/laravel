@@ -9,10 +9,10 @@
     <div class="absolute inset-0 bg-black/50 backdrop-blur-sm"></div>
 
     <!-- Modal Content -->
-    <!-- Updated: All corners rounded for better appearance -->
+    <!-- Updated: Wider modal to show more products -->
     <div
       ref="modalContent"
-      class="relative bg-white rounded-3xl shadow-2xl w-full h-[70vh] lg:h-[70vh] lg:max-w-6xl lg:mx-4 transform transition-all duration-300 ease-out"
+      class="relative bg-white rounded-3xl shadow-2xl w-full h-[85vh] lg:h-[80vh] lg:max-w-[90vw] xl:max-w-[85vw] lg:mx-4 transform transition-all duration-300 ease-out"
       :class="{
         'translate-y-0 opacity-100': isOpen,
         'translate-y-full opacity-0 lg:translate-y-0 lg:scale-95 lg:opacity-0': !isOpen
@@ -123,7 +123,7 @@
             </div>
 
             <!-- Products Grid using ProductBox Component -->
-            <div v-if="filteredProducts.length > 0" class="grid grid-cols-2 lg:grid-cols-5 gap-3 lg:gap-4">
+            <div v-if="filteredProducts.length > 0" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7 gap-3 lg:gap-4">
               <ProductBox
                 v-for="product in filteredProducts"
                 :key="product.id"

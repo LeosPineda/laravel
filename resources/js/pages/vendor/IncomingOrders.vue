@@ -158,13 +158,22 @@ defineExpose({
 // Real-time subscription
 const subscribeToChannel = () => {
   if (window.Echo && vendorId.value) {
+    console.log('🔔 Subscribing to vendor-orders channel for vendor:', vendorId.value);
+
     window.Echo.private(`vendor-orders.${vendorId.value}`)
-      .listen('.OrderReceived', (e: any) => {
+      // FIXED: Event broadcasts as 'VendorNewOrder' not 'OrderReceived'
+      .listen('.VendorNewOrder', (e: any) => {
+        console.log('🛒 NEW ORDER RECEIVED:', e);
         loadOrders();
-        toast.success(`New Order #${e.order?.order_number}!`);
+        toast.newOrder(`🆕 New Order #${e.order?.order_number} from Table ${e.order?.table_number || 'N/A'}!`);
       })
       .listen('.OrderStatusChanged', (e: any) => {
+        console.log('📦 ORDER STATUS CHANGED:', e);
         loadOrders();
+        // Show toast for customer cancellations
+        if (e.order?.new_status === 'cancelled') {
+          toast.warning(`⚠️ Order #${e.order?.order_number} was cancelled`);
+        }
       });
   }
 };

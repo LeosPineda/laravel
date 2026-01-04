@@ -1,13 +1,14 @@
 <template>
   <CustomerLayout>
-    <div class="max-w-4xl mx-auto">
-      <!-- Header -->
-      <div class="bg-white shadow-sm border-b border-gray-200 mb-6">
-        <div class="px-6 py-8">
-          <h1 class="text-3xl font-bold text-gray-900">Profile Settings</h1>
-          <p class="text-gray-600 mt-2">Manage your account security settings</p>
-        </div>
+    <!-- Header - Full Width -->
+    <div class="bg-white shadow-sm border-b border-gray-200">
+      <div class="px-4 sm:px-6 py-6">
+        <h1 class="text-2xl font-bold text-gray-900">Profile Settings</h1>
+        <p class="text-gray-600 mt-1">Manage your account security settings</p>
       </div>
+    </div>
+
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 py-6">
 
       <!-- Success/Error Messages -->
       <div v-if="$page.props.flash?.success" class="mb-6 bg-green-50 border border-green-200 rounded-lg p-4">
