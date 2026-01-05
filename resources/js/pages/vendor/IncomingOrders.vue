@@ -57,9 +57,9 @@ const formatTime = (dateString: string) => {
   return new Date(dateString).toLocaleTimeString('en-PH', { hour: '2-digit', minute: '2-digit' });
 };
 
-const loadOrders = async () => {
+// Silent refresh - doesn't show global loading spinner
+const refreshOrders = async () => {
   try {
-    loading.value = true;
     const response = await apiGet('/api/vendor/orders?per_page=50');
 
     if (response.ok) {
@@ -67,10 +67,17 @@ const loadOrders = async () => {
       allOrders.value = (data.orders || []).filter((o: any) =>
         o.status === 'pending' || o.status === 'accepted'
       );
-    } else {
-      console.error('Failed to load orders:', response.status);
-      toast.error('Failed to load orders');
     }
+  } catch (error) {
+    console.error('Error refreshing orders:', error);
+  }
+};
+
+// Initial load with loading spinner
+const loadOrders = async () => {
+  try {
+    loading.value = true;
+    await refreshOrders();
   } catch (error) {
     console.error('Error loading orders:', error);
     toast.error('Failed to load orders');
@@ -90,7 +97,7 @@ const acceptOrder = async (order: any) => {
 
     if (response.ok) {
       toast.success(`Order #${order.order_number} accepted! Customer will be notified.`);
-      await loadOrders();
+      await refreshOrders();
       activeTab.value = 'accepted';
       emit('ordersUpdated');
     } else {
@@ -120,7 +127,7 @@ const handleDeclineOrder = async (reason: string) => {
 
     if (response.ok) {
       toast.warning(`Order #${selectedOrder.value.order_number} declined. Customer will be notified.`);
-      await loadOrders();
+      await refreshOrders();
       emit('ordersUpdated');
     } else {
       const error = await response.json();
@@ -138,7 +145,7 @@ const markReady = async (order: any) => {
 
     if (response.ok) {
       toast.success(`Order #${order.order_number} is ready! Customer notified + receipt sent.`);
-      await loadOrders();
+      await refreshOrders();
       emit('ordersUpdated');
     } else {
       const error = await response.json();

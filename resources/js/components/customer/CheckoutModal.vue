@@ -235,7 +235,7 @@
               v-model="tableNumber"
               type="text"
               placeholder="Enter table number (e.g., A1, B5)"
-              class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+              class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-transparent text-gray-900 bg-white placeholder:text-gray-400"
             />
           </div>
 
@@ -248,7 +248,7 @@
               v-model="specialInstructions"
               placeholder="Any allergies or special requests..."
               rows="3"
-              class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-transparent resize-none"
+              class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-transparent resize-none text-gray-900 bg-white placeholder:text-gray-400"
             ></textarea>
           </div>
         </div>

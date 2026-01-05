@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { ref } from 'vue';
+
 const props = defineProps<{
   order: {
     id: number;
@@ -17,17 +19,29 @@ const emit = defineEmits<{
   markReady: [order: any];
 }>();
 
-// Just emit events - parent handles API calls
-const acceptOrder = (order: any) => {
+// Loading states for buttons
+const accepting = ref(false);
+const declining = ref(false);
+const markingReady = ref(false);
+
+// Emit events with loading states
+const acceptOrder = async (order: any) => {
+  accepting.value = true;
   emit('acceptOrder', order);
+  // Parent will reload orders, so loading state will be cleared when component unmounts
+  setTimeout(() => { accepting.value = false; }, 5000); // Fallback timeout
 };
 
 const declineOrder = (order: any) => {
+  declining.value = true;
   emit('declineOrder', order);
+  setTimeout(() => { declining.value = false; }, 5000);
 };
 
-const markReady = (order: any) => {
+const markReady = async (order: any) => {
+  markingReady.value = true;
   emit('markReady', order);
+  setTimeout(() => { markingReady.value = false; }, 5000);
 };
 
 const formatTime = (dateString: string) => {
@@ -83,32 +97,48 @@ const getStatusInfo = (status: string) => {
     <div class="flex gap-2">
       <button
         @click="emit('viewOrder', order)"
-        class="flex-1 px-3 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm hover:bg-gray-200 transition-colors"
+        :disabled="accepting || declining || markingReady"
+        class="flex-1 px-3 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm hover:bg-gray-200 transition-colors disabled:opacity-50"
       >
-        View Order
+        View
       </button>
 
       <template v-if="order.status === 'pending'">
         <button
           @click="declineOrder(order)"
-          class="px-3 py-2 bg-red-100 text-red-600 rounded-lg text-sm hover:bg-red-200 transition-colors"
+          :disabled="accepting || declining"
+          class="px-3 py-2 bg-red-100 text-red-600 rounded-lg text-sm hover:bg-red-200 transition-colors disabled:opacity-50 flex items-center gap-1"
         >
-          Decline
+          <svg v-if="declining" class="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+          </svg>
+          {{ declining ? '...' : 'Decline' }}
         </button>
         <button
           @click="acceptOrder(order)"
-          class="flex-1 px-3 py-2 bg-green-500 text-white rounded-lg text-sm hover:bg-green-600 transition-colors"
+          :disabled="accepting || declining"
+          class="flex-1 px-3 py-2 bg-green-500 text-white rounded-lg text-sm hover:bg-green-600 transition-colors disabled:opacity-50 flex items-center justify-center gap-1"
         >
-          Accept
+          <svg v-if="accepting" class="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+          </svg>
+          {{ accepting ? 'Accepting...' : 'Accept' }}
         </button>
       </template>
 
       <template v-else-if="order.status === 'accepted'">
         <button
           @click="markReady(order)"
-          class="flex-1 px-3 py-2 bg-blue-500 text-white rounded-lg text-sm hover:bg-blue-600 transition-colors"
+          :disabled="markingReady"
+          class="flex-1 px-3 py-2 bg-blue-500 text-white rounded-lg text-sm hover:bg-blue-600 transition-colors disabled:opacity-50 flex items-center justify-center gap-1"
         >
-          Mark Ready
+          <svg v-if="markingReady" class="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+          </svg>
+          {{ markingReady ? 'Processing...' : 'Mark Ready' }}
         </button>
       </template>
     </div>

@@ -127,68 +127,70 @@
             <div
               v-for="item in vendorCart.items"
               :key="item.id"
-              class="p-4 flex items-center gap-4"
+              class="p-3 sm:p-4"
             >
-              <!-- Product Image -->
-              <div class="w-16 h-16 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
-                <img
-                  v-if="item.product.image_url"
-                  :src="getImageUrl(item.product.image_url)"
-                  :alt="item.product.name"
-                  class="w-full h-full object-cover"
-                  @error="handleImageError"
-                />
-                <div v-else class="w-full h-full flex items-center justify-center text-2xl">
-                  🍽️
+              <!-- Mobile: Stack layout -->
+              <div class="flex gap-3">
+                <!-- Product Image -->
+                <div class="w-14 h-14 sm:w-16 sm:h-16 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
+                  <img
+                    v-if="item.product.image_url"
+                    :src="getImageUrl(item.product.image_url)"
+                    :alt="item.product.name"
+                    class="w-full h-full object-cover"
+                    @error="handleImageError"
+                  />
+                  <div v-else class="w-full h-full flex items-center justify-center text-xl sm:text-2xl">
+                    🍽️
+                  </div>
                 </div>
-              </div>
 
-              <!-- Item Details -->
-              <div class="flex-1 min-w-0">
-                <h4 class="font-medium text-gray-900 truncate">{{ item.product.name }}</h4>
-                <p class="text-sm text-gray-500">
-                  ₱{{ formatPrice(item.unit_price) }} × {{ item.quantity }}
-                </p>
-                <!-- Addons -->
-                <div v-if="item.selected_addons && item.selected_addons.length > 0" class="mt-1">
-                  <span class="text-xs text-orange-600">
-                    + {{ item.selected_addons.length }} addon(s)
-                  </span>
+                <!-- Item Details & Actions -->
+                <div class="flex-1 min-w-0">
+                  <!-- Name & Price Row -->
+                  <div class="flex items-start justify-between gap-2">
+                    <h4 class="font-medium text-gray-900 text-sm sm:text-base line-clamp-2">{{ item.product.name }}</h4>
+                    <span class="font-semibold text-orange-600 text-sm sm:text-base whitespace-nowrap">
+                      ₱{{ formatPrice(item.total_price) }}
+                    </span>
+                  </div>
+
+                  <!-- Quantity & Addons -->
+                  <p class="text-xs sm:text-sm text-gray-500 mt-0.5">
+                    ₱{{ formatPrice(item.unit_price) }} × {{ item.quantity }}
+                    <span v-if="item.selected_addons && item.selected_addons.length > 0" class="text-orange-600">
+                      + {{ item.selected_addons.length }} addon(s)
+                    </span>
+                  </p>
+
+                  <!-- Action Buttons Row -->
+                  <div class="flex items-center gap-2 mt-2">
+                    <button
+                      @click="handleEditItem(item)"
+                      class="flex items-center gap-1 px-2.5 py-1.5 text-xs sm:text-sm text-gray-600 hover:text-orange-600 bg-gray-100 hover:bg-orange-50 rounded-lg transition-colors"
+                    >
+                      <svg class="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                      </svg>
+                      <span>Edit</span>
+                    </button>
+
+                    <button
+                      @click="handleRemoveItem(item.id)"
+                      :disabled="removingItem === item.id"
+                      class="flex items-center gap-1 px-2.5 py-1.5 text-xs sm:text-sm text-gray-600 hover:text-red-600 bg-gray-100 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
+                    >
+                      <svg v-if="removingItem !== item.id" class="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                      <svg v-else class="w-3.5 h-3.5 sm:w-4 sm:h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                      </svg>
+                      <span>{{ removingItem === item.id ? '...' : 'Remove' }}</span>
+                    </button>
+                  </div>
                 </div>
-              </div>
-
-              <!-- Price & Actions -->
-              <div class="flex items-center gap-3">
-                <span class="font-semibold text-orange-600">
-                  ₱{{ formatPrice(item.total_price) }}
-                </span>
-
-                <!-- Remove Button -->
-                <button
-                  @click="handleRemoveItem(item.id)"
-                  :disabled="removingItem === item.id"
-                  class="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                  title="Remove"
-                >
-                  <svg v-if="removingItem !== item.id" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                  </svg>
-                  <svg v-else class="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
-                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
-                  </svg>
-                </button>
-
-                <!-- Edit Button -->
-                <button
-                  @click="handleEditItem(item)"
-                  class="p-2 text-gray-400 hover:text-orange-500 hover:bg-orange-50 rounded-lg transition-colors"
-                  title="Edit"
-                >
-                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                  </svg>
-                </button>
               </div>
             </div>
           </div>

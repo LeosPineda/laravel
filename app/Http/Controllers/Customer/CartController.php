@@ -49,12 +49,22 @@ class CartController extends Controller
                     ];
                 }
 
+                // Enrich selected_addons with addon names
+                $selectedAddons = $item->selected_addons ?? [];
+                if (!empty($selectedAddons)) {
+                    $addonIds = array_column($selectedAddons, 'addon_id');
+                    $addons = Addon::whereIn('id', $addonIds)->pluck('name', 'id');
+                    foreach ($selectedAddons as &$addon) {
+                        $addon['name'] = $addons[$addon['addon_id']] ?? 'Addon';
+                    }
+                }
+
                 $vendorCarts[$vendorId]['items'][] = [
                     'id' => $item->id,
                     'product_id' => $item->product_id,
                     'quantity' => $item->quantity,
                     'unit_price' => $item->unit_price,
-                    'selected_addons' => $item->selected_addons,
+                    'selected_addons' => $selectedAddons,
                     'special_instructions' => $item->special_instructions,
                     'total_price' => $item->total_price,
                     'product' => [

@@ -2,23 +2,26 @@
   <!-- Product Modal Container -->
   <div
     v-if="isOpen"
-    class="fixed inset-0 z-40 flex items-center justify-center"
+    class="fixed inset-0 z-40 flex items-end sm:items-center justify-center"
     @click="handleBackdropClick"
   >
     <!-- Backdrop -->
     <div class="absolute inset-0 bg-black/50 backdrop-blur-sm"></div>
 
-    <!-- Modal Content -->
-    <!-- Updated: Wider modal to show more products -->
+    <!-- Modal Content - Bottom sheet on mobile, centered on desktop -->
     <div
       ref="modalContent"
-      class="relative bg-white rounded-3xl shadow-2xl w-full h-[85vh] lg:h-[80vh] lg:max-w-[90vw] xl:max-w-[85vw] lg:mx-4 transform transition-all duration-300 ease-out"
+      class="relative bg-white w-full max-h-[90vh] sm:max-h-[85vh] sm:h-auto sm:rounded-3xl rounded-t-3xl shadow-2xl lg:max-w-[90vw] xl:max-w-[85vw] lg:mx-4 transform transition-all duration-300 ease-out flex flex-col"
       :class="{
         'translate-y-0 opacity-100': isOpen,
-        'translate-y-full opacity-0 lg:translate-y-0 lg:scale-95 lg:opacity-0': !isOpen
+        'translate-y-full opacity-0 sm:translate-y-0 sm:scale-95 sm:opacity-0': !isOpen
       }"
       @click.stop
     >
+      <!-- Mobile drag handle -->
+      <div class="sm:hidden flex justify-center pt-2 pb-1 flex-shrink-0">
+        <div class="w-10 h-1 bg-gray-300 rounded-full"></div>
+      </div>
       <!-- Header -->
       <div class="flex items-center justify-between p-4 lg:p-6 border-b border-gray-200">
         <div class="flex items-center gap-3">
@@ -168,7 +171,12 @@ interface Product {
   stock_quantity: number
   is_active?: boolean
   is_featured?: boolean
-  addons?: Addon[]
+  addons?: Array<{
+    id: number
+    name: string
+    price: string | number
+    is_active: boolean
+  }>
 }
 
 interface Vendor {
