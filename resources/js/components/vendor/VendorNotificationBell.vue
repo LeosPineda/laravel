@@ -219,51 +219,63 @@ const deleteAll = async () => {
 }
 
 // Real-time subscription for ONLY two order states
-// RE-ENABLED: Core functionality for vendor-customer system
+// FIXED: Use correct channel and event names that match backend
 const subscribeToNotifications = () => {
   if (window.Echo && props.vendorId) {
     try {
-      window.Echo.private(`vendor-notifications.${props.vendorId}`)
-        .listen('.OrderReceived', (e) => {
+      // FIXED: Use vendor-orders channel (matches OrderReceived.php)
+      window.Echo.private(`vendor-orders.${props.vendorId}`)
+        // FIXED: Listen for VendorNewOrder (matches OrderReceived.php broadcastAs)
+        .listen('.VendorNewOrder', (e) => {
+          console.log('🛒 VendorNotificationBell: New order received', e)
           // Add new order alert to top of list
           notifications.value.unshift({
-            ...e.notification,
-            type: 'order'  // New order from customer
+            id: Date.now(), // Temporary ID until refresh
+            title: 'New Order! 🛒',
+            message: e.message || `Order #${e.order?.order_number} from Table ${e.order?.table_number || 'N/A'}`,
+            type: 'order',
+            is_read: false,
+            created_at: new Date().toISOString()
           })
           unreadCount.value++
 
           // Show browser notification
           if (Notification.permission === 'granted') {
             new Notification('New Order! 🛒', {
-              body: e.notification.message,
+              body: e.message || `Order #${e.order?.order_number}`,
               icon: '/fast-food.png',
               tag: 'new-order'
             })
           }
         })
+        // Listen for order cancellations (customer cancelled pending order)
         .listen('.OrderStatusChanged', (e) => {
-          // Only handle DECLINED orders
-          const status = e.notification.data?.status
-          if (status === 'declined') {
+          console.log('📦 VendorNotificationBell: Order status changed', e)
+          // Only handle CANCELLED orders from customers
+          const newStatus = e.order?.new_status || e.order?.status
+          if (newStatus === 'cancelled') {
             notifications.value.unshift({
-              ...e.notification,
-              type: 'order_declined'  // Customer declined order
+              id: Date.now(),
+              title: 'Order Cancelled ❌',
+              message: e.message || `Order #${e.order?.order_number} was cancelled`,
+              type: 'order_declined',
+              is_read: false,
+              created_at: new Date().toISOString()
             })
             unreadCount.value++
 
             // Show browser notification
             if (Notification.permission === 'granted') {
-              new Notification('Order Declined ❌', {
-                body: e.notification.message,
+              new Notification('Order Cancelled ❌', {
+                body: e.message || `Order #${e.order?.order_number} was cancelled`,
                 icon: '/fast-food.png',
-                tag: 'order-declined'
+                tag: 'order-cancelled'
               })
             }
           }
         })
     } catch (error) {
       console.error('Broadcasting connection error:', error)
-      // Continue without real-time if broadcasting fails
     }
   }
 }
@@ -281,7 +293,8 @@ onMounted(() => {
 onUnmounted(() => {
   if (window.Echo && props.vendorId) {
     try {
-      window.Echo.leave(`vendor-notifications.${props.vendorId}`)
+      // FIXED: Leave the correct channel (vendor-orders, not vendor-notifications)
+      window.Echo.leave(`vendor-orders.${props.vendorId}`)
     } catch (error) {
       console.error('Error leaving broadcasting channel:', error)
     }

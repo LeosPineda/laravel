@@ -248,14 +248,8 @@ onUnmounted(() => {
 
     <!-- Content -->
     <div class="p-6">
-      <!-- Loading -->
-      <div v-if="loading" class="text-center py-12">
-        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto"></div>
-        <p class="text-gray-500 mt-4">Loading orders...</p>
-      </div>
-
       <!-- Search Control -->
-      <div v-if="!loading" class="mb-6 p-4 bg-gray-50 rounded-lg border">
+      <div class="mb-6 p-4 bg-gray-50 rounded-lg border">
         <div class="flex items-center gap-4">
           <div class="flex items-center gap-2">
             <label class="text-sm text-gray-600">Search:</label>

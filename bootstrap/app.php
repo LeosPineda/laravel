@@ -29,15 +29,16 @@ return Application::configure(basePath: dirname(__DIR__))
 
         // ✅ COMPLETE FIX: Disable CSRF for all routes to prevent any 419 errors
         $middleware->validateCsrfTokens(except: [
-            'api/*',           // All API routes - no CSRF needed for session-based auth
-            'superadmin/*',    // All superadmin routes (forms)
-            'vendor/*',        // All vendor routes (forms)
-            'customer/*',      // All customer routes (forms)
+            'api/*',              // All API routes - no CSRF needed for session-based auth
+            'broadcasting/auth',  // ✅ Pusher channel authorization
+            'superadmin/*',       // All superadmin routes (forms)
+            'vendor/*',           // All vendor routes (forms)
+            'customer/*',         // All customer routes (forms)
             'logout',
-            'login',           // Login form
-            'register',        // Registration form
-            'forgot-password', // Password reset request
-            'reset-password',  // Password reset confirmation
+            'login',              // Login form
+            'register',           // Registration form
+            'forgot-password',    // Password reset request
+            'reset-password',     // Password reset confirmation
         ]);
 
         $middleware->alias([
