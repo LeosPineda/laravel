@@ -48,7 +48,8 @@ const getIcon = (type: string) => {
     error: '❌',
     warning: '⚠️',
     info: 'ℹ️',
-    order: '📦'
+    order: '📦',
+    customer: '🔔'
   }
   return icons[type] || '📢'
 }
@@ -59,7 +60,8 @@ const getToastClasses = (type: string) => {
     error: 'bg-red-600 text-white border-red-400',
     warning: 'bg-yellow-500 text-black border-yellow-400',
     info: 'bg-blue-600 text-white border-blue-400',
-    order: 'bg-gradient-to-r from-orange-500 to-red-500 text-white border-orange-400 animate-pulse ring-4 ring-orange-300/50'
+    order: 'bg-gradient-to-r from-orange-500 to-red-500 text-white border-orange-400 animate-pulse ring-4 ring-orange-300/50',
+    customer: 'bg-gradient-to-r from-green-500 to-teal-500 text-white border-green-400 ring-2 ring-green-300/50'
   }
   return classes[type] || 'bg-gray-700 text-white border-gray-500'
 }

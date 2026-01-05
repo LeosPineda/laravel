@@ -135,7 +135,7 @@ const handleOrdersUpdated = async () => {
   }
 }
 
-// Real-time subscription for stats bar updates
+// Real-time subscription for stats bar updates AND child component refresh
 const subscribeToChannel = () => {
   if (window.Echo && vendorId.value) {
     console.log('🔔 Orders: Subscribing to vendor-orders channel for vendor:', vendorId.value)
@@ -143,12 +143,23 @@ const subscribeToChannel = () => {
     window.Echo.private(`vendor-orders.${vendorId.value}`)
       // FIXED: Event broadcasts as 'VendorNewOrder' not 'OrderReceived'
       .listen('.VendorNewOrder', () => {
-        console.log('🛒 Orders: New order received, refreshing stats')
+        console.log('🛒 Orders: New order received, refreshing stats and child components')
         loadStats()
+        // Refresh child IncomingOrders component
+        if (incomingOrdersRef.value?.refreshOrders) {
+          incomingOrdersRef.value.refreshOrders()
+        }
       })
       .listen('.OrderStatusChanged', () => {
-        console.log('📦 Orders: Order status changed, refreshing stats')
+        console.log('📦 Orders: Order status changed, refreshing stats and child components')
         loadStats()
+        // Refresh child components
+        if (incomingOrdersRef.value?.refreshOrders) {
+          incomingOrdersRef.value.refreshOrders()
+        }
+        if (orderHistoryRef.value?.loadOrders) {
+          orderHistoryRef.value.loadOrders()
+        }
       })
   }
 }

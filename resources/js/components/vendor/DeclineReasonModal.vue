@@ -83,14 +83,7 @@
       </div>
 
       <!-- Footer -->
-      <div class="flex items-center justify-end gap-3 p-6 border-t border-gray-200">
-        <button
-          @click="closeModal"
-          :disabled="processing"
-          class="px-4 py-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50"
-        >
-          Cancel
-        </button>
+      <div class="flex items-center justify-end p-6 border-t border-gray-200">
         <button
           @click="confirmDecline"
           :disabled="processing || !canConfirm"
@@ -174,15 +167,20 @@ const confirmDecline = async () => {
   try {
     const reason = selectedReason.value || customReason.value.trim()
 
-    // Small delay to show loading state
-    await new Promise(resolve => setTimeout(resolve, 500))
-
+    // Emit the decline event - parent will handle API call
     emit('decline', reason)
-    closeModal()
+
+    // Wait a bit then close modal
+    setTimeout(() => {
+      selectedReason.value = ''
+      customReason.value = ''
+      error.value = ''
+      processing.value = false
+      emit('close')
+    }, 1000)
   } catch (err) {
     console.error('Error declining order:', err)
     error.value = 'Failed to decline order. Please try again.'
-  } finally {
     processing.value = false
   }
 }

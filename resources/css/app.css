@@ -204,3 +204,174 @@
         display: none;
     }
 }
+
+/* ========================================
+   📱 MOBILE-FIRST SHOPEE-LIKE STYLES
+   ======================================== */
+
+/* Mobile base font size (14px instead of 16px) */
+@media (max-width: 640px) {
+    html {
+        font-size: 14px;
+    }
+
+    body {
+        line-height: 1.4;
+    }
+
+    /* Tighter line heights for mobile */
+    .leading-mobile {
+        line-height: 1.3;
+    }
+
+    /* Mobile-optimized text sizes */
+    .text-mobile-xs { font-size: 11px; }
+    .text-mobile-sm { font-size: 12px; }
+    .text-mobile-base { font-size: 13px; }
+    .text-mobile-md { font-size: 14px; }
+    .text-mobile-lg { font-size: 15px; }
+    .text-mobile-xl { font-size: 16px; }
+    .text-mobile-price { font-size: 16px; font-weight: 600; }
+
+    /* Compact padding for mobile */
+    .p-mobile { padding: 0.75rem; }
+    .px-mobile { padding-left: 0.75rem; padding-right: 0.75rem; }
+    .py-mobile { padding-top: 0.5rem; padding-bottom: 0.5rem; }
+
+    /* Mobile button styles */
+    .btn-mobile {
+        padding: 0.5rem 0.75rem;
+        font-size: 13px;
+        border-radius: 0.5rem;
+    }
+
+    /* Mobile input styles */
+    .input-mobile {
+        padding: 0.625rem 0.75rem;
+        font-size: 14px;
+        border-radius: 0.5rem;
+    }
+}
+
+/* Customer pages mobile-specific styles */
+@media (max-width: 640px) {
+    /* Product cards - more compact */
+    .product-card-mobile {
+        padding: 0.5rem;
+    }
+
+    .product-card-mobile .product-name {
+        font-size: 13px;
+        line-height: 1.3;
+        -webkit-line-clamp: 2;
+    }
+
+    .product-card-mobile .product-price {
+        font-size: 15px;
+        font-weight: 600;
+        color: #ff6b35;
+    }
+
+    .product-card-mobile .product-meta {
+        font-size: 11px;
+        color: #6b7280;
+    }
+
+    /* Vendor cards - compact */
+    .vendor-card-mobile {
+        padding: 0.75rem;
+    }
+
+    .vendor-card-mobile .vendor-name {
+        font-size: 14px;
+        font-weight: 600;
+        line-height: 1.3;
+    }
+
+    .vendor-card-mobile .vendor-meta {
+        font-size: 11px;
+        color: #6b7280;
+    }
+
+    /* Cart items - compact layout */
+    .cart-item-mobile {
+        padding: 0.75rem;
+        gap: 0.5rem;
+    }
+
+    .cart-item-mobile .item-name {
+        font-size: 13px;
+        font-weight: 500;
+        line-height: 1.3;
+    }
+
+    .cart-item-mobile .item-price {
+        font-size: 14px;
+        font-weight: 600;
+        color: #ff6b35;
+    }
+
+    .cart-item-mobile .item-meta {
+        font-size: 11px;
+        color: #6b7280;
+    }
+
+    /* Modal headers - compact */
+    .modal-header-mobile {
+        padding: 0.75rem 1rem;
+    }
+
+    .modal-header-mobile h2 {
+        font-size: 15px;
+        font-weight: 600;
+    }
+
+    .modal-header-mobile p {
+        font-size: 12px;
+    }
+
+    /* Bottom navigation - app-like */
+    .bottom-nav-mobile {
+        padding: 0.5rem 0;
+    }
+
+    .bottom-nav-mobile .nav-item {
+        font-size: 10px;
+    }
+
+    /* Headers - compact */
+    .page-header-mobile h1 {
+        font-size: 18px;
+        font-weight: 700;
+    }
+
+    .page-header-mobile p {
+        font-size: 12px;
+    }
+
+    /* Notifications - compact */
+    .notification-item-mobile {
+        padding: 0.75rem;
+    }
+
+    .notification-item-mobile .notif-title {
+        font-size: 13px;
+        font-weight: 500;
+    }
+
+    .notification-item-mobile .notif-message {
+        font-size: 12px;
+    }
+
+    .notification-item-mobile .notif-time {
+        font-size: 11px;
+        color: #9ca3af;
+    }
+}
+
+/* Tablet and desktop - restore normal sizes */
+@media (min-width: 641px) {
+    html {
+        font-size: 16px;
+    }
+}

@@ -3,32 +3,49 @@ import { ref, readonly } from 'vue'
 export interface Toast {
   id: number
   message: string
-  type: 'success' | 'error' | 'warning' | 'info' | 'order'
+  type: 'success' | 'error' | 'warning' | 'info' | 'order' | 'customer'
   duration: number
 }
 
 const toasts = ref<Toast[]>([])
 let toastId = 0
 
-// Sound for new orders
-let orderSound: HTMLAudioElement | null = null
+// Sound file path
+const NOTIFICATION_SOUND = '/storage/Sound/mixkit-software-interface-back-2575.wav'
+
+// Sound instance (lazy loaded)
+let notificationSound: HTMLAudioElement | null = null
 
 const initSound = () => {
-  if (!orderSound && typeof window !== 'undefined') {
-    orderSound = new Audio('/sounds/new-order.mp3')
-    orderSound.volume = 0.7
+  if (typeof window === 'undefined') return
+  if (!notificationSound) {
+    notificationSound = new Audio(NOTIFICATION_SOUND)
+    notificationSound.volume = 0.6
   }
 }
 
-const playSound = () => {
+// Play the notification sound
+const playNotificationSound = () => {
   initSound()
-  if (orderSound) {
-    orderSound.currentTime = 0
-    orderSound.play().catch(() => {
-      // Audio play failed (user hasn't interacted with page yet)
+  if (notificationSound) {
+    notificationSound.currentTime = 0
+    notificationSound.play().catch(() => {
       console.log('Sound play requires user interaction first')
     })
   }
+}
+
+// Different sound methods (all use the same sound for consistency)
+const playOrderSound = () => {
+  playNotificationSound()
+}
+
+const playCustomerSound = () => {
+  playNotificationSound()
+}
+
+const playErrorSound = () => {
+  playNotificationSound()
 }
 
 const show = (message: string, type: Toast['type'] = 'info', duration = 10000) => {
@@ -62,16 +79,34 @@ const clear = () => {
   toasts.value = []
 }
 
-// Convenience methods - 10 seconds default duration
-const success = (message: string, duration = 10000) => show(message, 'success', duration)
-const error = (message: string, duration = 10000) => show(message, 'error', duration)
-const warning = (message: string, duration = 10000) => show(message, 'warning', duration)
-const info = (message: string, duration = 10000) => show(message, 'info', duration)
+// Convenience methods - 30 seconds default duration for customer alerts
+const success = (message: string, duration = 30000, withSound = false) => {
+  if (withSound) playCustomerSound()
+  return show(message, 'success', duration)
+}
+
+const error = (message: string, duration = 30000, withSound = false) => {
+  if (withSound) playErrorSound()
+  return show(message, 'error', duration)
+}
+
+const warning = (message: string, duration = 30000) => show(message, 'warning', duration)
+const info = (message: string, duration = 30000) => show(message, 'info', duration)
 
 // Special method for new orders - with sound (15 seconds for vendor attention)
 const newOrder = (message: string, duration = 15000) => {
-  playSound()
+  playOrderSound()
   return show(message, 'order', duration)
+}
+
+// Customer notification with sound (30 seconds)
+const customerAlert = (message: string, type: 'success' | 'error' = 'success', duration = 30000) => {
+  if (type === 'success') {
+    playCustomerSound()
+  } else {
+    playErrorSound()
+  }
+  return show(message, type === 'success' ? 'customer' : 'error', duration)
 }
 
 export function useToast() {
@@ -85,6 +120,9 @@ export function useToast() {
     warning,
     info,
     newOrder,
-    playSound
+    customerAlert,
+    playCustomerSound,
+    playOrderSound,
+    playErrorSound
   }
 }

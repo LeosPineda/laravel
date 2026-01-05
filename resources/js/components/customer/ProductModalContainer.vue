@@ -2,16 +2,16 @@
   <!-- Product Modal Container -->
   <div
     v-if="isOpen"
-    class="fixed inset-0 z-40 flex items-end sm:items-center justify-center"
+    class="fixed inset-0 z-40 flex items-start sm:items-center justify-center"
     @click="handleBackdropClick"
   >
     <!-- Backdrop -->
     <div class="absolute inset-0 bg-black/50 backdrop-blur-sm"></div>
 
-    <!-- Modal Content - Bottom sheet on mobile, centered on desktop -->
+    <!-- Modal Content - Full screen on mobile, large modal on desktop -->
     <div
       ref="modalContent"
-      class="relative bg-white w-full max-h-[90vh] sm:max-h-[85vh] sm:h-auto sm:rounded-3xl rounded-t-3xl shadow-2xl lg:max-w-[90vw] xl:max-w-[85vw] lg:mx-4 transform transition-all duration-300 ease-out flex flex-col"
+      class="relative bg-white w-full h-full sm:h-auto sm:max-h-[90vh] sm:rounded-2xl shadow-2xl lg:max-w-[90vw] xl:max-w-[85vw] lg:mx-4 transform transition-all duration-300 ease-out flex flex-col"
       :class="{
         'translate-y-0 opacity-100': isOpen,
         'translate-y-full opacity-0 sm:translate-y-0 sm:scale-95 sm:opacity-0': !isOpen

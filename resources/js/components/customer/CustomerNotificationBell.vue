@@ -217,6 +217,9 @@
 <script setup>
 import { ref, onMounted, onUnmounted, computed } from 'vue'
 import axios from 'axios'
+import { useToast } from '@/composables/useToast'
+
+const toast = useToast()
 
 const props = defineProps({
   userId: {
@@ -229,10 +232,10 @@ const showDropdown = ref(false)
 const notifications = ref([])
 const unreadCount = ref(0)
 
-// Filter to show ONLY customer order status notifications
+// Filter to show ONLY receipt notifications in bell (order status goes to toast)
 const orderNotifications = computed(() => {
   return (notifications.value || []).filter(n =>
-    ['order_status', 'receipt_ready'].includes(n.type)
+    n.type === 'receipt_ready'
   )
 })
 
@@ -350,32 +353,27 @@ const subscribeToNotifications = () => {
       window.Echo.private(`customer-orders.${props.userId}`)
         .listen('.OrderStatusChanged', (e) => {
           const status = e.order?.status
-          if (status && ['accepted', 'ready_for_pickup', 'cancelled'].includes(status)) {
-            const newNotification = {
-              id: Date.now(),
-              type: 'order_status',
-              title: getStatusTitle(status),
-              message: e.message || 'Order status updated',
-              data: e.order,
-              is_read: false,
-              created_at: new Date().toISOString()
-            }
+          const orderNumber = e.order?.order_number || ''
 
-            if (Array.isArray(notifications.value)) {
-              notifications.value.unshift(newNotification)
-            } else {
-              notifications.value = [newNotification]
-            }
-            unreadCount.value++
+          // Order status changes go to TOAST with sound (30 seconds, closeable)
+          if (status === 'accepted') {
+            toast.customerAlert(`✅ Order #${orderNumber} accepted! Your food is being prepared.`, 'success')
+          } else if (status === 'ready_for_pickup') {
+            toast.customerAlert(`🔔 Order #${orderNumber} is ready for pickup!`, 'success')
+          } else if (status === 'cancelled') {
+            toast.customerAlert(`❌ Order #${orderNumber} was cancelled by vendor.`, 'error')
+          }
 
-            // Browser notification
-            if (Notification.permission === 'granted') {
-              new Notification(getStatusTitle(status), {
-                body: e.message || 'Order status updated',
-                icon: '/fast-food.png',
-                tag: `order-status-${status}`
-              })
-            }
+          // Receipt notifications go to BELL (loaded from server)
+          // Bell will refresh when user clicks it
+
+          // Browser notification
+          if (Notification.permission === 'granted' && status) {
+            new Notification(getStatusTitle(status), {
+              body: e.message || `Order #${orderNumber} status updated`,
+              icon: '/fast-food.png',
+              tag: `order-status-${status}`
+            })
           }
         })
     } catch (error) {

@@ -30,7 +30,6 @@ class OrderController extends Controller
             $query = Order::with([
                 'vendor:id,brand_name,brand_image',
                 'items.product:id,name,image_url',
-                'items.selectedAddons',
             ])
                 ->where('customer_id', $user->id);
 
@@ -68,7 +67,6 @@ class OrderController extends Controller
             $order = Order::with([
                 'vendor:id,brand_name,brand_image',
                 'items.product:id,name,image_url',
-                'items.selectedAddons',
             ])
                 ->where('customer_id', $user->id)
                 ->where('id', $orderId)
@@ -239,7 +237,6 @@ class OrderController extends Controller
             $order = Order::with([
                 'vendor:id,brand_name,brand_image',
                 'items.product:id,name,image_url',
-                'items.selectedAddons',
             ])
                 ->where('customer_id', $user->id)
                 ->where('id', $orderId)

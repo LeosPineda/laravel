@@ -159,31 +159,12 @@ const markReady = async (order: any) => {
 
 // Expose loadOrders for parent component
 defineExpose({
-  loadOrders
+  loadOrders,
+  refreshOrders
 });
 
-// Real-time subscription
-const subscribeToChannel = () => {
-  if (window.Echo && vendorId.value) {
-    console.log('🔔 Subscribing to vendor-orders channel for vendor:', vendorId.value);
-
-    window.Echo.private(`vendor-orders.${vendorId.value}`)
-      // FIXED: Event broadcasts as 'VendorNewOrder' not 'OrderReceived'
-      .listen('.VendorNewOrder', (e: any) => {
-        console.log('🛒 NEW ORDER RECEIVED:', e);
-        loadOrders();
-        toast.newOrder(`🆕 New Order #${e.order?.order_number} from Table ${e.order?.table_number || 'N/A'}!`);
-      })
-      .listen('.OrderStatusChanged', (e: any) => {
-        console.log('📦 ORDER STATUS CHANGED:', e);
-        loadOrders();
-        // Show toast for customer cancellations
-        if (e.order?.new_status === 'cancelled') {
-          toast.warning(`⚠️ Order #${e.order?.order_number} was cancelled`);
-        }
-      });
-  }
-};
+// REMOVED: Real-time subscription - handled by parent Orders.vue and VendorLayout
+// This prevents duplicate event handlers and double toasts
 
 const debouncedSearch = () => {
   if (searchTimeout) {
@@ -199,13 +180,11 @@ onMounted(async () => {
   vendorId.value = user?.vendor?.id || null;
 
   await loadOrders();
-  subscribeToChannel();
+  // NOTE: Real-time subscription is handled by parent Orders.vue
 });
 
 onUnmounted(() => {
-  if (window.Echo && vendorId.value) {
-    window.Echo.leave(`vendor-orders.${vendorId.value}`);
-  }
+  // No cleanup needed - parent handles channel subscription
 });
 </script>
 
