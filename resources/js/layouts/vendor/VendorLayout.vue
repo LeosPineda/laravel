@@ -219,12 +219,14 @@ const setupToastNotifications = () => {
     channel.listen('.VendorNewOrder', (e) => {
       console.log('🛒 NEW ORDER TOAST RECEIVED:', e)
       // Show simple toast for new order - EXTENDED DURATION FOR TESTING (30 seconds)
-      toastNewOrder('🛒 New order received!', 30000)
+      toastNewOrder(`🛒 New order #${e.order?.order_number || ''} received!`, 30000)
     })
-    .listen('.VendorOrderCancelled', (e) => {
-      console.log('❌ ORDER CANCELLED TOAST RECEIVED:', e)
-      // ✅ FIXED: Changed message to reflect vendor action, not customer
-      toastError('❌ Order cancelled by vendor!', 20000)
+    .listen('.OrderStatusChanged', (e) => {
+      console.log('📦 ORDER STATUS CHANGED TOAST:', e)
+      // Show toast for cancelled orders
+      if (e.order?.new_status === 'cancelled' || e.order?.status === 'cancelled') {
+        toastError(`❌ Order #${e.order?.order_number || ''} was cancelled`, 20000)
+      }
     })
 
   } catch (error) {

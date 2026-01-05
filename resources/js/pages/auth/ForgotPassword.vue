@@ -15,8 +15,6 @@ const vendorEmail = ref('');
 
 // Check if email belongs to a vendor
 const isVendorEmail = computed(() => {
-    // Simple check - in production, you might want to validate against backend
-    // This is a basic example - you can enhance this logic
     return form.email.includes('vendor') || form.email.includes('@vendor.') || form.email.includes('restaurant');
 });
 
@@ -36,7 +34,6 @@ const closeModal = () => {
 };
 
 const contactAdmin = () => {
-    // You could add a link to contact admin or redirect to support page
     window.location.href = 'mailto:support@4rodzfoodcourt.com?subject=Password Reset Request&body=Please help me reset my vendor account password for email: ' + vendorEmail.value;
 };
 </script>
@@ -45,22 +42,18 @@ const contactAdmin = () => {
     <Head title="Forgot Password" />
 
     <div class="min-h-screen flex flex-col lg:flex-row bg-white">
-        <!-- Left Side - Branding (Full Width) -->
+        <!-- Left Side - Branding -->
         <div class="hidden lg:flex lg:w-1/2 bg-[#F5F5F5] p-12 xl:p-16 flex-col justify-between relative">
-            <!-- Decorative Elements -->
             <div class="absolute top-0 right-0 w-80 h-80 bg-[#FF6B35]/5 rounded-full -translate-y-1/2 translate-x-1/2"></div>
             <div class="absolute bottom-0 left-0 w-64 h-64 bg-[#FF6B35]/5 rounded-full translate-y-1/2 -translate-x-1/2"></div>
 
-            <!-- Content -->
             <div class="relative z-10">
-                <!-- Logo -->
                 <div class="flex items-center gap-4">
                     <img src="/fast-food.png" alt="4Rodz" class="w-16 h-16 rounded-xl" />
                     <span class="text-2xl font-bold text-[#1A1A1A]">4Rodz Food Court</span>
                 </div>
             </div>
 
-            <!-- Main Content -->
             <div class="relative z-10 max-w-lg ml-8 xl:ml-12">
                 <h1 class="text-4xl xl:text-5xl font-bold text-[#1A1A1A] leading-tight mb-6">
                     Forgot your<br>
@@ -70,7 +63,6 @@ const contactAdmin = () => {
                     Don't worry! We'll help you reset your password and get back to ordering your favorite food.
                 </p>
 
-                <!-- Features -->
                 <div class="space-y-5">
                     <div class="flex items-center gap-5 p-5 bg-white rounded-2xl border border-[#E0E0E0] shadow-sm">
                         <div class="w-14 h-14 bg-[#FF6B35]/10 rounded-xl flex items-center justify-center shrink-0">
@@ -94,27 +86,15 @@ const contactAdmin = () => {
                             <p class="text-[#1A1A1A]/60 text-sm">Reset your password in minutes</p>
                         </div>
                     </div>
-                    <div class="flex items-center gap-5 p-5 bg-white rounded-2xl border border-[#E0E0E0] shadow-sm">
-                        <div class="w-14 h-14 bg-[#FF6B35]/10 rounded-xl flex items-center justify-center shrink-0">
-                            <svg class="w-7 h-7 text-[#FF6B35]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                        </div>
-                        <div>
-                            <h3 class="font-semibold text-[#1A1A1A] text-lg">Account Security</h3>
-                            <p class="text-[#1A1A1A]/60 text-sm">Your account stays protected</p>
-                        </div>
-                    </div>
                 </div>
             </div>
 
-            <!-- Footer -->
             <div class="relative z-10">
                 <p class="text-[#1A1A1A]/40 text-base">&copy; 2024 4Rodz Food Court</p>
             </div>
         </div>
 
-        <!-- Right Side - Form (60% white) -->
+        <!-- Right Side - Form -->
         <div class="flex-1 flex items-center justify-center p-6 sm:p-8 lg:p-16 bg-white">
             <div class="w-full max-w-[480px]">
                 <!-- Mobile Header -->
@@ -126,7 +106,6 @@ const contactAdmin = () => {
                     <p class="text-[#1A1A1A]/50 text-sm mt-1">Order • Pick up • Enjoy</p>
                 </div>
 
-                <!-- Welcome Text -->
                 <div class="mb-10">
                     <h2 class="text-3xl sm:text-4xl font-bold text-[#1A1A1A]">Reset password</h2>
                     <p class="text-[#1A1A1A]/60 mt-3 text-lg">Enter your email to receive a reset link</p>
@@ -141,7 +120,6 @@ const contactAdmin = () => {
                 </div>
 
                 <form @submit.prevent="submit" class="space-y-6">
-                    <!-- Email -->
                     <div>
                         <label for="email" class="block text-base font-medium text-[#1A1A1A] mb-3">
                             Email address
@@ -162,7 +140,6 @@ const contactAdmin = () => {
                         </p>
                     </div>
 
-                    <!-- Submit Button -->
                     <button
                         type="submit"
                         :disabled="form.processing"
@@ -179,7 +156,6 @@ const contactAdmin = () => {
                     </button>
                 </form>
 
-                <!-- Back to Login -->
                 <div class="mt-10 text-center">
                     <a href="/login" class="text-[#1A1A1A]/60 text-lg">
                         <span class="font-medium text-[#FF6B35] hover:underline">← Back to Sign In</span>
@@ -195,11 +171,7 @@ const contactAdmin = () => {
         class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
         @click="closeModal"
     >
-        <div
-            class="bg-white rounded-xl max-w-md w-full p-6 shadow-2xl"
-            @click.stop
-        >
-            <!-- Modal Header -->
+        <div class="bg-white rounded-xl max-w-md w-full p-6 shadow-2xl" @click.stop>
             <div class="flex items-center gap-3 mb-4">
                 <div class="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center">
                     <svg class="w-5 h-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -212,12 +184,10 @@ const contactAdmin = () => {
                 </div>
             </div>
 
-            <!-- Modal Content -->
             <div class="mb-6">
                 <p class="text-[#1A1A1A]/80 mb-4">
                     We've detected that you're trying to reset a <strong>vendor account</strong> password.
                 </p>
-
                 <div class="bg-orange-50 border border-orange-200 rounded-lg p-4 mb-4">
                     <div class="flex items-start gap-3">
                         <svg class="w-5 h-5 text-orange-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -226,18 +196,16 @@ const contactAdmin = () => {
                         <div>
                             <p class="text-sm font-medium text-orange-800 mb-2">Important Security Notice:</p>
                             <p class="text-sm text-orange-700">
-                                Vendor account passwords can only be changed by the <strong>Food Court Administrator</strong> for security purposes.
+                                Vendor account passwords can only be changed by the <strong>Food Court Administrator</strong>.
                             </p>
                         </div>
                     </div>
                 </div>
-
                 <p class="text-sm text-[#1A1A1A]/70">
                     <strong>Email:</strong> {{ vendorEmail }}
                 </p>
             </div>
 
-            <!-- Modal Actions -->
             <div class="flex gap-3">
                 <button
                     @click="contactAdmin"

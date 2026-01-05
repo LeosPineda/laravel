@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Head, useForm } from '@inertiajs/vue3';
+import { Head, useForm, router } from '@inertiajs/vue3';
 import { ref } from 'vue';
 
 const props = defineProps<{
@@ -9,6 +9,7 @@ const props = defineProps<{
 
 const showPassword = ref(false);
 const showPasswordConfirmation = ref(false);
+const resetSuccess = ref(false);
 
 const form = useForm({
     token: props.token,
@@ -18,23 +19,18 @@ const form = useForm({
 });
 
 const submit = () => {
-    console.log('Form submitted with data:', {
-        token: form.token,
-        email: form.email,
-        password: form.password,
-        password_confirmation: form.password_confirmation
-    });
-
     form.post('/reset-password', {
-        onSuccess: (page) => {
-            console.log('Password reset successful:', page);
-        },
-        onError: (errors) => {
-            console.error('Password reset failed:', errors);
+        onSuccess: () => {
+            resetSuccess.value = true;
+            // Redirect to login after 3 seconds
+            setTimeout(() => {
+                router.visit('/login');
+            }, 3000);
         },
         onFinish: () => {
-            console.log('Form submission finished');
-            form.reset('password', 'password_confirmation');
+            if (!resetSuccess.value) {
+                form.reset('password', 'password_confirmation');
+            }
         },
     });
 };
@@ -59,10 +55,25 @@ const togglePasswordConfirmationVisibility = () => {
                 <p class="text-[#1A1A1A]/60 mt-2">Create new password</p>
             </div>
 
-            <!-- Card -->
-            <div class="bg-white rounded-xl shadow-sm border border-[#E0E0E0] p-8">
+            <!-- Success Message -->
+            <div v-if="resetSuccess" class="bg-white rounded-xl shadow-sm border border-green-200 p-8 text-center">
+                <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                    </svg>
+                </div>
+                <h2 class="text-xl font-bold text-green-600 mb-2">Password Reset Successful!</h2>
+                <p class="text-gray-600 mb-4">Your password has been changed successfully.</p>
+                <p class="text-sm text-gray-500">Redirecting to login page...</p>
+                <div class="mt-4">
+                    <a href="/login" class="text-[#FF6B35] hover:underline font-medium">Go to Login →</a>
+                </div>
+            </div>
+
+            <!-- Form Card -->
+            <div v-else class="bg-white rounded-xl shadow-sm border border-[#E0E0E0] p-8">
                 <form @submit.prevent="submit" class="space-y-5">
-                    <!-- Hidden email field (required for Laravel Fortify) -->
+                    <!-- Hidden email field -->
                     <input type="hidden" v-model="form.email" />
 
                     <!-- Password -->
@@ -79,7 +90,7 @@ const togglePasswordConfirmationVisibility = () => {
                                 autofocus
                                 autocomplete="new-password"
                                 placeholder="Enter new password"
-                                class="w-full px-4 py-3 pr-12 border border-[#E0E0E0] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FF6B35] focus:border-transparent transition-all"
+                                class="w-full px-4 py-3 pr-12 border border-[#E0E0E0] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FF6B35] focus:border-transparent transition-all text-[#1A1A1A] bg-white placeholder:text-gray-400"
                                 :class="{ 'border-red-500': form.errors.password }"
                             />
                             <button
@@ -114,7 +125,7 @@ const togglePasswordConfirmationVisibility = () => {
                                 required
                                 autocomplete="new-password"
                                 placeholder="Confirm new password"
-                                class="w-full px-4 py-3 pr-12 border border-[#E0E0E0] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FF6B35] focus:border-transparent transition-all"
+                                class="w-full px-4 py-3 pr-12 border border-[#E0E0E0] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FF6B35] focus:border-transparent transition-all text-[#1A1A1A] bg-white placeholder:text-gray-400"
                                 :class="{ 'border-red-500': form.errors.password_confirmation }"
                             />
                             <button
