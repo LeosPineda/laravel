@@ -51,8 +51,7 @@ const loadOrders = async () => {
       pagination.value = data.pagination || pagination.value;
       selectedOrders.value = [];
     } else {
-      console.error('Failed to load orders:', response.status);
-      toast.error('Failed to load order history');
+      // Silent error handling
     }
   } catch (error) {
     console.error('Error loading orders:', error);

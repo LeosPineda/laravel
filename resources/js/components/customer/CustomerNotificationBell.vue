@@ -348,7 +348,7 @@ const deleteAll = async () => {
   }
 }
 
-// Real-time subscription
+// REAL-TIME SUBSCRIPTION - SINGLE SOURCE OF TRUTH
 const subscribeToNotifications = () => {
   if (window.Echo && props.userId) {
     try {
@@ -365,40 +365,27 @@ const subscribeToNotifications = () => {
           } else if (status === 'cancelled') {
             toast.customerAlert(`❌ Order #${orderNumber} was cancelled by vendor.`, 'error')
 
-            // ✅ FIXED: Restore cart items when vendor cancels order + refresh cart
+            // ✅ RESTORE CART ITEMS: When vendor cancels order
             await restoreOrderToCart(e.order)
           }
 
           // Receipt notifications go to BELL (loaded from server)
-          // Bell will refresh when user clicks it
-
-          // Browser notification
-          if (Notification.permission === 'granted' && status) {
-            new Notification(getStatusTitle(status), {
-              body: e.message || `Order #${orderNumber} status updated`,
-              icon: '/fast-food.png',
-              tag: `order-status-${status}`
-            })
-          }
+          // Bell will refresh when user clicks it - no need for real-time here
+        })
+        .error((error) => {
+          console.error('🚨 CustomerNotificationBell: Real-time listener error:', error)
         })
     } catch (error) {
-      console.error('Broadcasting error:', error)
+      console.error('❌ CustomerNotificationBell: Broadcasting error:', error)
     }
   }
 }
 
-const getStatusTitle = (status) => {
-  const titles = {
-    'accepted': 'Order Accepted ✅',
-    'ready_for_pickup': 'Ready for Pickup 🔔',
-    'cancelled': 'Order Cancelled ❌'
-  }
-  return titles[status] || 'Order Update'
-}
-
-// ✅ NEW: Restore cancelled order items to cart with real-time refresh
+// RESTORE CANCELLED ORDER ITEMS TO CART
 const restoreOrderToCart = async (order) => {
   try {
+    console.log('🛒 Restoring cancelled order items to cart...')
+
     // Fetch the full order details to get items
     const response = await fetch(`/api/customer/orders/${order.id}`, {
       headers: {
@@ -414,8 +401,8 @@ const restoreOrderToCart = async (order) => {
     const data = await response.json()
     const orderDetails = data.order
 
-    if (!orderDetails?.items || orderDetails.items.length === 0) {
-      console.warn('No items found in cancelled order')
+     if (!orderDetails?.items || orderDetails.items.length === 0) {
+      console.warn('⚠️ No items found in cancelled order')
       return
     }
 
@@ -435,7 +422,7 @@ const restoreOrderToCart = async (order) => {
           product_id: item.product_id,
           quantity: item.quantity,
           addons: addons,
-          special_instructions: null // Don't restore special instructions
+          special_instructions: null
         })
       })
 
@@ -459,10 +446,6 @@ const restoreOrderToCart = async (order) => {
 onMounted(() => {
   loadNotifications()
   subscribeToNotifications()
-
-  if ('Notification' in window && Notification.permission === 'default') {
-    Notification.requestPermission()
-  }
 })
 
 onUnmounted(() => {
@@ -503,3 +486,4 @@ onUnmounted(() => {
   background: #b1b1b1;
 }
 </style>
+

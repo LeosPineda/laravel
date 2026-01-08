@@ -238,7 +238,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted } from 'vue'
 import { Link, usePage } from '@inertiajs/vue3'
 import CustomerLayout from '@/layouts/customer/CustomerLayout.vue'
 import EditItemModal from '@/components/customer/EditItemModal.vue'
@@ -252,7 +252,6 @@ const { success, error } = useToast()
 
 // Page props
 const page = usePage()
-const userId = page.props.auth?.user?.id
 
 // Local state
 const removingItem = ref(null)
@@ -405,7 +404,7 @@ const handleCancelOrder = async (order) => {
     if (response.ok) {
       success('Order cancelled. Items restored to cart.')
 
-    // Remove from pending orders
+      // Remove from pending orders
       pendingOrders.value = pendingOrders.value.filter(o => o.id !== order.id)
 
       // Refresh cart to get restored items
@@ -442,48 +441,10 @@ const fetchPendingOrders = async () => {
   }
 }
 
-// Real-time: Listen for order status changes
-const setupRealtimeListeners = () => {
-  if (window.Echo && userId) {
-    window.Echo.private(`customer-orders.${userId}`)
-      .listen('.OrderStatusChanged', (e) => {
-        const orderId = e.order?.id
-        const newStatus = e.order?.new_status || e.order?.status
-
-        if (orderId) {
-          if (newStatus === 'accepted') {
-            // Order accepted - remove from pending, show success
-            pendingOrders.value = pendingOrders.value.filter(o => o.id !== orderId)
-            success(`Order #${e.order.order_number} accepted! 🎉`)
-          } else if (newStatus === 'cancelled') {
-            // Order declined by vendor - remove from pending
-            pendingOrders.value = pendingOrders.value.filter(o => o.id !== orderId)
-            error(`Order #${e.order.order_number} was declined by vendor`)
-            // Refresh cart to see if items were restored
-            fetchCart()
-          } else if (newStatus === 'ready_for_pickup') {
-            success(`Order #${e.order.order_number} is ready for pickup! 🔔`)
-          }
-        }
-      })
-  }
-}
-
 // Lifecycle
 onMounted(() => {
   fetchCart()
   fetchPendingOrders()
-  setupRealtimeListeners()
-})
-
-onUnmounted(() => {
-  if (window.Echo && userId) {
-    try {
-      window.Echo.leave(`customer-orders.${userId}`)
-    } catch (err) {
-      console.error('Error leaving channel:', err)
-    }
-  }
 })
 </script>
 

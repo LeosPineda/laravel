@@ -37,7 +37,7 @@ const playNotificationSound = () => {
   if (notificationSound) {
     notificationSound.currentTime = 0
     notificationSound.play().catch(() => {
-      console.log('Sound play requires user interaction first')
+      // Silently fail - don't show audio errors to user
     })
   }
 }

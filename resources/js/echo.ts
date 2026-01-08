@@ -25,8 +25,10 @@ window.Echo = new Echo({
             'X-Requested-With': 'XMLHttpRequest',
         },
     },
-    // Ensure credentials (cookies/session) are sent with auth request
     enabledTransports: ['ws', 'wss'],
+    wsConnection: {
+        params: {},
+    },
 });
 
 export default window.Echo;

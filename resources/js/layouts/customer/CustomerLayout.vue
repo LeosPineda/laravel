@@ -127,8 +127,6 @@
             </span>
           </Link>
 
-
-
           <Link
             href="/customer/profile"
             class="flex flex-col items-center py-2 px-3 hover:bg-[#F5F5F5] rounded-lg transition-colors"
@@ -233,12 +231,10 @@ const logout = () => {
   router.post('/logout')
 }
 
-// Fetch cart on mount + request notification permission
+// FIXED: Only fetch cart data, no real-time listeners
+// All customer real-time is handled by CustomerNotificationBell.vue
 onMounted(() => {
   fetchCart()
-  if ('Notification' in window && Notification.permission === 'default') {
-    Notification.requestPermission()
-  }
 })
 </script>
 

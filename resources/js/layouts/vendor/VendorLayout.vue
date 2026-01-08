@@ -191,75 +191,68 @@
 </template>
 
 <script setup>
+import { ref, onMounted, onUnmounted } from 'vue'
 import { Link, router } from '@inertiajs/vue3'
 import { usePage } from '@inertiajs/vue3'
 import { useToast } from '@/composables/useToast'
 import { useSound } from '@/composables/useSound'
 import ToastContainer from '@/components/ui/ToastContainer.vue'
-import { onMounted, onUnmounted } from 'vue'
 
 const page = usePage()
 const { newOrder: toastNewOrder, error: toastError } = useToast()
 const { isSoundEnabled, toggleSound } = useSound()
+const vendorId = ref(null)
 
 const logout = () => {
   router.post('/logout')
 }
 
-// Real-time toast notifications for vendor (appears on ALL vendor pages)
-const setupToastNotifications = () => {
+// VENDOR REAL-TIME TOAST NOTIFICATIONS - SINGLE SOURCE OF TRUTH
+const setupVendorToastNotifications = () => {
   const user = page.props.auth?.user
+  vendorId.value = user?.vendor?.id || null
 
-  if (!user || !user.vendor?.id) {
-    return
-  }
-
-  if (!window.Echo) {
+  if (!vendorId.value || !window.Echo) {
     return
   }
 
   try {
-    console.log('🔔 Setting up vendor notifications for vendor ID:', user.vendor.id)
+    const channel = window.Echo.private(`vendor-orders.${vendorId.value}`)
 
-    const channel = window.Echo.private(`vendor-orders.${user.vendor.id}`)
-
+    // ✅ FIXED: Listen for proper backend event names
     channel.listen('.VendorNewOrder', (e) => {
-      console.log('📦 NEW ORDER NOTIFICATION:', e)
       toastNewOrder(`📦 New order #${e.order?.order_number || ''} received!`, 30000)
     })
     .listen('.OrderStatusChanged', (e) => {
-      console.log('📦 ORDER STATUS CHANGED:', e)
+      // Handle customer cancellations with error toast
       if (e.order?.new_status === 'cancelled' || e.order?.status === 'cancelled') {
-        toastError(`❌ Order #${e.order?.order_number || ''} was cancelled`, 20000)
+        toastError(`❌ Order #${e.order?.order_number || ''} was cancelled by customer`, 20000)
       }
+    })
+    .error((error) => {
+      // Silent error handling - don't log to console
     })
 
   } catch (error) {
-    console.error('❌ Toast notification setup error:', error)
+    // Silent error handling - don't log to console
   }
 }
 
-const cleanupChannel = () => {
-  const user = page.props.auth?.user
-  if (user?.vendor?.id && window.Echo) {
+const cleanupVendorChannel = () => {
+  if (vendorId.value && window.Echo) {
     try {
-      window.Echo.leave(`vendor-orders.${user.vendor.id}`)
+      window.Echo.leave(`vendor-orders.${vendorId.value}`)
     } catch (error) {
-      console.error('Error leaving notification channel:', error)
+      // Silent error handling - don't log to console
     }
   }
 }
 
 onMounted(() => {
-  setupToastNotifications()
+  setupVendorToastNotifications()
 })
 
 onUnmounted(() => {
-  cleanupChannel()
+  cleanupVendorChannel()
 })
 </script>
-
-<style scoped>
-/* No additional styles needed - using Tailwind CSS classes */
-</style>
-

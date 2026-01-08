@@ -87,7 +87,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted } from 'vue'
 import { usePage } from '@inertiajs/vue3'
 import VendorLayout from '@/layouts/vendor/VendorLayout.vue'
 import IncomingOrders from './IncomingOrders.vue'
@@ -97,7 +97,6 @@ import { useToast } from '@/composables/useToast'
 
 const toast = useToast()
 const page = usePage()
-const vendorId = ref(null)
 
 const activeTab = ref('incoming')
 const incomingOrdersRef = ref(null)
@@ -137,54 +136,14 @@ const handleOrdersUpdated = async () => {
   }
 }
 
-// Real-time subscription for stats bar updates AND child component refresh
-const subscribeToChannel = () => {
-  if (window.Echo && vendorId.value) {
-    console.log('🔔 Orders: Subscribing to vendor-orders channel for vendor:', vendorId.value)
-
-    window.Echo.private(`vendor-orders.${vendorId.value}`)
-      // FIXED: Event broadcasts as 'VendorNewOrder' not 'OrderReceived'
-      .listen('.VendorNewOrder', (e) => {
-        console.log('🛒 Orders: New order received, refreshing stats and child components')
-        toast.newOrder(`📦 New Order #${e.order?.order_number || 'received'}!`)
-        loadStats()
-        // Refresh child IncomingOrders component
-        if (incomingOrdersRef.value?.refreshOrders) {
-          incomingOrdersRef.value.refreshOrders()
-        }
-      })
-      .listen('.OrderStatusChanged', () => {
-        console.log('📦 Orders: Order status changed, refreshing stats and child components')
-        loadStats()
-        // Refresh child components
-        if (incomingOrdersRef.value?.refreshOrders) {
-          incomingOrdersRef.value.refreshOrders()
-        }
-        if (orderHistoryRef.value?.loadOrders) {
-          orderHistoryRef.value.loadOrders()
-        }
-      })
-  }
-}
-
-const unsubscribeFromChannel = () => {
-  if (window.Echo && vendorId.value) {
-    window.Echo.leave(`vendor-orders.${vendorId.value}`)
-  }
-}
+// FIXED: No real-time subscriptions here
+// All vendor real-time is handled by VendorLayout.vue for toast notifications
+// This eliminates double subscriptions and complexity
+// VendorLayout handles toast notifications on ALL vendor pages
+// Orders.vue focuses on order management and component coordination
 
 onMounted(async () => {
-  // Get vendor ID from user data
-  const user = page.props.auth?.user
-  vendorId.value = user?.vendor?.id || null
-
   await loadStats()
-
-  // Subscribe to real-time updates
-  subscribeToChannel()
-})
-
-onUnmounted(() => {
-  unsubscribeFromChannel()
 })
 </script>
+        loadStats()
