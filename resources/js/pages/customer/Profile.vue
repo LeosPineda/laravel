@@ -29,7 +29,33 @@
         </div>
       </div>
 
+      <!-- Sound Settings Section -->
+      <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+        <h2 class="text-lg font-semibold text-gray-900 mb-4">🔊 Sound Settings</h2>
+        <p class="text-gray-600 mb-4">Control sound notifications for order updates</p>
 
+        <div class="flex items-center justify-between">
+          <div>
+            <h3 class="text-sm font-medium text-gray-900">Order Notifications Sound</h3>
+            <p class="text-sm text-gray-500">Get sound alerts when your order status changes</p>
+          </div>
+          <div class="flex items-center">
+            <button
+              @click="toggleSound"
+              class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+              :class="isSoundEnabled ? 'bg-blue-600' : 'bg-gray-200'"
+            >
+              <span
+                class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform duration-200 ease-in-out"
+                :class="isSoundEnabled ? 'translate-x-6' : 'translate-x-1'"
+              />
+            </button>
+            <span class="ml-3 text-sm font-medium text-gray-700">
+              {{ isSoundEnabled ? 'ON' : 'OFF' }}
+            </span>
+          </div>
+        </div>
+      </div>
 
       <!-- Delete Account Component -->
       <div class="mt-6">
@@ -40,6 +66,10 @@
 </template>
 
 <script setup>
+import { ref, onMounted } from 'vue'
+import { useSound } from '@/composables/useSound'
 import CustomerLayout from '@/layouts/customer/CustomerLayout.vue'
 import DeleteAccount from '@/components/customer/DeleteAccount.vue'
+
+const { isSoundEnabled, toggleSound } = useSound()
 </script>

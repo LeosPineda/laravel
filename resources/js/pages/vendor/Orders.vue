@@ -93,7 +93,9 @@ import VendorLayout from '@/layouts/vendor/VendorLayout.vue'
 import IncomingOrders from './IncomingOrders.vue'
 import OrderHistory from './OrderHistory.vue'
 import { apiGet } from '@/composables/useApi'
+import { useToast } from '@/composables/useToast'
 
+const toast = useToast()
 const page = usePage()
 const vendorId = ref(null)
 
@@ -142,8 +144,9 @@ const subscribeToChannel = () => {
 
     window.Echo.private(`vendor-orders.${vendorId.value}`)
       // FIXED: Event broadcasts as 'VendorNewOrder' not 'OrderReceived'
-      .listen('.VendorNewOrder', () => {
+      .listen('.VendorNewOrder', (e) => {
         console.log('🛒 Orders: New order received, refreshing stats and child components')
+        toast.newOrder(`📦 New Order #${e.order?.order_number || 'received'}!`)
         loadStats()
         // Refresh child IncomingOrders component
         if (incomingOrdersRef.value?.refreshOrders) {

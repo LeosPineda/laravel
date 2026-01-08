@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { usePage } from '@inertiajs/vue3';
 import OrderDetailModal from '@/components/vendor/OrderDetailModal.vue';
 import IncomingOrderCard from '@/components/vendor/IncomingOrderCard.vue';
@@ -11,14 +11,13 @@ const emit = defineEmits(['ordersUpdated']);
 const toast = useToast();
 const page = usePage();
 
-const vendorId = ref<number | null>(null);
 const allOrders = ref<any[]>([]);
 const loading = ref(false);
 const activeTab = ref('pending');
 
 // Local filter state
 const searchQuery = ref('');
-let searchTimeout: NodeJS.Timeout | null = null;
+let searchTimeout: ReturnType<typeof setTimeout> | null = null;
 
 // Modals
 const showOrderModal = ref(false);
@@ -96,7 +95,8 @@ const acceptOrder = async (order: any) => {
     const response = await apiPatch(`/api/vendor/orders/${order.id}/accept`);
 
     if (response.ok) {
-      toast.success(`Order #${order.order_number} accepted! Customer will be notified.`);
+      // Use customerAlert with sound for vendor actions
+      toast.customerAlert(`✅ Order #${order.order_number} accepted! Customer notified.`, 'success');
       await refreshOrders();
       activeTab.value = 'accepted';
       emit('ordersUpdated');
@@ -110,13 +110,13 @@ const acceptOrder = async (order: any) => {
   }
 };
 
-// UPDATED: Show decline modal instead of confirm dialog
+// Show decline modal instead of confirm dialog
 const declineOrder = (order: any) => {
   selectedOrder.value = order;
   showDeclineModal.value = true;
 };
 
-// NEW: Handle decline from modal
+// Handle decline from modal
 const handleDeclineOrder = async (reason: string) => {
   if (!selectedOrder.value) return;
 
@@ -126,7 +126,8 @@ const handleDeclineOrder = async (reason: string) => {
     });
 
     if (response.ok) {
-      toast.warning(`Order #${selectedOrder.value.order_number} declined. Customer will be notified.`);
+      // Use customerAlert with sound for vendor actions
+      toast.customerAlert(`❌ Order #${selectedOrder.value.order_number} declined. Customer notified.`, 'error');
       await refreshOrders();
       emit('ordersUpdated');
     } else {
@@ -144,7 +145,8 @@ const markReady = async (order: any) => {
     const response = await apiPatch(`/api/vendor/orders/${order.id}/ready`);
 
     if (response.ok) {
-      toast.success(`Order #${order.order_number} is ready! Customer notified + receipt sent.`);
+      // Use customerAlert with sound for vendor actions
+      toast.customerAlert(`🔔 Order #${order.order_number} ready for pickup! Receipt sent.`, 'success');
       await refreshOrders();
       emit('ordersUpdated');
     } else {
@@ -163,9 +165,6 @@ defineExpose({
   refreshOrders
 });
 
-// REMOVED: Real-time subscription - handled by parent Orders.vue and VendorLayout
-// This prevents duplicate event handlers and double toasts
-
 const debouncedSearch = () => {
   if (searchTimeout) {
     clearTimeout(searchTimeout);
@@ -176,20 +175,12 @@ const debouncedSearch = () => {
 };
 
 onMounted(async () => {
-  const user = page.props.auth?.user;
-  vendorId.value = user?.vendor?.id || null;
-
   await loadOrders();
   // NOTE: Real-time subscription is handled by parent Orders.vue
-});
-
-onUnmounted(() => {
-  // No cleanup needed - parent handles channel subscription
 });
 </script>
 
 <template>
-  <!-- No header - parent Orders.vue handles navigation -->
   <div>
     <!-- Tabs -->
     <div class="border-b border-gray-200 px-6">
@@ -289,7 +280,7 @@ onUnmounted(() => {
     <!-- Order Detail Modal -->
     <OrderDetailModal
       :is-open="showOrderModal"
-      :order-id="selectedOrderId"
+      :order-id="selectedOrderId || undefined"
       @close="showOrderModal = false"
     />
 

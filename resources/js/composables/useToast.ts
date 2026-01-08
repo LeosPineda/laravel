@@ -1,4 +1,5 @@
 import { ref, readonly } from 'vue'
+import { useSound } from './useSound'
 
 export interface Toast {
   id: number
@@ -9,6 +10,9 @@ export interface Toast {
 
 const toasts = ref<Toast[]>([])
 let toastId = 0
+
+// Sound settings
+const { isSoundEnabled } = useSound()
 
 // Sound file path
 const NOTIFICATION_SOUND = '/storage/Sound/mixkit-software-interface-back-2575.wav'
@@ -24,8 +28,10 @@ const initSound = () => {
   }
 }
 
-// Play the notification sound
+// Play the notification sound (respects sound settings)
 const playNotificationSound = () => {
+  if (!isSoundEnabled()) return // Check if sound is enabled
+
   initSound()
   if (notificationSound) {
     notificationSound.currentTime = 0

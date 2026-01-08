@@ -75,7 +75,21 @@
 
           <!-- Right side -->
           <div class="flex items-center gap-4">
-            <!-- Toast notifications will be handled by ToastContainer below -->
+            <!-- Sound toggle button -->
+            <button
+              @click="toggleSound"
+              class="flex items-center gap-2 px-3 py-2 text-sm font-medium text-[#1A1A1A]/70 hover:text-[#1A1A1A] hover:bg-[#F5F5F5] rounded-lg transition-colors"
+              :title="isSoundEnabled ? 'Sound ON' : 'Sound OFF'"
+            >
+              <svg v-if="isSoundEnabled" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+              </svg>
+              <svg v-else class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2" />
+              </svg>
+              <span class="hidden sm:inline">{{ isSoundEnabled ? 'Sound ON' : 'Sound OFF' }}</span>
+            </button>
 
             <!-- Logout -->
             <button
@@ -180,20 +194,21 @@
 import { Link, router } from '@inertiajs/vue3'
 import { usePage } from '@inertiajs/vue3'
 import { useToast } from '@/composables/useToast'
+import { useSound } from '@/composables/useSound'
 import ToastContainer from '@/components/ui/ToastContainer.vue'
 
 const page = usePage()
 const { newOrder: toastNewOrder, error: toastError } = useToast()
+const { isSoundEnabled, toggleSound } = useSound()
 
 const logout = () => {
   router.post('/logout')
 }
 
-// Real-time toast notifications for vendor - FIXED VERSION with proper error handling
+// Real-time toast notifications for vendor
 const setupToastNotifications = () => {
   const user = page.props.auth?.user
 
-  // FIXED: Check if user and vendor exist
   if (!user) {
     console.warn('⚠️ No authenticated user found')
     return
@@ -204,7 +219,6 @@ const setupToastNotifications = () => {
     return
   }
 
-  // FIXED: Check if Echo is available
   if (!window.Echo) {
     console.warn('⚠️ Laravel Echo not available - toast notifications disabled')
     toastError('⚠️ Real-time notifications unavailable', 5000)
@@ -218,12 +232,10 @@ const setupToastNotifications = () => {
 
     channel.listen('.VendorNewOrder', (e) => {
       console.log('🛒 NEW ORDER TOAST RECEIVED:', e)
-      // Show simple toast for new order - EXTENDED DURATION FOR TESTING (30 seconds)
       toastNewOrder(`🛒 New order #${e.order?.order_number || ''} received!`, 30000)
     })
     .listen('.OrderStatusChanged', (e) => {
       console.log('📦 ORDER STATUS CHANGED TOAST:', e)
-      // Show toast for cancelled orders
       if (e.order?.new_status === 'cancelled' || e.order?.status === 'cancelled') {
         toastError(`❌ Order #${e.order?.order_number || ''} was cancelled`, 20000)
       }
@@ -235,7 +247,6 @@ const setupToastNotifications = () => {
   }
 }
 
-// Setup toast notifications on mount
 import { onMounted, onUnmounted } from 'vue'
 
 onMounted(() => {
