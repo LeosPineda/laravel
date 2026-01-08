@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Customer;
 
 use App\Events\OrderReceived;
+use App\Events\OrderStatusChanged;
 use App\Http\Controllers\Controller;
 use App\Models\Cart;
 use App\Models\CartItem;
@@ -142,12 +143,25 @@ class OrderController extends Controller
                     ];
                 }
 
+                // Check stock availability for all items before creating order
+                foreach ($itemsData as $itemData) {
+                    $product = Product::find($itemData['product_id']);
+                    if (! $product) {
+                        throw new \Exception("Product not found for ID: {$itemData['product_id']}");
+                    }
+                    // Calculate available stock: total stock - quantity in this cart
+                    $availableStock = ($product->stock_quantity ?? 0);
+                    if ($availableStock < $itemData['quantity']) {
+                        throw new \Exception("Insufficient stock for product '{$product->name}'. Available: {$availableStock}, Requested: {$itemData['quantity']}");
+                    }
+                }
+
                 $paymentProofUrl = null;
                 if ($validated['payment_method'] === 'qr_code' && $request->hasFile('payment_proof')) {
                     $paymentProofUrl = $request->file('payment_proof')->store('payment-proofs', 'public');
                 }
 
-                $orderNumber = 'ORD-'.str_pad(Order::max('id') + 1, 6, '0', STR_PAD_LEFT);
+                $orderNumber = 'ORD-'.str_pad((Order::max('id') ?? 0) + 1, 6, '0', STR_PAD_LEFT);
 
                 $order = Order::create([
                     'customer_id' => $user->id,
@@ -173,13 +187,9 @@ class OrderController extends Controller
                         'total_price' => $itemData['total_price'],
                     ]);
 
-                    // 🔧 FIX: Deduct stock with locking to prevent race conditions
-                    // Use lockForUpdate to prevent concurrent modifications
+                    // Deduct stock with locking to prevent race conditions
                     $product = Product::lockForUpdate()->find($itemData['product_id']);
-                    if ($product->stock_quantity < $itemData['quantity']) {
-                        throw new \Exception("Insufficient stock for product '{$product->name}'. Available: {$product->stock_quantity}, Requested: {$itemData['quantity']}");
-                    }
-                    $product->decrement('stock_quantity', $itemData['quantity']);
+                    $product->update(['stock_quantity' => ($product->stock_quantity ?? 0) - $itemData['quantity']]);
                 }
 
                 $cart->clear();
@@ -223,9 +233,10 @@ class OrderController extends Controller
             ], 404);
         } catch (\Exception $e) {
             Log::error('Error placing order: '.$e->getMessage());
+            Log::error('Stack trace: '.$e->getTraceAsString());
 
             return response()->json([
-                'message' => 'Error placing order',
+                'message' => 'Error placing order: '.$e->getMessage(),
                 'success' => false,
             ], 500);
         }
@@ -465,27 +476,56 @@ class OrderController extends Controller
                     }
                 }
 
-                // Restore items to cart
+                // Restore items to cart - MERGE with existing items
                 $cart = Cart::firstOrCreate(
                     ['user_id' => $user->id, 'vendor_id' => $order->vendor_id],
                     ['created_at' => now(), 'updated_at' => now()]
                 );
 
                 foreach ($order->items as $item) {
-                    CartItem::create([
-                        'cart_id' => $cart->id,
-                        'product_id' => $item->product_id,
-                        'quantity' => $item->quantity,
-                        'unit_price' => $item->unit_price,
-                        'selected_addons' => $item->selected_addons,
-                        'special_instructions' => null,
-                        'created_at' => now(),
-                        'updated_at' => now(),
-                    ]);
+                    // Sort addons for order-insensitive comparison
+                    $selectedAddons = collect($item->selected_addons ?? [])->sortBy('addon_id')->values()->all();
+                    $selectedAddonsJson = json_encode($selectedAddons);
+
+                    // Check if item already exists with same product and addons
+                    $existingItem = CartItem::where('cart_id', $cart->id)
+                        ->where('product_id', $item->product_id)
+                        ->where('selected_addons', $selectedAddonsJson)
+                        ->first();
+
+                    if ($existingItem) {
+                        // Merge: add quantity to existing item
+                        $existingItem->update([
+                            'quantity' => $existingItem->quantity + $item->quantity,
+                            'updated_at' => now(),
+                        ]);
+                    } else {
+                        // Create new cart item
+                        CartItem::create([
+                            'cart_id' => $cart->id,
+                            'product_id' => $item->product_id,
+                            'quantity' => $item->quantity,
+                            'unit_price' => $item->unit_price,
+                            'selected_addons' => $item->selected_addons,
+                            'special_instructions' => null,
+                            'created_at' => now(),
+                            'updated_at' => now(),
+                        ]);
+                    }
                 }
 
-                // Update order status
-                $order->update(['status' => 'cancelled']);
+                // Update order status with cancellation details
+                $order->update([
+                    'status' => 'cancelled',
+                    'cancelled_by' => 'customer',
+                    'cancelled_at' => now(),
+                ]);
+
+                // Broadcast ONLY to vendor - customer cancelled
+                // Note: We send to vendor-toasts channel for toast notification
+                // We DON'T send to customer-orders channel since customer already knows they cancelled
+                $vendor = Vendor::find($order->vendor_id);
+                event(new OrderStatusChanged($vendor, $order, $user, 'pending', 'cancelled'));
 
                 DB::commit();
 

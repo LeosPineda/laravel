@@ -3,14 +3,17 @@
 namespace App\Http\Controllers\Vendor;
 
 use App\Events\OrderStatusChanged;
+use App\Events\ReceiptReady;
 use App\Http\Controllers\Controller;
-use App\Models\Order;
-use App\Models\Vendor;
-use App\Models\User;
+use App\Models\Cart;
+use App\Models\CartItem;
 use App\Models\Notification;
+use App\Models\Order;
+use App\Models\User;
+use App\Models\Vendor;
 use Barryvdh\DomPDF\Facade\Pdf;
-use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -24,7 +27,7 @@ class OrderController extends Controller
     {
         try {
             $vendor = $this->getCurrentVendor();
-            if (!$vendor) {
+            if (! $vendor) {
                 return response()->json(['error' => 'Vendor not found'], 404);
             }
 
@@ -45,7 +48,7 @@ class OrderController extends Controller
             if ($search) {
                 $query->where(function ($q) use ($search) {
                     $q->where('order_number', 'like', "%{$search}%")
-                      ->orWhere('table_number', 'like', "%{$search}%");
+                        ->orWhere('table_number', 'like', "%{$search}%");
                 });
             }
 
@@ -59,13 +62,13 @@ class OrderController extends Controller
                     'per_page' => $orders->perPage(),
                     'total' => $orders->total(),
                 ],
-                'stats' => $this->getOrderStats($vendor->id)
+                'stats' => $this->getOrderStats($vendor->id),
             ]);
 
         } catch (\Exception $e) {
             Log::error('Error fetching vendor orders', [
                 'vendor_id' => auth()->id(),
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
 
             return response()->json(['error' => 'Failed to fetch orders'], 500);
@@ -79,26 +82,37 @@ class OrderController extends Controller
     {
         try {
             $vendor = $this->getCurrentVendor();
-            if (!$vendor || $order->vendor_id !== $vendor->id) {
+            if (! $vendor || $order->vendor_id !== $vendor->id) {
                 return response()->json(['error' => 'Order not found'], 404);
             }
 
             // Load order items with product details and customer info
             $order->load([
                 'items.product.addons',
-                'customer:id,name,email'
+                'customer:id,name,email',
             ]);
 
             // Add special_instructions to the response
             $orderData = $order->toArray();
             $orderData['special_instructions'] = $order->special_instructions;
 
+            // Enrich order items with addon names
+            foreach ($orderData['items'] as &$item) {
+                if (! empty($item['selected_addons'])) {
+                    $addonIds = array_column($item['selected_addons'], 'addon_id');
+                    $addonNames = \App\Models\Addon::whereIn('id', $addonIds)->pluck('name', 'id')->toArray();
+                    foreach ($item['selected_addons'] as &$addon) {
+                        $addon['name'] = $addonNames[$addon['addon_id']] ?? 'Addon';
+                    }
+                }
+            }
+
             return response()->json(['order' => $orderData]);
 
         } catch (\Exception $e) {
             Log::error('Error fetching order details', [
                 'order_id' => $order->id,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
 
             return response()->json(['error' => 'Failed to fetch order details'], 500);
@@ -112,11 +126,11 @@ class OrderController extends Controller
     {
         try {
             $vendor = $this->getCurrentVendor();
-            if (!$vendor || $order->vendor_id !== $vendor->id) {
+            if (! $vendor || $order->vendor_id !== $vendor->id) {
                 return response()->json(['error' => 'Order not found'], 404);
             }
 
-            if (!$order->isPending()) {
+            if (! $order->isPending()) {
                 return response()->json(['error' => 'Order cannot be accepted'], 400);
             }
 
@@ -126,20 +140,21 @@ class OrderController extends Controller
 
             try {
                 $order->update([
-                    'status' => 'accepted'
+                    'status' => 'accepted',
                 ]);
 
                 // Broadcast status change event
                 event(new OrderStatusChanged($vendor, $order, $order->customer, $oldStatus, 'accepted'));
 
                 // ✅ UPDATED: Detailed order accepted notification with items and addons
-                $itemsList = $order->items->map(function($item) {
+                $itemsList = $order->items->map(function ($item) {
                     $addonText = '';
                     if ($item->selected_addons && count($item->selected_addons) > 0) {
                         $addonNames = collect($item->selected_addons)->pluck('name')->implode(', ');
                         $addonText = " + {$addonNames}";
                     }
                     $productName = $item->product ? $item->product->name : 'Unknown Item';
+
                     return "{$item->quantity}x {$productName}{$addonText}";
                 })->implode(', ');
 
@@ -158,7 +173,7 @@ class OrderController extends Controller
 
                 return response()->json([
                     'message' => 'Order accepted successfully',
-                    'order' => $order->fresh(['items.product', 'customer'])
+                    'order' => $order->fresh(['items.product', 'customer']),
                 ]);
 
             } catch (\Exception $e) {
@@ -169,7 +184,7 @@ class OrderController extends Controller
         } catch (\Exception $e) {
             Log::error('Error accepting order', [
                 'order_id' => $order->id,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
 
             return response()->json(['error' => 'Failed to accept order'], 500);
@@ -183,11 +198,11 @@ class OrderController extends Controller
     {
         try {
             $vendor = $this->getCurrentVendor();
-            if (!$vendor || $order->vendor_id !== $vendor->id) {
+            if (! $vendor || $order->vendor_id !== $vendor->id) {
                 return response()->json(['error' => 'Order not found'], 404);
             }
 
-            if (!$order->isPending()) {
+            if (! $order->isPending()) {
                 return response()->json(['error' => 'Order cannot be declined'], 400);
             }
 
@@ -195,7 +210,7 @@ class OrderController extends Controller
 
             // Validate decline reason
             $request->validate([
-                'decline_reason' => 'required|string|max:255'
+                'decline_reason' => 'required|string|max:255',
             ]);
 
             $declineReason = $request->input('decline_reason');
@@ -203,9 +218,37 @@ class OrderController extends Controller
             DB::beginTransaction();
 
             try {
+                // Restore stock for cancelled order items
+                foreach ($order->items as $item) {
+                    if ($item->product) {
+                        $item->product->increment('stock_quantity', $item->quantity);
+                    }
+                }
+
+                // Restore items to customer's cart
+                $cart = Cart::firstOrCreate(
+                    ['user_id' => $order->customer_id, 'vendor_id' => $order->vendor_id],
+                    ['created_at' => now(), 'updated_at' => now()]
+                );
+
+                foreach ($order->items as $item) {
+                    CartItem::create([
+                        'cart_id' => $cart->id,
+                        'product_id' => $item->product_id,
+                        'quantity' => $item->quantity,
+                        'unit_price' => $item->unit_price,
+                        'selected_addons' => $item->selected_addons,
+                        'special_instructions' => null,
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ]);
+                }
+
                 $order->update([
                     'status' => 'cancelled',
-                    'decline_reason' => $declineReason
+                    'decline_reason' => $declineReason,
+                    'cancelled_by' => 'vendor',
+                    'cancelled_at' => now(),
                 ]);
 
                 // Broadcast status change event
@@ -228,7 +271,7 @@ class OrderController extends Controller
 
                 return response()->json([
                     'message' => 'Order declined successfully',
-                    'order' => $order->fresh(['items.product', 'customer'])
+                    'order' => $order->fresh(['items.product', 'customer']),
                 ]);
 
             } catch (\Exception $e) {
@@ -239,7 +282,7 @@ class OrderController extends Controller
         } catch (\Exception $e) {
             Log::error('Error declining order', [
                 'order_id' => $order->id,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
 
             return response()->json(['error' => 'Failed to decline order'], 500);
@@ -255,11 +298,11 @@ class OrderController extends Controller
     {
         try {
             $vendor = $this->getCurrentVendor();
-            if (!$vendor || $order->vendor_id !== $vendor->id) {
+            if (! $vendor || $order->vendor_id !== $vendor->id) {
                 return response()->json(['error' => 'Order not found'], 404);
             }
 
-            if (!$order->isAccepted()) {
+            if (! $order->isAccepted()) {
                 return response()->json(['error' => 'Order must be accepted first'], 400);
             }
 
@@ -270,7 +313,7 @@ class OrderController extends Controller
             try {
                 $order->update([
                     'status' => 'ready_for_pickup',
-                    'completed_at' => now()
+                    'completed_at' => now(),
                 ]);
 
                 // Broadcast status change event
@@ -303,11 +346,14 @@ class OrderController extends Controller
                     'created_at' => now(),
                 ]);
 
+                // Broadcast ReceiptReady event for real-time notification
+                event(new ReceiptReady($vendor, $order, $order->customer));
+
                 DB::commit();
 
                 return response()->json([
                     'message' => 'Order marked as ready and completed',
-                    'order' => $order->fresh(['items.product', 'customer'])
+                    'order' => $order->fresh(['items.product', 'customer']),
                 ]);
 
             } catch (\Exception $e) {
@@ -318,7 +364,7 @@ class OrderController extends Controller
         } catch (\Exception $e) {
             Log::error('Error marking order as ready', [
                 'order_id' => $order->id,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
 
             return response()->json(['error' => 'Failed to mark order as ready'], 500);
@@ -336,7 +382,7 @@ class OrderController extends Controller
             $pdf = Pdf::loadView('receipts.customer', compact('order'));
 
             // Create unique filename
-            $fileName = "receipt-{$order->order_number}-" . time() . ".pdf";
+            $fileName = "receipt-{$order->order_number}-".time().'.pdf';
 
             // Save PDF to storage (public disk for easy access)
             $filePath = "receipts/{$fileName}";
@@ -344,7 +390,7 @@ class OrderController extends Controller
 
             // Update order with receipt URL
             $order->update([
-                'receipt_url' => $filePath
+                'receipt_url' => $filePath,
             ]);
 
             return $filePath;
@@ -352,7 +398,7 @@ class OrderController extends Controller
         } catch (\Exception $e) {
             Log::error('Error generating receipt', [
                 'order_id' => $order->id,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
 
             // Return empty string if generation fails
@@ -367,7 +413,7 @@ class OrderController extends Controller
     {
         try {
             $vendor = $this->getCurrentVendor();
-            if (!$vendor || $order->vendor_id !== $vendor->id) {
+            if (! $vendor || $order->vendor_id !== $vendor->id) {
                 return response()->json(['error' => 'Order not found'], 404);
             }
 
@@ -384,7 +430,7 @@ class OrderController extends Controller
                 DB::commit();
 
                 return response()->json([
-                    'message' => 'Order deleted successfully'
+                    'message' => 'Order deleted successfully',
                 ]);
 
             } catch (\Exception $e) {
@@ -395,7 +441,7 @@ class OrderController extends Controller
         } catch (\Exception $e) {
             Log::error('Error deleting order', [
                 'order_id' => $order->id,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
 
             return response()->json(['error' => 'Failed to delete order'], 500);
@@ -410,11 +456,11 @@ class OrderController extends Controller
         try {
             $request->validate([
                 'order_ids' => 'required|array|min:1',
-                'order_ids.*' => 'integer|exists:orders,id'
+                'order_ids.*' => 'integer|exists:orders,id',
             ]);
 
             $vendor = $this->getCurrentVendor();
-            if (!$vendor) {
+            if (! $vendor) {
                 return response()->json(['error' => 'Vendor not found'], 404);
             }
 
@@ -440,7 +486,7 @@ class OrderController extends Controller
 
                 return response()->json([
                     'message' => "{$deletedCount} orders deleted successfully",
-                    'deleted_count' => $deletedCount
+                    'deleted_count' => $deletedCount,
                 ]);
 
             } catch (\Exception $e) {
@@ -451,7 +497,7 @@ class OrderController extends Controller
         } catch (\Exception $e) {
             Log::error('Error batch deleting orders', [
                 'order_ids' => $request->input('order_ids', []),
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
 
             return response()->json(['error' => 'Failed to delete orders'], 500);
@@ -465,7 +511,7 @@ class OrderController extends Controller
     {
         try {
             $vendor = $this->getCurrentVendor();
-            if (!$vendor) {
+            if (! $vendor) {
                 return response()->json(['error' => 'Vendor not found'], 404);
             }
 
@@ -474,7 +520,7 @@ class OrderController extends Controller
         } catch (\Exception $e) {
             Log::error('Error fetching order stats', [
                 'vendor_id' => auth()->id(),
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
 
             return response()->json(['error' => 'Failed to fetch order statistics'], 500);
@@ -488,7 +534,7 @@ class OrderController extends Controller
     {
         try {
             $vendor = $this->getCurrentVendor();
-            if (!$vendor) {
+            if (! $vendor) {
                 return response()->json(['error' => 'Vendor not found'], 404);
             }
 
@@ -501,18 +547,20 @@ class OrderController extends Controller
             $pdf = Pdf::loadView('receipts.customer', compact('order'));
 
             $fileName = "receipt-{$order->order_number}.pdf";
+
             return $pdf->download($fileName);
 
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
             return response()->json([
                 'message' => 'Order not found or receipt not available',
-                'success' => false
+                'success' => false,
             ], 404);
         } catch (\Exception $e) {
-            Log::error('Error generating vendor receipt: ' . $e->getMessage());
+            Log::error('Error generating vendor receipt: '.$e->getMessage());
+
             return response()->json([
                 'message' => 'Error generating receipt',
-                'success' => false
+                'success' => false,
             ], 500);
         }
     }
@@ -524,7 +572,7 @@ class OrderController extends Controller
     {
         try {
             $vendor = $this->getCurrentVendor();
-            if (!$vendor) {
+            if (! $vendor) {
                 return response()->json(['error' => 'Vendor not found'], 404);
             }
 
@@ -537,18 +585,20 @@ class OrderController extends Controller
             $pdf = Pdf::loadView('receipts.customer', compact('order'));
 
             $fileName = "receipt-{$order->order_number}.pdf";
+
             return $pdf->stream($fileName);
 
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
             return response()->json([
                 'message' => 'Order not found or receipt not available',
-                'success' => false
+                'success' => false,
             ], 404);
         } catch (\Exception $e) {
-            Log::error('Error streaming vendor receipt: ' . $e->getMessage());
+            Log::error('Error streaming vendor receipt: '.$e->getMessage());
+
             return response()->json([
                 'message' => 'Error generating receipt',
-                'success' => false
+                'success' => false,
             ], 500);
         }
     }
@@ -560,7 +610,7 @@ class OrderController extends Controller
     {
         $user = Auth::user();
 
-        if (!$user) {
+        if (! $user) {
             return null;
         }
 

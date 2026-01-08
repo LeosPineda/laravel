@@ -5,7 +5,6 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Order extends Model
 {
@@ -20,6 +19,8 @@ class Order extends Model
         'table_number',
         'special_instructions',
         'decline_reason',
+        'cancelled_by',
+        'cancelled_at',
         'payment_proof_url',
         'receipt_url',
         'completed_at',
@@ -28,6 +29,7 @@ class Order extends Model
     protected $casts = [
         'total_amount' => 'decimal:2',
         'completed_at' => 'datetime',
+        'cancelled_at' => 'datetime',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];
@@ -130,7 +132,7 @@ class Order extends Model
      */
     public function getDeclineReasonDisplayAttribute(): string
     {
-        if (!$this->decline_reason) {
+        if (! $this->decline_reason) {
             return '';
         }
 

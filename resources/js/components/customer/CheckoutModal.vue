@@ -1,5 +1,5 @@
 <template>
-  <!-- Checkout Modal - Mobile Bottom Sheet -->
+  <!-- Checkout Modal - Responsive Design -->
   <div
     v-if="isOpen"
     class="fixed inset-0 z-[60] flex items-end sm:items-center justify-center"
@@ -8,18 +8,18 @@
     <!-- Backdrop -->
     <div class="absolute inset-0 bg-black/50 backdrop-blur-sm"></div>
 
-    <!-- Modal Content - Bottom sheet on mobile, larger on desktop -->
+    <!-- Modal Content - Mobile: Bottom Sheet, Desktop: Centered Modal -->
     <div
-      class="relative bg-white w-full sm:max-w-lg md:max-w-xl sm:mx-4 sm:rounded-2xl rounded-t-3xl shadow-2xl transform transition-all duration-300 ease-out max-h-[95vh] sm:max-h-[90vh] flex flex-col"
+      class="relative bg-white w-full sm:w-[440px] md:w-[480px] sm:mx-4 rounded-t-3xl sm:rounded-2xl shadow-2xl transform transition-all duration-300 ease-out max-h-[90vh] sm:max-h-[85vh] flex flex-col overflow-hidden"
       :class="{
         'translate-y-0 opacity-100': isOpen,
-        'translate-y-4 opacity-0': !isOpen
+        'translate-y-full sm:translate-y-4 sm:opacity-0': !isOpen
       }"
       @click.stop
     >
       <!-- Drag Handle (mobile only) -->
-      <div class="sm:hidden flex justify-center pt-3 pb-1">
-        <div class="w-10 h-1 bg-gray-300 rounded-full"></div>
+      <div class="sm:hidden flex justify-center pt-4 pb-2">
+        <div class="w-12 h-1.5 bg-gray-300 rounded-full"></div>
       </div>
       <!-- Header -->
       <div class="flex items-center justify-between p-4 border-b border-gray-200 flex-shrink-0">
@@ -296,6 +296,7 @@
 
 <script setup>
 import { ref, computed, watch } from 'vue'
+import { useToast } from '@/composables/useToast'
 
 const props = defineProps({
   vendorCart: {
@@ -309,6 +310,9 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['close', 'complete'])
+
+// Toast notifications
+const { error } = useToast()
 
 // State
 const step = ref('payment-method') // 'payment-method', 'qr-payment', 'order-summary'
@@ -467,7 +471,7 @@ const submitOrder = async () => {
     }
   } catch (err) {
     console.error('Error submitting order:', err)
-    // Could emit error event or show toast
+    error(err.message || 'Failed to submit order')
   } finally {
     submitting.value = false
   }

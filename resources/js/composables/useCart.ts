@@ -142,8 +142,11 @@ export function useCart() {
   const updateCartItem = async (cartItemId: number, quantity: number, addons?: AddonSelection[]) => {
     try {
       const body: any = { quantity }
+      // Always include addons in request (empty array if none selected)
       if (addons !== undefined) {
         body.addons = addons
+      } else {
+        body.addons = []
       }
 
       const response = await fetch(`/api/customer/cart/items/${cartItemId}`, {

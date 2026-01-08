@@ -154,8 +154,8 @@
               </div>
             </div>
 
-            <!-- Notifications List -->
-            <div class="flex-1 overflow-y-auto">
+            <!-- Notifications List - Scrollable -->
+            <div class="flex-1 overflow-y-auto" style="max-height: calc(85vh - 120px);">
               <div v-if="orderNotifications.length === 0" class="px-4 py-12 text-center">
                 <div class="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
                   <span class="text-4xl">📭</span>
@@ -171,7 +171,7 @@
                   'px-4 py-4 border-b border-gray-100 active:bg-gray-50 transition-colors',
                   notification.is_read ? 'bg-white' : 'bg-orange-50/50'
                 ]"
-                @click="markAsRead(notification)"
+                @click="handleNotificationClick(notification)"
               >
                 <div class="flex items-start gap-3">
                   <!-- Status Icon -->
@@ -190,6 +190,18 @@
                     </div>
                     <p class="text-gray-600 mt-1">{{ notification.message }}</p>
                     <p class="text-sm text-gray-400 mt-2">{{ formatTime(notification.created_at) }}</p>
+
+                    <!-- Receipt Download Button -->
+                    <button
+                      v-if="notification.type === 'receipt_ready'"
+                      @click.stop="downloadReceipt(notification)"
+                      class="mt-3 px-4 py-2 bg-green-500 text-white text-sm font-medium rounded-lg hover:bg-green-600 transition-colors flex items-center gap-2"
+                    >
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                      </svg>
+                      {{ downloadingReceipt === notification.id ? 'Downloading...' : 'Download Receipt' }}
+                    </button>
                   </div>
 
                   <!-- Delete Button -->
@@ -233,11 +245,12 @@ const props = defineProps({
 const showDropdown = ref(false)
 const notifications = ref([])
 const unreadCount = ref(0)
+const downloadingReceipt = ref(null)
 
-// Filter to show ONLY receipt notifications in bell (order status goes to toast)
+// Filter to show order notifications (receipt_ready and order_status) in bell
 const orderNotifications = computed(() => {
   return (notifications.value || []).filter(n =>
-    n.type === 'receipt_ready'
+    n.type === 'receipt_ready' || n.type === 'order_status' || n.type === 'accepted' || n.type === 'ready_for_pickup' || n.type === 'cancelled'
   )
 })
 
@@ -348,33 +361,113 @@ const deleteAll = async () => {
   }
 }
 
+// Handle notification click - show toast for order status or download receipt
+const handleNotificationClick = (notification) => {
+  if (notification.type === 'receipt_ready') {
+    downloadReceipt(notification)
+  } else {
+    markAsRead(notification)
+  }
+}
+
+// Download receipt for an order
+const downloadReceipt = async (notification) => {
+  downloadingReceipt.value = notification.id
+
+  try {
+    // Get order ID from notification
+    const orderId = notification.order_id
+
+    if (!orderId) {
+      toast.error('Order not found')
+      return
+    }
+
+    // Fetch the receipt as a blob
+    const response = await fetch(`/api/customer/orders/${orderId}/receipt/stream`, {
+      headers: {
+        'Accept': 'application/pdf',
+        'X-Requested-With': 'XMLHttpRequest'
+      },
+      credentials: 'include'
+    })
+
+    if (!response.ok) {
+      throw new Error('Failed to download receipt')
+    }
+
+    // Get the blob
+    const blob = await response.blob()
+
+    // Create download link
+    const url = window.URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+
+    // Extract order number from message or use default
+    const match = notification.message?.match(/#(\w+)/)
+    const orderNumber = match ? match[1] : 'order'
+    link.download = `receipt-${orderNumber}.pdf`
+
+    // Trigger download
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    window.URL.revokeObjectURL(url)
+
+    toast.success('Receipt downloaded!')
+  } catch (error) {
+    console.error('Error downloading receipt:', error)
+    toast.error('Failed to download receipt')
+  } finally {
+    downloadingReceipt.value = null
+  }
+}
+
 // REAL-TIME SUBSCRIPTION - SINGLE SOURCE OF TRUTH
 const subscribeToNotifications = () => {
   if (window.Echo && props.userId) {
     try {
-      window.Echo.private(`customer-orders.${props.userId}`)
-        .listen('.OrderStatusChanged', async (e) => {
-          const status = e.order?.status
-          const orderNumber = e.order?.order_number || ''
+      const channel = window.Echo.private(`customer-orders.${props.userId}`)
 
-          // Order status changes go to TOAST with sound (30 seconds, closeable)
-          if (status === 'accepted') {
-            toast.customerAlert(`✅ Order #${orderNumber} accepted! Your food is being prepared.`, 'success')
-          } else if (status === 'ready_for_pickup') {
-            toast.customerAlert(`🔔 Order #${orderNumber} is ready for pickup!`, 'success')
-          } else if (status === 'cancelled') {
-            toast.customerAlert(`❌ Order #${orderNumber} was cancelled by vendor.`, 'error')
+      // Order status changes - TOAST with sound
+      channel.listen('.OrderStatusChanged', async (e) => {
+        console.log('📡 CustomerNotificationBell received OrderStatusChanged:', e)
 
-            // ✅ RESTORE CART ITEMS: When vendor cancels order
-            await restoreOrderToCart(e.order)
+        const status = e.order?.new_status || e.order?.status
+        const orderNumber = e.order?.order_number || ''
+        const cancelledBy = e.order?.cancelled_by || e.order?.cancelledBy
+
+        if (status === 'accepted') {
+          toast.customerAlert(`✅ Order #${orderNumber} accepted! Your food is being prepared.`, 'success')
+        } else if (status === 'ready_for_pickup') {
+          toast.customerAlert(`🔔 Order #${orderNumber} is ready for pickup!`, 'success')
+        } else if (status === 'cancelled') {
+          // Show appropriate message based on who cancelled
+          if (cancelledBy === 'vendor') {
+            toast.customerAlert(`❌ Order #${orderNumber} was cancelled by the vendor.`, 'error')
+          } else if (cancelledBy === 'customer') {
+            toast.customerAlert(`❌ Order #${orderNumber} was cancelled.`, 'error')
+          } else {
+            toast.customerAlert(`❌ Order #${orderNumber} was cancelled.`, 'error')
           }
+          await restoreOrderToCart(e.order)
+        }
 
-          // Receipt notifications go to BELL (loaded from server)
-          // Bell will refresh when user clicks it - no need for real-time here
-        })
-        .error((error) => {
-          console.error('🚨 CustomerNotificationBell: Real-time listener error:', error)
-        })
+        // Refresh notifications when status changes
+        loadNotifications()
+      })
+      .listen('.ReceiptReady', (e) => {
+        // Receipt notification - play sound and show toast
+        console.log('📡 ReceiptReady received:', e)
+        toast.customerAlert(`🧾 ${e.message || 'Your receipt is ready!'}`, 'success')
+
+        // Refresh notifications to show receipt in bell
+        loadNotifications()
+      })
+      .error((error) => {
+        console.error('🚨 CustomerNotificationBell: Real-time listener error:', error)
+      })
     } catch (error) {
       console.error('❌ CustomerNotificationBell: Broadcasting error:', error)
     }

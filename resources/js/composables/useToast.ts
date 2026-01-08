@@ -14,17 +14,38 @@ let toastId = 0
 // Get reactive sound state
 const { isSoundEnabled } = useSound()
 
-// Sound file path
-const NOTIFICATION_SOUND = '/storage/Sound/mixkit-software-interface-back-2575.wav'
+// Sound file path - use multiple fallbacks
+const NOTIFICATION_SOUND_PATHS = [
+  '/storage/Sound/mixkit-software-interface-back-2575.wav',
+  '/sounds/notification.mp3',
+  '/audio/notification.mp3'
+]
 
 // Sound instance (lazy loaded)
 let notificationSound: HTMLAudioElement | null = null
+let soundInitialized = false
 
 const initSound = () => {
   if (typeof window === 'undefined') return
+  if (soundInitialized) return
   if (!notificationSound) {
-    notificationSound = new Audio(NOTIFICATION_SOUND)
+    // Use the correct sound path
+    notificationSound = new Audio('/storage/Sound/mixkit-software-interface-back-2575.wav')
     notificationSound.volume = 0.6
+
+    // Preload the audio
+    notificationSound.load()
+
+    notificationSound.addEventListener('canplaythrough', () => {
+      console.log('✅ Sound loaded successfully')
+      soundInitialized = true
+    }, { once: true })
+
+    notificationSound.addEventListener('error', (e) => {
+      console.error('❌ Sound load error:', e)
+      // Try fallback beep
+      fallbackBeep()
+    }, { once: true })
   }
 }
 
@@ -37,8 +58,40 @@ const playNotificationSound = () => {
   if (notificationSound) {
     notificationSound.currentTime = 0
     notificationSound.play().catch(() => {
-      // Silently fail - don't show audio errors to user
+      // Fallback to browser beep if audio fails
+      fallbackBeep()
     })
+  } else {
+    // Fallback to browser beep
+    fallbackBeep()
+  }
+}
+
+// Browser beep fallback using Web Audio API
+const fallbackBeep = () => {
+  if (typeof window === 'undefined') return
+  try {
+    const AudioContext = window.AudioContext || (window as any).webkitAudioContext
+    if (AudioContext) {
+      const audioCtx = new AudioContext()
+      const oscillator = audioCtx.createOscillator()
+      const gainNode = audioCtx.createGain()
+
+      oscillator.connect(gainNode)
+      gainNode.connect(audioCtx.destination)
+
+      oscillator.type = 'sine'
+      oscillator.frequency.value = 800
+      gainNode.gain.value = 0.1
+
+      oscillator.start()
+      setTimeout(() => {
+        oscillator.stop()
+        audioCtx.close()
+      }, 200)
+    }
+  } catch (e) {
+    // Silent fail - some browsers block audio
   }
 }
 
@@ -86,17 +139,32 @@ const clear = () => {
   toasts.value = []
 }
 
-// Convenience methods - 30 seconds default duration for customer alerts
+// Convenience methods - all toasts play sound by default
 const success = (message: string, duration = 5000) => {
+  playCustomerSound()
   return show(message, 'success', duration)
 }
 
 const error = (message: string, duration = 5000) => {
+  playErrorSound()
   return show(message, 'error', duration)
 }
 
-const warning = (message: string, duration = 5000) => show(message, 'warning', duration)
-const info = (message: string, duration = 5000) => show(message, 'info', duration)
+// Vendor error notification with sound (for cancellations, etc.)
+const vendorError = (message: string, duration = 10000) => {
+  playErrorSound()
+  return show(message, 'error', duration)
+}
+
+const warning = (message: string, duration = 5000) => {
+  playNotificationSound()
+  return show(message, 'warning', duration)
+}
+
+const info = (message: string, duration = 5000) => {
+  playNotificationSound()
+  return show(message, 'info', duration)
+}
 
 // Special method for new orders - with sound (15 seconds for vendor attention)
 const newOrder = (message: string, duration = 10000) => {
@@ -122,6 +190,7 @@ export function useToast() {
     clear,
     success,
     error,
+    vendorError,  // Error toast with sound for vendors
     warning,
     info,
     newOrder,

@@ -199,7 +199,7 @@ import { useSound } from '@/composables/useSound'
 import ToastContainer from '@/components/ui/ToastContainer.vue'
 
 const page = usePage()
-const { newOrder: toastNewOrder, error: toastError } = useToast()
+const { newOrder: toastNewOrder, vendorError: toastVendorError } = useToast()
 const { isSoundEnabled, toggleSound } = useSound()
 const vendorId = ref(null)
 
@@ -217,20 +217,35 @@ const setupVendorToastNotifications = () => {
   }
 
   try {
-    const channel = window.Echo.private(`vendor-orders.${vendorId.value}`)
+    // Listen on vendor-toasts channel for all order notifications
+    const toastChannel = window.Echo.private(`vendor-toasts.${vendorId.value}`)
 
-    // ✅ FIXED: Listen for proper backend event names
-    channel.listen('.VendorNewOrder', (e) => {
+    // Listen on vendor-orders channel for order list updates
+    const ordersChannel = window.Echo.private(`vendor-orders.${vendorId.value}`)
+
+    // Toast notifications (new orders and cancellations)
+    toastChannel.listen('.VendorNewOrder', (e) => {
       toastNewOrder(`📦 New order #${e.order?.order_number || ''} received!`, 30000)
     })
     .listen('.OrderStatusChanged', (e) => {
-      // Handle customer cancellations with error toast
+      // Handle customer cancellations with error toast (plays sound)
       if (e.order?.new_status === 'cancelled' || e.order?.status === 'cancelled') {
-        toastError(`❌ Order #${e.order?.order_number || ''} was cancelled by customer`, 20000)
+        toastVendorError(`❌ Order #${e.order?.order_number || ''} was cancelled by customer`, 20000)
       }
     })
     .error((error) => {
-      // Silent error handling - don't log to console
+      // Silent error handling
+    })
+
+    // Order list updates (accept, ready, etc.)
+    ordersChannel.listen('.OrderStatusChanged', (e) => {
+      // FIXED: Auto-refresh order page when status changes occur
+      if (page.url.includes('/vendor/orders') || page.url.includes('/vendor/incoming-orders')) {
+        router.reload()
+      }
+    })
+    .error((error) => {
+      // Silent error handling
     })
 
   } catch (error) {
@@ -241,6 +256,7 @@ const setupVendorToastNotifications = () => {
 const cleanupVendorChannel = () => {
   if (vendorId.value && window.Echo) {
     try {
+      window.Echo.leave(`vendor-toasts.${vendorId.value}`)
       window.Echo.leave(`vendor-orders.${vendorId.value}`)
     } catch (error) {
       // Silent error handling - don't log to console

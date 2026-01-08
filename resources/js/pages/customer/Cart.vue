@@ -31,7 +31,7 @@
         </Link>
       </div>
 
-      <div v-else class="space-y-6">
+      <div v-else class="w-full max-w-xl mx-auto space-y-6">
         <!-- PENDING ORDERS Section -->
         <div
           v-for="order in pendingOrders"
@@ -146,7 +146,7 @@
                 </div>
 
                 <!-- Item Details & Actions -->
-                <div class="flex-1 min-w-0">
+                <div class="flex-1 max-w-0">
                   <!-- Name & Price Row -->
                   <div class="flex items-start justify-between gap-2">
                     <h4 class="font-medium text-gray-900 text-sm sm:text-base line-clamp-2">{{ item.product.name }}</h4>
@@ -246,8 +246,8 @@ import CheckoutModal from '@/components/customer/CheckoutModal.vue'
 import { useCart } from '@/composables/useCart'
 import { useToast } from '@/composables/useToast'
 
-// Cart composable
-const { vendorCarts, loading, fetchCart, removeFromCart, updateCartItem } = useCart()
+// Cart composable - destructure ALL needed refs including cartCount
+const { vendorCarts, cart, cartCount, loading, fetchCart, removeFromCart, updateCartItem } = useCart()
 const { success, error } = useToast()
 
 // Page props
@@ -381,7 +381,12 @@ const handleOrderComplete = async (orderData) => {
     pendingOrders.value.unshift(orderData.order)
   }
 
-  // Refresh cart (cart items for this vendor should be cleared)
+  // FIXED: Clear local cart state first before fetching to prevent old items from reappearing
+  vendorCarts.value = []
+  cart.value = []
+  cartCount.value = 0
+
+  // Then fetch fresh cart data from server
   await fetchCart()
 }
 

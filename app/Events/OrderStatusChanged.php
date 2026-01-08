@@ -38,22 +38,24 @@ class OrderStatusChanged implements ShouldBroadcast
         $this->newStatus = $newStatus;
     }
 
-    /**
-     * Get the channels the event should broadcast on.
-     */
     public function broadcastOn(): array
     {
-        $channels = [
-            new PrivateChannel('vendor-orders.'.$this->vendor->id),
-            new PrivateChannel('customer-orders.'.$this->customer->id),
-        ];
-
-        // Add vendor-toasts channel for customer cancellations
-        if ($this->newStatus === 'cancelled') {
-            $channels[] = new PrivateChannel('vendor-toasts.'.$this->vendor->id);
+        // FIXED: Broadcast to vendor channels, but NOT customer channel for cancellation
+        // Customer already knows they cancelled - no need to notify them
+        if ($this->newStatus === 'cancelled' && $this->order->cancelled_by === 'customer') {
+            // Customer cancelled - only notify vendor
+            return [
+                new PrivateChannel('vendor-orders.'.$this->vendor->id),
+                new PrivateChannel('vendor-toasts.'.$this->vendor->id),
+            ];
         }
 
-        return $channels;
+        // Broadcast to all channels for other status changes
+        return [
+            new PrivateChannel('vendor-orders.'.$this->vendor->id),
+            new PrivateChannel('vendor-toasts.'.$this->vendor->id),
+            new PrivateChannel('customer-orders.'.$this->customer->id),
+        ];
     }
 
     /**
@@ -79,6 +81,7 @@ class OrderStatusChanged implements ShouldBroadcast
                 'status' => $this->order->status,
                 'old_status' => $this->oldStatus,
                 'new_status' => $this->newStatus,
+                'cancelled_by' => $this->order->cancelled_by,
                 'total_amount' => $this->order->total_amount,
                 'payment_method' => $this->order->payment_method,
                 'table_number' => $this->order->table_number,

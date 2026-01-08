@@ -146,4 +146,3 @@ onMounted(async () => {
   await loadStats()
 })
 </script>
-        loadStats()

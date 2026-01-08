@@ -36,9 +36,10 @@ class MenuController extends Controller
                 ->orderBy('brand_name')
                 ->get();
 
-            // Get product counts separately (more efficient)
+            // Get product counts separately (more efficient) - Only count products WITH stock
             $vendorIds = $vendors->pluck('id');
             $productCounts = \App\Models\Product::whereIn('vendor_id', $vendorIds)
+                ->where('stock_quantity', '>', 0) // Only count products that are in stock
                 ->groupBy('vendor_id')
                 ->selectRaw('vendor_id, COUNT(*) as count')
                 ->pluck('count', 'vendor_id')

@@ -102,14 +102,14 @@
                 : 'border-gray-200 hover:border-orange-200 hover:bg-orange-50/50'"
               @click="toggleAddon(addon)"
             >
-              <label class="flex items-center gap-2 flex-1 cursor-pointer" @click.stop>
+              <label class="flex items-center gap-2 flex-1 cursor-pointer text-gray-900" @click.stop>
                 <input
                   type="checkbox"
                   :checked="isAddonSelected(addon.id)"
                   @change="toggleAddon(addon)"
                   class="w-5 h-5 text-orange-600 border-2 border-gray-300 rounded focus:ring-orange-500"
                 />
-                <span>{{ addon.name }}</span>
+                <span class="font-medium">{{ addon.name }}</span>
               </label>
               <span class="font-bold text-orange-600">+₱{{ formatPrice(addon.price) }}</span>
             </div>

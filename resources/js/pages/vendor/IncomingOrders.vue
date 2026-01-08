@@ -95,8 +95,8 @@ const acceptOrder = async (order: any) => {
     const response = await apiPatch(`/api/vendor/orders/${order.id}/accept`);
 
     if (response.ok) {
-      // Use customerAlert with sound for vendor actions
-      toast.customerAlert(`✅ Order #${order.order_number} accepted! Customer notified.`, 'success');
+      // Vendor toast - new order accepted
+      toast.newOrder(`✅ Order #${order.order_number} accepted! Customer notified.`);
       await refreshOrders();
       activeTab.value = 'accepted';
       emit('ordersUpdated');
@@ -126,8 +126,8 @@ const handleDeclineOrder = async (reason: string) => {
     });
 
     if (response.ok) {
-      // Use customerAlert with sound for vendor actions
-      toast.customerAlert(`❌ Order #${selectedOrder.value.order_number} declined. Customer notified.`, 'error');
+      // Vendor toast - order declined
+      toast.vendorError(`❌ Order #${selectedOrder.value.order_number} declined. Customer notified.`);
       await refreshOrders();
       emit('ordersUpdated');
 
@@ -149,8 +149,8 @@ const markReady = async (order: any) => {
     const response = await apiPatch(`/api/vendor/orders/${order.id}/ready`);
 
     if (response.ok) {
-      // Use customerAlert with sound for vendor actions
-      toast.customerAlert(`🔔 Order #${order.order_number} ready for pickup! Receipt sent.`, 'success');
+      // Vendor toast - order ready
+      toast.newOrder(`🔔 Order #${order.order_number} ready for pickup! Receipt sent.`);
       await refreshOrders();
       emit('ordersUpdated');
     } else {

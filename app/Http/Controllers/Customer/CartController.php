@@ -239,25 +239,31 @@ class CartController extends Controller
                 $query->where('user_id', $user->id);
             })->with('product')->findOrFail($cartItemId);
 
-            // Prepare addons data if provided
+            // Prepare addons data - null means no change, empty array means remove all addons
             $selectedAddons = null;
-            if (! empty($validated['addons'])) {
-                // Get all addon IDs to fetch in one query
-                $addonIds = array_column($validated['addons'], 'addon_id');
-                $dbAddons = Addon::whereIn('id', $addonIds)->pluck('price', 'id')->toArray();
+            if (array_key_exists('addons', $validated)) {
+                // addons is explicitly provided (could be empty array)
+                if (empty($validated['addons'])) {
+                    // Empty array means remove all addons
+                    $selectedAddons = [];
+                } else {
+                    // Non-empty array - process addons
+                    $addonIds = array_column($validated['addons'], 'addon_id');
+                    $dbAddons = Addon::whereIn('id', $addonIds)->pluck('price', 'id')->toArray();
 
-                $selectedAddons = [];
-                foreach ($validated['addons'] as $addon) {
-                    $dbPrice = $dbAddons[$addon['addon_id']] ?? 0;
-                    $selectedAddons[] = [
-                        'addon_id' => $addon['addon_id'],
-                        'quantity' => $addon['quantity'],
-                        'price' => $dbPrice,
-                    ];
+                    $selectedAddons = [];
+                    foreach ($validated['addons'] as $addon) {
+                        $dbPrice = $dbAddons[$addon['addon_id']] ?? 0;
+                        $selectedAddons[] = [
+                            'addon_id' => $addon['addon_id'],
+                            'quantity' => $addon['quantity'],
+                            'price' => $dbPrice,
+                        ];
+                    }
+
+                    // Sort addons by addon_id for order-insensitive comparison
+                    $selectedAddons = collect($selectedAddons)->sortBy('addon_id')->values()->all();
                 }
-
-                // Sort addons by addon_id for order-insensitive comparison
-                $selectedAddons = collect($selectedAddons)->sortBy('addon_id')->values()->all();
             }
 
             // If addons are being updated, check if we should merge with another item
