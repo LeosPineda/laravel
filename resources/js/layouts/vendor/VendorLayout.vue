@@ -109,14 +109,14 @@
     <!-- Mobile Navigation -->
     <div class="md:hidden border-t border-[#E0E0E0] bg-white">
       <div class="px-4 sm:px-6">
-        <nav class="flex justify-between py-3">
+        <nav class="flex justify-between py-3 overflow-x-auto">
           <Link
             href="/vendor/dashboard"
-            class="flex flex-col items-center py-2 px-3 hover:bg-[#F5F5F5] rounded-lg transition-colors"
+            class="flex flex-col items-center py-2 px-2 hover:bg-[#F5F5F5] rounded-lg transition-colors min-w-0 flex-1"
           >
             <span class="text-xl">🏠</span>
             <span
-              class="text-xs mt-1 font-medium"
+              class="text-xs mt-1 font-medium truncate"
               :class="$page.url.startsWith('/vendor/dashboard') ? 'text-[#FF6B35]' : 'text-[#1A1A1A]/60'"
             >
               Dashboard
@@ -125,11 +125,11 @@
 
           <Link
             href="/vendor/orders"
-            class="flex flex-col items-center py-2 px-3 hover:bg-[#F5F5F5] rounded-lg transition-colors"
+            class="flex flex-col items-center py-2 px-2 hover:bg-[#F5F5F5] rounded-lg transition-colors min-w-0 flex-1"
           >
             <span class="text-xl">📦</span>
             <span
-              class="text-xs mt-1 font-medium"
+              class="text-xs mt-1 font-medium truncate"
               :class="$page.url.startsWith('/vendor/orders') ? 'text-[#FF6B35]' : 'text-[#1A1A1A]/60'"
             >
               Orders
@@ -138,11 +138,11 @@
 
           <Link
             href="/vendor/products"
-            class="flex flex-col items-center py-2 px-3 hover:bg-[#F5F5F5] rounded-lg transition-colors"
+            class="flex flex-col items-center py-2 px-2 hover:bg-[#F5F5F5] rounded-lg transition-colors min-w-0 flex-1"
           >
             <span class="text-xl">🍔</span>
             <span
-              class="text-xs mt-1 font-medium"
+              class="text-xs mt-1 font-medium truncate"
               :class="$page.url.startsWith('/vendor/products') ? 'text-[#FF6B35]' : 'text-[#1A1A1A]/60'"
             >
               Products
@@ -151,11 +151,11 @@
 
           <Link
             href="/vendor/analytics"
-            class="flex flex-col items-center py-2 px-3 hover:bg-[#F5F5F5] rounded-lg transition-colors"
+            class="flex flex-col items-center py-2 px-2 hover:bg-[#F5F5F5] rounded-lg transition-colors min-w-0 flex-1"
           >
             <span class="text-xl">📊</span>
             <span
-              class="text-xs mt-1 font-medium"
+              class="text-xs mt-1 font-medium truncate"
               :class="$page.url.startsWith('/vendor/analytics') ? 'text-[#FF6B35]' : 'text-[#1A1A1A]/60'"
             >
               Analytics
@@ -164,11 +164,11 @@
 
           <Link
             href="/vendor/qr"
-            class="flex flex-col items-center py-2 px-3 hover:bg-[#F5F5F5] rounded-lg transition-colors"
+            class="flex flex-col items-center py-2 px-2 hover:bg-[#F5F5F5] rounded-lg transition-colors min-w-0 flex-1"
           >
             <span class="text-xl">📱</span>
             <span
-              class="text-xs mt-1 font-medium"
+              class="text-xs mt-1 font-medium truncate"
               :class="$page.url.startsWith('/vendor/qr') ? 'text-[#FF6B35]' : 'text-[#1A1A1A]/60'"
             >
               QR Code
@@ -196,6 +196,7 @@ import { usePage } from '@inertiajs/vue3'
 import { useToast } from '@/composables/useToast'
 import { useSound } from '@/composables/useSound'
 import ToastContainer from '@/components/ui/ToastContainer.vue'
+import { onMounted, onUnmounted } from 'vue'
 
 const page = usePage()
 const { newOrder: toastNewOrder, error: toastError } = useToast()
@@ -205,37 +206,29 @@ const logout = () => {
   router.post('/logout')
 }
 
-// Real-time toast notifications for vendor
+// Real-time toast notifications for vendor (appears on ALL vendor pages)
 const setupToastNotifications = () => {
   const user = page.props.auth?.user
 
-  if (!user) {
-    console.warn('⚠️ No authenticated user found')
-    return
-  }
-
-  if (!user.vendor?.id) {
-    console.warn('⚠️ No vendor ID found for user')
+  if (!user || !user.vendor?.id) {
     return
   }
 
   if (!window.Echo) {
-    console.warn('⚠️ Laravel Echo not available - toast notifications disabled')
-    toastError('⚠️ Real-time notifications unavailable', 5000)
     return
   }
 
   try {
-    console.log('🔔 Setting up vendor toast notifications for vendor ID:', user.vendor.id)
+    console.log('🔔 Setting up vendor notifications for vendor ID:', user.vendor.id)
 
-    const channel = window.Echo.private(`vendor-toasts.${user.vendor.id}`)
+    const channel = window.Echo.private(`vendor-orders.${user.vendor.id}`)
 
     channel.listen('.VendorNewOrder', (e) => {
-      console.log('🛒 NEW ORDER TOAST RECEIVED:', e)
-      toastNewOrder(`🛒 New order #${e.order?.order_number || ''} received!`, 30000)
+      console.log('📦 NEW ORDER NOTIFICATION:', e)
+      toastNewOrder(`📦 New order #${e.order?.order_number || ''} received!`, 30000)
     })
     .listen('.OrderStatusChanged', (e) => {
-      console.log('📦 ORDER STATUS CHANGED TOAST:', e)
+      console.log('📦 ORDER STATUS CHANGED:', e)
       if (e.order?.new_status === 'cancelled' || e.order?.status === 'cancelled') {
         toastError(`❌ Order #${e.order?.order_number || ''} was cancelled`, 20000)
       }
@@ -243,28 +236,30 @@ const setupToastNotifications = () => {
 
   } catch (error) {
     console.error('❌ Toast notification setup error:', error)
-    toastError('❌ Notification system error', 5000)
   }
 }
 
-import { onMounted, onUnmounted } from 'vue'
+const cleanupChannel = () => {
+  const user = page.props.auth?.user
+  if (user?.vendor?.id && window.Echo) {
+    try {
+      window.Echo.leave(`vendor-orders.${user.vendor.id}`)
+    } catch (error) {
+      console.error('Error leaving notification channel:', error)
+    }
+  }
+}
 
 onMounted(() => {
   setupToastNotifications()
 })
 
 onUnmounted(() => {
-  const user = page.props.auth?.user
-  if (user?.vendor?.id && window.Echo) {
-    try {
-      window.Echo.leave(`vendor-toasts.${user.vendor.id}`)
-    } catch (error) {
-      console.error('Error leaving toast channel:', error)
-    }
-  }
+  cleanupChannel()
 })
 </script>
 
 <style scoped>
 /* No additional styles needed - using Tailwind CSS classes */
 </style>
+

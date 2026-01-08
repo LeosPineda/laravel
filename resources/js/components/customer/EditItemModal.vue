@@ -270,14 +270,19 @@ const saveChanges = async () => {
   saving.value = true
 
   try {
+    // Sort addons by addon_id to ensure consistent order for merge comparison
+    const sortedAddons = [...selectedAddons.value]
+      .map(a => ({
+        addon_id: a.addon_id || a.id,
+        quantity: a.quantity || 1,
+        price: parseFloat(a.price)
+      }))
+      .sort((a, b) => a.addon_id - b.addon_id)
+
     const updatedItem = {
       id: props.item.id,
       quantity: quantity.value,
-      addons: selectedAddons.value.map(a => ({
-        addon_id: a.addon_id || a.id,
-        quantity: 1,
-        price: parseFloat(a.price)
-      }))
+      addons: sortedAddons
     }
 
     emit('save', updatedItem)

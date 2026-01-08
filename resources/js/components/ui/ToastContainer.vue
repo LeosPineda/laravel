@@ -1,6 +1,6 @@
 <template>
   <Teleport to="body">
-    <div class="fixed top-20 right-4 z-[100] flex flex-col gap-3 max-w-md md:top-4 md:right-6">
+    <div class="fixed top-24 right-4 z-[100] flex flex-col gap-3 max-w-md sm:top-20 md:top-4 md:right-6 pb-safe">
       <TransitionGroup name="toast">
         <div
           v-for="toast in toasts"
@@ -8,7 +8,7 @@
           @click="remove(toast.id)"
           :class="[
             'px-5 py-4 rounded-xl shadow-2xl cursor-pointer transition-all border',
-            'flex items-start gap-4 min-w-[340px]',
+            'flex items-start gap-4 w-[calc(100vw-2rem)] sm:w-auto sm:min-w-[340px]',
             getToastClasses(toast.type)
           ]"
         >

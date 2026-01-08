@@ -146,7 +146,7 @@ const getBorderClass = (status: string) => {
         <p class="text-sm text-gray-500">Table {{ order.table_number || 'N/A' }}</p>
         <p class="text-sm text-gray-500">{{ formatTime(order.updated_at) }}</p>
       </div>
-      <span class="text-lg font-bold text-orange-600">₱{{ parseFloat(order.total_amount).toFixed(0) }}</span>
+      <span class="text-lg font-bold text-orange-600">₱{{ (Number(order.total_amount) || 0).toFixed(0) }}</span>
     </div>
 
     <div class="flex gap-2">

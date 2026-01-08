@@ -130,6 +130,10 @@ const handleDeclineOrder = async (reason: string) => {
       toast.customerAlert(`❌ Order #${selectedOrder.value.order_number} declined. Customer notified.`, 'error');
       await refreshOrders();
       emit('ordersUpdated');
+
+      // Close modal after successful decline
+      showDeclineModal.value = false;
+      selectedOrder.value = null;
     } else {
       const error = await response.json();
       toast.error(error.message || 'Failed to decline order');

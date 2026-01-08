@@ -1,7 +1,7 @@
 <template>
   <CustomerLayout>
-    <!-- Header -->
-    <div class="bg-white shadow-sm border-b border-gray-200">
+    <!-- Header (Desktop Only) -->
+    <div class="sm:block hidden bg-white shadow-sm border-b border-gray-200">
       <div class="px-4 sm:px-6 py-6">
         <h1 class="text-2xl font-bold text-gray-900">Browse Vendors</h1>
         <p class="text-gray-600 mt-1">Choose from our active food vendors</p>
@@ -176,10 +176,9 @@ const handleAddedToCart = async (product, quantity, addonIds) => {
   }
 }
 
-// Lifecycle
+// Lifecycle - Note: fetchCart() is called in CustomerLayout, no need to call here
 onMounted(() => {
   loadVendors()
-  fetchCart()
 })
 </script>
 

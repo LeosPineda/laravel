@@ -51,7 +51,7 @@ class CartController extends Controller
 
                 // Enrich selected_addons with addon names
                 $selectedAddons = $item->selected_addons ?? [];
-                if (!empty($selectedAddons)) {
+                if (! empty($selectedAddons)) {
                     $addonIds = array_column($selectedAddons, 'addon_id');
                     $addons = Addon::whereIn('id', $addonIds)->pluck('name', 'id');
                     foreach ($selectedAddons as &$addon) {
@@ -112,7 +112,6 @@ class CartController extends Controller
                 'addons' => 'nullable|array',
                 'addons.*.addon_id' => 'exists:addons,id',
                 'addons.*.quantity' => 'required|integer|min:1',
-                'addons.*.price' => 'required|numeric|min:0',
             ]);
 
             $user = Auth::user();
@@ -135,17 +134,26 @@ class CartController extends Controller
                 ['created_at' => now(), 'updated_at' => now()]
             );
 
-            // Prepare addons data
+            // Prepare addons data with VALIDATED prices from database
             $selectedAddons = [];
             if (! empty($validated['addons'])) {
+                // Get all addon IDs to fetch in one query
+                $addonIds = array_column($validated['addons'], 'addon_id');
+                $dbAddons = Addon::whereIn('id', $addonIds)->pluck('price', 'id')->toArray();
+
                 foreach ($validated['addons'] as $addon) {
+                    // Use database price, not frontend-provided price
+                    $dbPrice = $dbAddons[$addon['addon_id']] ?? 0;
                     $selectedAddons[] = [
                         'addon_id' => $addon['addon_id'],
                         'quantity' => $addon['quantity'],
-                        'price' => $addon['price'],
+                        'price' => $dbPrice,
                     ];
                 }
             }
+
+            // Sort addons by addon_id to ensure order-insensitive comparison
+            $selectedAddons = collect($selectedAddons)->sortBy('addon_id')->values()->all();
 
             // Check if item already exists with same addons and instructions
             $existingItem = CartItem::where('cart_id', $cart->id)
@@ -211,13 +219,17 @@ class CartController extends Controller
     }
 
     /**
-     * Update cart item quantity
+     * Update cart item - supports quantity and addons
+     * Will merge with existing item if addons match
      */
     public function update(Request $request, $cartItemId)
     {
         try {
             $validated = $request->validate([
                 'quantity' => 'required|integer|min:1',
+                'addons' => 'nullable|array',
+                'addons.*.addon_id' => 'exists:addons,id',
+                'addons.*.quantity' => 'required|integer|min:1',
             ]);
 
             $user = Auth::user();
@@ -227,8 +239,68 @@ class CartController extends Controller
                 $query->where('user_id', $user->id);
             })->with('product')->findOrFail($cartItemId);
 
-            // Check stock availability for quantity update
-            if ($cartItem->product->stock_quantity < $validated['quantity']) {
+            // Prepare addons data if provided
+            $selectedAddons = null;
+            if (! empty($validated['addons'])) {
+                // Get all addon IDs to fetch in one query
+                $addonIds = array_column($validated['addons'], 'addon_id');
+                $dbAddons = Addon::whereIn('id', $addonIds)->pluck('price', 'id')->toArray();
+
+                $selectedAddons = [];
+                foreach ($validated['addons'] as $addon) {
+                    $dbPrice = $dbAddons[$addon['addon_id']] ?? 0;
+                    $selectedAddons[] = [
+                        'addon_id' => $addon['addon_id'],
+                        'quantity' => $addon['quantity'],
+                        'price' => $dbPrice,
+                    ];
+                }
+
+                // Sort addons by addon_id for order-insensitive comparison
+                $selectedAddons = collect($selectedAddons)->sortBy('addon_id')->values()->all();
+            }
+
+            // If addons are being updated, check if we should merge with another item
+            if ($selectedAddons !== null) {
+                $existingWithSameAddons = CartItem::where('cart_id', $cartItem->cart_id)
+                    ->where('product_id', $cartItem->product_id)
+                    ->where('id', '!=', $cartItemId)
+                    ->where('selected_addons', json_encode($selectedAddons))
+                    ->where('special_instructions', $cartItem->special_instructions)
+                    ->first();
+
+                if ($existingWithSameAddons) {
+                    // Merge: add quantity to existing item and delete current item
+                    $newQuantity = $existingWithSameAddons->quantity + $validated['quantity'];
+
+                    // Check if total exceeds stock
+                    if ($newQuantity > $cartItem->product->stock_quantity) {
+                        return response()->json([
+                            'message' => 'Insufficient stock for quantity increase',
+                            'available_stock' => $cartItem->product->stock_quantity,
+                            'success' => false,
+                        ], 400);
+                    }
+
+                    $existingWithSameAddons->update([
+                        'quantity' => $newQuantity,
+                        'updated_at' => now(),
+                    ]);
+
+                    // Delete the current item
+                    $cartItem->delete();
+
+                    return response()->json([
+                        'message' => 'Items merged successfully!',
+                        'merged_with' => $existingWithSameAddons->id,
+                        'new_quantity' => $newQuantity,
+                        'success' => true,
+                    ]);
+                }
+            }
+
+            // No merge needed, check stock and update the item
+            if ($validated['quantity'] > $cartItem->product->stock_quantity) {
                 return response()->json([
                     'message' => 'Insufficient stock for requested quantity',
                     'available_stock' => $cartItem->product->stock_quantity,
@@ -236,14 +308,21 @@ class CartController extends Controller
                 ], 400);
             }
 
-            $cartItem->update([
+            // Update the item
+            $updateData = [
                 'quantity' => $validated['quantity'],
                 'updated_at' => now(),
-            ]);
+            ];
+
+            if ($selectedAddons !== null) {
+                $updateData['selected_addons'] = $selectedAddons;
+            }
+
+            $cartItem->update($updateData);
 
             return response()->json([
                 'message' => 'Cart item updated successfully',
-                'cartItem' => $cartItem->getSummary(),
+                'cartItem' => $cartItem->fresh()->getSummary(),
                 'success' => true,
             ]);
 

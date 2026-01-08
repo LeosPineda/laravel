@@ -30,11 +30,24 @@ class MenuController extends Controller
                 });
             }
 
-            // Get vendor count with all their products (no is_active filtering)
+            // Optimized: Use simple select and count query instead of withCount
+            // This avoids potential slow subqueries
             $vendors = $query->select('id', 'brand_name', 'brand_logo', 'is_active')
-                ->withCount('products')
                 ->orderBy('brand_name')
                 ->get();
+
+            // Get product counts separately (more efficient)
+            $vendorIds = $vendors->pluck('id');
+            $productCounts = \App\Models\Product::whereIn('vendor_id', $vendorIds)
+                ->groupBy('vendor_id')
+                ->selectRaw('vendor_id, COUNT(*) as count')
+                ->pluck('count', 'vendor_id')
+                ->toArray();
+
+            // Attach counts to vendors
+            $vendors->each(function ($vendor) use ($productCounts) {
+                $vendor->products_count = $productCounts[$vendor->id] ?? 0;
+            });
 
             return response()->json([
                 'vendors' => $vendors,
@@ -259,8 +272,11 @@ class MenuController extends Controller
             }
 
             $fileName = $vendor->brand_name.'-payment-qr.'.pathinfo($filePath, PATHINFO_EXTENSION);
+            $fileContents = Storage::disk('public')->get($filePath);
 
-            return Storage::disk('public')->download($filePath, $fileName);
+            return response($fileContents, 200)
+                ->header('Content-Type', 'image/png')
+                ->header('Content-Disposition', 'attachment; filename="'.$fileName.'"');
 
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
             return response()->json([

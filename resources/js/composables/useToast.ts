@@ -11,7 +11,7 @@ export interface Toast {
 const toasts = ref<Toast[]>([])
 let toastId = 0
 
-// Sound settings
+// Get reactive sound state
 const { isSoundEnabled } = useSound()
 
 // Sound file path
@@ -30,7 +30,8 @@ const initSound = () => {
 
 // Play the notification sound (respects sound settings)
 const playNotificationSound = () => {
-  if (!isSoundEnabled()) return // Check if sound is enabled
+  // isSoundEnabled is a computed ref, access .value
+  if (!isSoundEnabled.value) return
 
   initSound()
   if (notificationSound) {
@@ -86,21 +87,19 @@ const clear = () => {
 }
 
 // Convenience methods - 30 seconds default duration for customer alerts
-const success = (message: string, duration = 30000, withSound = false) => {
-  if (withSound) playCustomerSound()
+const success = (message: string, duration = 5000) => {
   return show(message, 'success', duration)
 }
 
-const error = (message: string, duration = 30000, withSound = false) => {
-  if (withSound) playErrorSound()
+const error = (message: string, duration = 5000) => {
   return show(message, 'error', duration)
 }
 
-const warning = (message: string, duration = 30000) => show(message, 'warning', duration)
-const info = (message: string, duration = 30000) => show(message, 'info', duration)
+const warning = (message: string, duration = 5000) => show(message, 'warning', duration)
+const info = (message: string, duration = 5000) => show(message, 'info', duration)
 
 // Special method for new orders - with sound (15 seconds for vendor attention)
-const newOrder = (message: string, duration = 15000) => {
+const newOrder = (message: string, duration = 10000) => {
   playOrderSound()
   return show(message, 'order', duration)
 }

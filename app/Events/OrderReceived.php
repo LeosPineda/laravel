@@ -30,22 +30,20 @@ class OrderReceived implements ShouldBroadcast
 
     /**
      * Get the channels the event should broadcast on.
+     * FIXED: Only broadcast to one channel to avoid duplicate notifications
      */
     public function broadcastOn(): array
     {
         return [
             new PrivateChannel('vendor-orders.' . $this->vendor->id),
-            new PrivateChannel('vendor-toasts.' . $this->vendor->id),
         ];
     }
 
     /**
      * The event's broadcast name.
-     * FIXED: Use different names for different channels to avoid conflicts
      */
     public function broadcastAs(): string
     {
-        // For vendor-toasts channel, use a different event name
         return 'VendorNewOrder';
     }
 

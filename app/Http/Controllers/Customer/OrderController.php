@@ -9,6 +9,7 @@ use App\Models\CartItem;
 use App\Models\Notification;
 use App\Models\Order;
 use App\Models\OrderItem;
+use App\Models\Product;
 use App\Models\Vendor;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
@@ -172,9 +173,13 @@ class OrderController extends Controller
                         'total_price' => $itemData['total_price'],
                     ]);
 
-                    // Deduct stock for this order item
-                    $product = $orderItem->product;
-                    $product->decrementStockOrFail($itemData['quantity']);
+                    // 🔧 FIX: Deduct stock with locking to prevent race conditions
+                    // Use lockForUpdate to prevent concurrent modifications
+                    $product = Product::lockForUpdate()->find($itemData['product_id']);
+                    if ($product->stock_quantity < $itemData['quantity']) {
+                        throw new \Exception("Insufficient stock for product '{$product->name}'. Available: {$product->stock_quantity}, Requested: {$itemData['quantity']}");
+                    }
+                    $product->decrement('stock_quantity', $itemData['quantity']);
                 }
 
                 $cart->clear();

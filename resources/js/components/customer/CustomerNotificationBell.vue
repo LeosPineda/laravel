@@ -117,13 +117,13 @@
           class="sm:hidden fixed inset-0 z-[60] bg-black/50"
           @click="showDropdown = false"
         >
-          <!-- Slide-up Panel -->
+          <!-- Top Panel -->
           <div
-            class="absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl max-h-[85vh] flex flex-col"
+            class="absolute top-0 left-0 right-0 bg-white rounded-t-3xl max-h-[85vh] flex flex-col"
             @click.stop
           >
-            <!-- Drag Handle -->
-            <div class="flex justify-center pt-3 pb-1">
+            <!-- Header Section -->
+            <div class="flex justify-center pt-4 pb-2 border-b border-gray-100">
               <div class="w-10 h-1 bg-gray-300 rounded-full"></div>
             </div>
 
@@ -186,7 +186,7 @@
                   <div class="flex-1 min-w-0">
                     <div class="flex items-center gap-2">
                       <p class="font-semibold text-gray-900">{{ notification.title }}</p>
-                      <div v-if="!notification.is_read" class="w-2 h-2 bg-orange-500 rounded-full flex-shrink-0 animate-pulse"></div>
+                      <div v-if="!notification.is_read" class="w-2 h-2 bg-orange-500 rounded-full animate-pulse"></div>
                     </div>
                     <p class="text-gray-600 mt-1">{{ notification.message }}</p>
                     <p class="text-sm text-gray-400 mt-2">{{ formatTime(notification.created_at) }}</p>
@@ -218,8 +218,10 @@
 import { ref, onMounted, onUnmounted, computed } from 'vue'
 import axios from 'axios'
 import { useToast } from '@/composables/useToast'
+import { useCart } from '@/composables/useCart'
 
 const toast = useToast()
+const { fetchCart } = useCart()
 
 const props = defineProps({
   userId: {
@@ -351,7 +353,7 @@ const subscribeToNotifications = () => {
   if (window.Echo && props.userId) {
     try {
       window.Echo.private(`customer-orders.${props.userId}`)
-        .listen('.OrderStatusChanged', (e) => {
+        .listen('.OrderStatusChanged', async (e) => {
           const status = e.order?.status
           const orderNumber = e.order?.order_number || ''
 
@@ -362,6 +364,9 @@ const subscribeToNotifications = () => {
             toast.customerAlert(`🔔 Order #${orderNumber} is ready for pickup!`, 'success')
           } else if (status === 'cancelled') {
             toast.customerAlert(`❌ Order #${orderNumber} was cancelled by vendor.`, 'error')
+
+            // ✅ FIXED: Restore cart items when vendor cancels order + refresh cart
+            await restoreOrderToCart(e.order)
           }
 
           // Receipt notifications go to BELL (loaded from server)
@@ -389,6 +394,66 @@ const getStatusTitle = (status) => {
     'cancelled': 'Order Cancelled ❌'
   }
   return titles[status] || 'Order Update'
+}
+
+// ✅ NEW: Restore cancelled order items to cart with real-time refresh
+const restoreOrderToCart = async (order) => {
+  try {
+    // Fetch the full order details to get items
+    const response = await fetch(`/api/customer/orders/${order.id}`, {
+      headers: {
+        'Accept': 'application/json',
+        'X-Requested-With': 'XMLHttpRequest'
+      }
+    })
+
+    if (!response.ok) {
+      throw new Error('Failed to fetch order details')
+    }
+
+    const data = await response.json()
+    const orderDetails = data.order
+
+    if (!orderDetails?.items || orderDetails.items.length === 0) {
+      console.warn('No items found in cancelled order')
+      return
+    }
+
+    // Add each item back to cart
+    for (const item of orderDetails.items) {
+      const addons = item.selected_addons || []
+
+      const cartResponse = await fetch('/api/customer/cart/items', {
+        method: 'POST',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest'
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          product_id: item.product_id,
+          quantity: item.quantity,
+          addons: addons,
+          special_instructions: null // Don't restore special instructions
+        })
+      })
+
+      if (!cartResponse.ok) {
+        const error = await cartResponse.json()
+        console.error(`Failed to restore item ${item.product_id}:`, error)
+      }
+    }
+
+    // ✅ KEY: Refresh cart state to update all components in real-time
+    await fetchCart()
+
+    console.log(`✅ Restored ${orderDetails.items.length} items to cart from cancelled order #${order.order_number}`)
+
+  } catch (error) {
+    console.error('Error restoring order to cart:', error)
+    toast.error('Failed to restore cancelled order items to cart')
+  }
 }
 
 onMounted(() => {

@@ -46,7 +46,7 @@
       <!-- Footer Row -->
       <div class="flex items-center justify-between">
         <div class="text-sm font-semibold text-gray-900">
-          ₱{{ order.total_amount?.toFixed(0) || '0' }}
+          ₱{{ (Number(order.total_amount) || 0).toFixed(0) }}
         </div>
 
         <!-- Compact Action Buttons -->

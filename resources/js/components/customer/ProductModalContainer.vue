@@ -8,56 +8,63 @@
     <!-- Backdrop -->
     <div class="absolute inset-0 bg-black/50 backdrop-blur-sm"></div>
 
-    <!-- Modal Content - Full screen on mobile, large modal on desktop -->
+    <!-- Modal Content - Mobile: Full Screen, Desktop: Large Modal -->
     <div
       ref="modalContent"
-      class="relative bg-white w-full h-full sm:h-auto sm:max-h-[90vh] sm:rounded-2xl shadow-2xl lg:max-w-[90vw] xl:max-w-[85vw] lg:mx-4 transform transition-all duration-300 ease-out flex flex-col"
+      class="relative bg-white w-full h-full sm:h-auto sm:max-h-[90vh] sm:rounded-2xl shadow-2xl lg:max-w-[90vw] xl:max-w-[85vw] lg:mx-4 transform transition-all duration-300 ease-out flex flex-col overflow-hidden"
       :class="{
         'translate-y-0 opacity-100': isOpen,
         'translate-y-full opacity-0 sm:translate-y-0 sm:scale-95 sm:opacity-0': !isOpen
       }"
       @click.stop
     >
-      <!-- Mobile drag handle -->
-      <div class="sm:hidden flex justify-center pt-2 pb-1 flex-shrink-0">
-        <div class="w-10 h-1 bg-gray-300 rounded-full"></div>
-      </div>
-      <!-- Header -->
-      <div class="flex items-center justify-between p-4 lg:p-6 border-b border-gray-200">
-        <div class="flex items-center gap-3">
-          <!-- Vendor Logo/Icon -->
-          <div class="w-10 h-10 lg:w-12 lg:h-12 bg-gradient-to-br from-orange-100 to-red-100 rounded-xl flex items-center justify-center">
-            <span v-if="vendor" class="text-lg lg:text-xl font-bold text-gray-600">
-              {{ getVendorInitials(vendor.brand_name) }}
-            </span>
-            <span v-else class="text-lg lg:text-xl">🍽️</span>
-          </div>
-
-          <!-- Vendor Info -->
-          <div>
-            <h2 class="text-lg lg:text-xl font-bold text-gray-900">
-              {{ vendor?.brand_name || 'Menu' }}
-            </h2>
-            <p class="text-sm text-gray-500">
-              {{ products?.length || 0 }} items available
-            </p>
-          </div>
-        </div>
-
-        <!-- Close Button -->
+      <!-- Mobile Header with Back Button (Hidden on Desktop, Sticky on Mobile) -->
+      <div class="hidden sm:hidden sticky top-0 z-10 flex items-center justify-between p-4 bg-white border-b border-gray-200 flex-shrink-0">
         <button
           @click="closeModal"
-          class="p-2 lg:p-3 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors"
-          aria-label="Close modal"
+          class="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
         >
-          <svg class="w-5 h-5 lg:w-6 lg:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+          </svg>
+          <span class="text-sm font-medium">Back</span>
+        </button>
+
+        <div class="flex items-center gap-2">
+          <div class="w-8 h-8 bg-gradient-to-br from-orange-100 to-red-100 rounded-lg flex items-center justify-center">
+            <span class="text-sm font-bold text-gray-600">{{ getVendorInitials(vendor?.brand_name || '') }}</span>
+          </div>
+          <h2 class="text-lg font-bold text-gray-900 truncate max-w-[200px]">
+            {{ vendor?.brand_name || 'Menu' }}
+          </h2>
+        </div>
+
+        <div class="w-16"></div> <!-- Spacer for centering -->
+      </div>
+
+      <!-- Desktop Header (Hidden on Mobile) -->
+      <div class="hidden sm:flex items-center justify-between p-6 border-b border-gray-200 flex-shrink-0">
+        <div class="flex items-center gap-3">
+          <div class="w-12 h-12 bg-gradient-to-br from-orange-100 to-red-100 rounded-xl flex items-center justify-center">
+            <span class="text-xl font-bold text-gray-600">{{ getVendorInitials(vendor?.brand_name || '') }}</span>
+          </div>
+          <div>
+            <h2 class="text-xl font-bold text-gray-900">{{ vendor?.brand_name || 'Menu' }}</h2>
+            <p class="text-sm text-gray-500">{{ products?.length || 0 }} items available</p>
+          </div>
+        </div>
+        <button
+          @click="closeModal"
+          class="p-3 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors"
+        >
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
           </svg>
         </button>
       </div>
 
-      <!-- Content Area -->
-      <div class="flex-1 overflow-hidden">
+      <!-- Scrollable Content Area -->
+      <div class="flex-1 overflow-y-auto">
         <!-- Loading State -->
         <div v-if="loading" class="flex items-center justify-center h-full min-h-[400px]">
           <div class="text-center">
@@ -81,52 +88,53 @@
           </div>
         </div>
 
-        <!-- Products Grid -->
-        <div v-else class="h-full overflow-y-auto">
-          <div class="p-4 lg:p-6">
-            <!-- Search Bar -->
-            <div class="mb-4">
-              <div class="relative">
-                <input
-                  v-model="searchQuery"
-                  type="text"
-                  placeholder="Search products..."
-                  class="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                >
-                <svg class="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
-              </div>
+        <!-- Products Content -->
+        <div v-else class="p-4 lg:p-6">
+          <!-- Search Bar -->
+          <div class="mb-4">
+            <div class="relative">
+              <input
+                v-model="searchQuery"
+                type="text"
+                placeholder="Search products..."
+                class="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-transparent text-base"
+              >
+              <svg class="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
             </div>
+          </div>
 
-            <!-- Category Filter (if categories exist) -->
-            <div v-if="availableCategories.length > 0" class="mb-4">
-              <div class="flex flex-wrap gap-2">
-                <button
-                  @click="setCategoryFilter(null)"
-                  class="px-3 py-1 rounded-full text-sm transition-colors"
-                  :class="selectedCategory === null
-                    ? 'bg-orange-500 text-white'
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'"
-                >
-                  All
-                </button>
-                <button
-                  v-for="category in availableCategories"
-                  :key="category"
-                  @click="setCategoryFilter(category)"
-                  class="px-3 py-1 rounded-full text-sm transition-colors"
-                  :class="selectedCategory === category
-                    ? 'bg-orange-500 text-white'
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'"
-                >
-                  {{ category }}
-                </button>
-              </div>
+          <!-- Category Filter (if categories exist) -->
+          <div v-if="availableCategories.length > 0" class="mb-4">
+            <div class="flex flex-wrap gap-2 overflow-x-auto pb-2">
+              <button
+                @click="setCategoryFilter(null)"
+                class="px-3 py-2 rounded-full text-sm font-medium transition-colors whitespace-nowrap"
+                :class="selectedCategory === null
+                  ? 'bg-orange-500 text-white'
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'"
+              >
+                All
+              </button>
+              <button
+                v-for="category in availableCategories"
+                :key="category"
+                @click="setCategoryFilter(category)"
+                class="px-3 py-2 rounded-full text-sm font-medium transition-colors whitespace-nowrap"
+                :class="selectedCategory === category
+                  ? 'bg-orange-500 text-white'
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'"
+              >
+                {{ category }}
+              </button>
             </div>
+          </div>
 
-            <!-- Products Grid using ProductBox Component -->
-            <div v-if="filteredProducts.length > 0" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7 gap-3 lg:gap-4">
+          <!-- Products Grid -->
+          <div v-if="filteredProducts.length > 0">
+            <!-- Mobile: 2 columns, Tablet: 3 columns, Desktop: 4+ columns -->
+            <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-3 lg:gap-4">
               <ProductBox
                 v-for="product in filteredProducts"
                 :key="product.id"
@@ -135,15 +143,15 @@
                 @view-details="handleViewDetails"
               />
             </div>
+          </div>
 
-            <!-- Empty State -->
-            <div v-else class="text-center py-12">
-              <div class="text-gray-400 text-4xl mb-4">🔍</div>
-              <p class="text-gray-500 font-medium mb-2">No products found</p>
-              <p class="text-gray-400 text-sm">
-                {{ searchQuery || selectedCategory ? 'Try adjusting your filters' : 'This vendor has no available products' }}
-              </p>
-            </div>
+          <!-- Empty State -->
+          <div v-else class="text-center py-12">
+            <div class="text-gray-400 text-4xl mb-4">🔍</div>
+            <p class="text-gray-500 font-medium mb-2">No products found</p>
+            <p class="text-gray-400 text-sm">
+              {{ searchQuery || selectedCategory ? 'Try adjusting your filters' : 'This vendor has no available products' }}
+            </p>
           </div>
         </div>
       </div>
@@ -162,6 +170,12 @@ interface Addon {
   is_active: boolean
 }
 
+interface AddonInput {
+  addon_id: number
+  quantity: number
+  price: number
+}
+
 interface Product {
   id: number
   name: string
@@ -171,12 +185,7 @@ interface Product {
   stock_quantity: number
   is_active?: boolean
   is_featured?: boolean
-  addons?: Array<{
-    id: number
-    name: string
-    price: string | number
-    is_active: boolean
-  }>
+  addons?: Addon[]
 }
 
 interface Vendor {
@@ -260,7 +269,7 @@ const setCategoryFilter = (category: string | null) => {
   selectedCategory.value = category
 }
 
-// 🔧 HIGH PRIORITY FIX: Helper function to fetch product with addons only when needed
+// Helper function to fetch product with addons
 const fetchProductWithAddons = async (productId: number): Promise<Product> => {
   const response = await fetch(`/api/customer/menu/products/${productId}`)
   if (response.ok) {
@@ -274,11 +283,9 @@ const fetchProductWithAddons = async (productId: number): Promise<Product> => {
 
 // Handle product details view
 const handleViewDetails = (product: Product) => {
-  // Check if product has addon property and it's an array
   if (product.addons && Array.isArray(product.addons)) {
     emit('product-select', { ...product })
   } else {
-    // Fetch if addon data is missing
     fetchProductWithAddons(product.id)
       .then((completeProduct: Product) => {
         emit('product-select', completeProduct)
@@ -291,11 +298,9 @@ const handleViewDetails = (product: Product) => {
 
 // Handle order now action
 const handleOrderNow = (product: Product) => {
-  // Check if product already has complete addon data
   if (product.addons && product.addons.length > 0) {
     emit('order-now', product)
   } else {
-    // Fetch if addon data is missing
     fetchProductWithAddons(product.id)
       .then((completeProduct: Product) => {
         emit('order-now', completeProduct)
@@ -366,22 +371,28 @@ watch(() => props.vendorId, (newVendorId) => {
   transition-duration: 150ms;
 }
 
-/* Custom scrollbar */
+/* Custom scrollbar for better mobile UX */
 .overflow-y-auto::-webkit-scrollbar {
-  width: 6px;
+  width: 4px;
 }
 
 .overflow-y-auto::-webkit-scrollbar-track {
-  background: #f1f1f1;
-  border-radius: 3px;
+  background: transparent;
 }
 
 .overflow-y-auto::-webkit-scrollbar-thumb {
-  background: #c1c1c1;
-  border-radius: 3px;
+  background: rgba(156, 163, 175, 0.5);
+  border-radius: 2px;
 }
 
 .overflow-y-auto::-webkit-scrollbar-thumb:hover {
-  background: #a8a8a8;
+  background: rgba(156, 163, 175, 0.7);
+}
+
+/* Prevent body scroll when modal is open on mobile */
+@media (max-width: 640px) {
+  .fixed.inset-0 {
+    position: fixed;
+  }
 }
 </style>

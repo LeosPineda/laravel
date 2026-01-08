@@ -35,7 +35,7 @@
         <div class="bg-gray-50 p-4 rounded-lg">
           <div class="text-sm text-gray-600">Order #{{ order?.order_number }}</div>
           <div class="text-sm text-gray-600">Table {{ order?.table_number }}</div>
-          <div class="text-lg font-semibold text-gray-900">₱{{ order?.total_amount?.toFixed(2) }}</div>
+          <div class="text-lg font-semibold text-gray-900">₱{{ (Number(order?.total_amount) || 0).toFixed(2) }}</div>
         </div>
 
         <!-- Pre-written Reason -->
@@ -113,6 +113,7 @@ interface Order {
 interface Props {
   isOpen: boolean
   order: Order | null
+  processing?: boolean
 }
 
 interface Emits {
@@ -170,14 +171,7 @@ const confirmDecline = async () => {
     // Emit the decline event - parent will handle API call
     emit('decline', reason)
 
-    // Wait a bit then close modal
-    setTimeout(() => {
-      selectedReason.value = ''
-      customReason.value = ''
-      error.value = ''
-      processing.value = false
-      emit('close')
-    }, 1000)
+    // Note: We don't reset processing here - parent will handle closing the modal
   } catch (err) {
     console.error('Error declining order:', err)
     error.value = 'Failed to decline order. Please try again.'

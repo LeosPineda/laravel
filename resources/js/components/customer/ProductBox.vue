@@ -111,7 +111,7 @@ import { ref, computed } from 'vue'
 interface Addon {
   id: number
   name: string
-  price: number
+  price: string | number
   is_active: boolean
 }
 

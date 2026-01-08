@@ -349,10 +349,16 @@ const handleEditItem = async (item) => {
 
 const handleSaveItem = async (updatedItem) => {
   try {
-    const result = await updateCartItem(updatedItem.id, updatedItem.quantity)
+    // Pass addons to updateCartItem so it can merge with existing items
+    const result = await updateCartItem(updatedItem.id, updatedItem.quantity, updatedItem.addons)
 
     if (result.success) {
-      success('Item updated successfully')
+      // Check if items were merged
+      if (result.message?.includes('merged')) {
+        success('Items merged! Total quantity updated.')
+      } else {
+        success('Item updated successfully')
+      }
       editingItem.value = null
     } else {
       error(result.message || 'Failed to update item')
@@ -399,7 +405,7 @@ const handleCancelOrder = async (order) => {
     if (response.ok) {
       success('Order cancelled. Items restored to cart.')
 
-      // Remove from pending orders
+    // Remove from pending orders
       pendingOrders.value = pendingOrders.value.filter(o => o.id !== order.id)
 
       // Refresh cart to get restored items

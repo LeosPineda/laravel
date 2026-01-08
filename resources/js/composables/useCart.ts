@@ -15,7 +15,6 @@ interface CartItem {
     image_url?: string
     category?: string
   }
-  // Added for flattened cart items
   vendor?: {
     id: number
     brand_name: string
@@ -41,15 +40,13 @@ interface VendorCart {
   items: CartItem[]
 }
 
-// ⚠️ SINGLETON PATTERN: State defined OUTSIDE the function
-// This ensures all components share the same cart state
+// Singleton pattern - state outside function for shared state
 const cart = ref<CartItem[]>([])
 const vendorCarts = ref<VendorCart[]>([])
 const loading = ref(false)
 const cartCount = ref(0)
 
 export function useCart() {
-  // Group cart items by vendor for multi-vendor display
   const cartByVendor = computed(() => {
     const grouped = cart.value.reduce((acc, item) => {
       const vendorId = item.vendor_id
@@ -69,14 +66,12 @@ export function useCart() {
     return Object.values(grouped)
   })
 
-  // Total cart value
   const cartTotal = computed(() => {
     return cart.value.reduce((total, item) => {
       return total + (item.quantity * item.product.price)
     }, 0)
   })
 
-  // API functions
   const fetchCart = async () => {
     loading.value = true
     try {
@@ -90,11 +85,9 @@ export function useCart() {
 
       if (response.ok) {
         const data = await response.json()
-        // Backend returns vendorCarts array with vendor and items
         vendorCarts.value = data.vendorCarts || []
         cartCount.value = Number(data.cartCount) || 0
 
-        // Also flatten items for backwards compatibility
         cart.value = vendorCarts.value.flatMap(vc => vc.items.map(item => ({
           ...item,
           vendor: vc.vendor,
@@ -134,7 +127,7 @@ export function useCart() {
       if (response.ok) {
         const data = await response.json()
         cartCount.value = Number(data.cartCount) || cartCount.value
-        await fetchCart() // Refresh cart
+        await fetchCart()
         return { success: true, message: data.message, cartItem: data.cartItem }
       } else {
         const errorData = await response.json()
@@ -146,8 +139,13 @@ export function useCart() {
     }
   }
 
-  const updateCartItem = async (cartItemId: number, quantity: number) => {
+  const updateCartItem = async (cartItemId: number, quantity: number, addons?: AddonSelection[]) => {
     try {
+      const body: any = { quantity }
+      if (addons !== undefined) {
+        body.addons = addons
+      }
+
       const response = await fetch(`/api/customer/cart/items/${cartItemId}`, {
         method: 'PUT',
         headers: {
@@ -156,14 +154,13 @@ export function useCart() {
           'X-Requested-With': 'XMLHttpRequest'
         },
         credentials: 'include',
-        body: JSON.stringify({
-          quantity: quantity
-        })
+        body: JSON.stringify(body)
       })
 
       if (response.ok) {
-        await fetchCart() // Refresh cart
-        return { success: true }
+        const data = await response.json()
+        await fetchCart()
+        return { success: true, message: data.message }
       } else {
         const errorData = await response.json()
         return { success: false, message: errorData.message || 'Failed to update cart' }
@@ -186,7 +183,7 @@ export function useCart() {
       })
 
       if (response.ok) {
-        await fetchCart() // Refresh cart
+        await fetchCart()
         return { success: true }
       } else {
         const errorData = await response.json()
@@ -200,7 +197,6 @@ export function useCart() {
 
   const clearCart = async (vendorId?: number) => {
     try {
-      // Route: DELETE /api/customer/cart/items clears all items
       const url = '/api/customer/cart/items'
 
       const response = await fetch(url, {
@@ -213,7 +209,7 @@ export function useCart() {
       })
 
       if (response.ok) {
-        await fetchCart() // Refresh cart
+        await fetchCart()
         return { success: true }
       } else {
         const errorData = await response.json()
@@ -226,17 +222,12 @@ export function useCart() {
   }
 
   return {
-    // State
     cart,
     vendorCarts,
     loading,
     cartCount,
-
-    // Computed
     cartByVendor,
     cartTotal,
-
-    // Methods
     fetchCart,
     addToCart,
     updateCartItem,

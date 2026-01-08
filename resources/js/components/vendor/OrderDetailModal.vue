@@ -1,4 +1,4 @@
-<template>
+ <template>
   <Teleport to="body">
     <div
       v-if="isOpen"
@@ -8,12 +8,12 @@
       aria-modal="true"
     >
       <!-- Backdrop -->
-      <div class="fixed inset-0 bg-black/50" @click="close"></div>
+      <div class="fixed inset-0 bg-black/50 z-[-1]" @click="close"></div>
 
       <!-- Modal Panel -->
       <div class="flex min-h-full items-center justify-center p-4">
         <div
-          class="relative w-full max-w-2xl transform overflow-hidden rounded-lg bg-white shadow-xl"
+          class="relative w-full max-w-2xl transform overflow-hidden rounded-lg bg-white shadow-xl mt-16 sm:mt-20"
           @click.stop
         >
           <!-- Loading State -->
@@ -79,7 +79,7 @@
                   </div>
                   <div>
                     <span class="font-medium text-gray-700">Total Amount:</span>
-                    <p class="text-gray-900 font-semibold">₱{{ parseFloat(order.total_amount).toFixed(2) }}</p>
+                    <p class="text-gray-900 font-semibold">₱{{ (Number(order.total_amount) || 0).toFixed(2) }}</p>
                   </div>
                 </div>
               </div>
@@ -150,7 +150,7 @@
                     </div>
                     <div class="flex justify-between font-semibold text-lg border-t border-gray-200 pt-2">
                       <span class="text-gray-900">Total:</span>
-                      <span class="text-gray-900">₱{{ parseFloat(order.total_amount).toFixed(2) }}</span>
+                      <span class="text-gray-900">₱{{ (Number(order.total_amount) || 0).toFixed(2) }}</span>
                     </div>
                   </div>
                 </div>
@@ -319,7 +319,7 @@ const statusBadge = {
 
 const statusLabels = {
   pending: 'Pending',
-  accepted: 'Accepted',
+  accepted: 'Your Order is Being Prepared',
   ready_for_pickup: 'Ready for Pickup',
   cancelled: 'Cancelled'
 }

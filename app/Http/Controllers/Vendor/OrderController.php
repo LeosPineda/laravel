@@ -132,14 +132,24 @@ class OrderController extends Controller
                 // Broadcast status change event
                 event(new OrderStatusChanged($vendor, $order, $order->customer, $oldStatus, 'accepted'));
 
-                // ✅ UPDATED: Combined "Accepted & Preparing" notification
+                // ✅ UPDATED: Detailed order accepted notification with items and addons
+                $itemsList = $order->items->map(function($item) {
+                    $addonText = '';
+                    if ($item->selected_addons && count($item->selected_addons) > 0) {
+                        $addonNames = collect($item->selected_addons)->pluck('name')->implode(', ');
+                        $addonText = " + {$addonNames}";
+                    }
+                    $productName = $item->product ? $item->product->name : 'Unknown Item';
+                    return "{$item->quantity}x {$productName}{$addonText}";
+                })->implode(', ');
+
                 $customerNotification = Notification::create([
                     'user_id' => $order->customer_id,
                     'vendor_id' => $vendor->id,
                     'order_id' => $order->id,
                     'type' => 'order_status',
                     'title' => 'Order Accepted & Preparing 👨‍🍳',
-                    'message' => "Your order #{$order->order_number} has been accepted and is now being prepared. Please wait for updates.",
+                    'message' => "Your order #{$order->order_number} has been accepted! Items: {$itemsList}. Now being prepared.",
                     'is_read' => false,
                     'created_at' => now(),
                 ]);
